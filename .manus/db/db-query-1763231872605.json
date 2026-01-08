@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, title FROM travels;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT id, title FROM travels;",
+  "rows": [
+    {
+      "id": "1",
+      "title": "Paris"
+    },
+    {
+      "id": "2",
+      "title": "Nova York"
+    },
+    {
+      "id": "3",
+      "title": "Tóquio"
+    },
+    {
+      "id": "4",
+      "title": "Bali"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\n1\tParis\n2\tNova York\n3\tTóquio\n4\tBali\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

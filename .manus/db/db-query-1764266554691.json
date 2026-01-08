@@ -1,0 +1,50 @@
+{
+  "query": "SELECT * FROM categories ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT * FROM categories ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Pacotes",
+      "description": "Pacotes completos de viagem",
+      "icon": "package",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "2",
+      "name": "Passagens",
+      "description": "Passagens aéreas",
+      "icon": "plane",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "3",
+      "name": "Hospedagens",
+      "description": "Hotéis e pousadas",
+      "icon": "hotel",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "4",
+      "name": "Black Friday",
+      "description": "Ofertas especiais Black Friday",
+      "icon": "tag",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "5",
+      "name": "Promoção",
+      "description": "Promoções e descontos",
+      "icon": "percent",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdescription\ticon\tcreatedAt\tupdatedAt\n1\tPacotes\tPacotes completos de viagem\tpackage\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n2\tPassagens\tPassagens aéreas\tplane\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n3\tHospedagens\tHotéis e pousadas\thotel\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n4\tBlack Friday\tOfertas especiais Black Friday\ttag\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n5\tPromoção\tPromoções e descontos\tpercent\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

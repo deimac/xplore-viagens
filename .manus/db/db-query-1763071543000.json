@@ -1,0 +1,62 @@
+{
+  "query": "SELECT * FROM travels;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT * FROM travels;",
+  "rows": [
+    {
+      "id": "1",
+      "title": "Paris",
+      "description": "Cidade da Luz - Conheça a Torre Eiffel, Louvre e muito mais",
+      "origin": "São Paulo",
+      "departureDate": "2024-12-15",
+      "returnDate": "2024-12-22",
+      "travelers": "2",
+      "price": "5000.00",
+      "imageUrl": "/paris.jpg",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "2",
+      "title": "Nova York",
+      "description": "A Cidade que Nunca Dorme - Times Square, Central Park e Estátua da Liberdade",
+      "origin": "Rio de Janeiro",
+      "departureDate": "2024-12-20",
+      "returnDate": "2024-12-27",
+      "travelers": "2",
+      "price": "6500.00",
+      "imageUrl": "/newyork.jpg",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "3",
+      "title": "Tóquio",
+      "description": "Tradição e Modernidade - Templos, tecnologia e cultura japonesa",
+      "origin": "São Paulo",
+      "departureDate": "2025-01-10",
+      "returnDate": "2025-01-17",
+      "travelers": "2",
+      "price": "8500.00",
+      "imageUrl": "/tokyo.jpg",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    },
+    {
+      "id": "4",
+      "title": "Bali",
+      "description": "Paraíso Tropical - Praias, templos e natureza exuberante",
+      "origin": "Brasília",
+      "departureDate": "2025-02-05",
+      "returnDate": "2025-02-15",
+      "travelers": "2",
+      "price": "4500.00",
+      "imageUrl": "/bali.jpg",
+      "createdAt": "2025-11-13 22:00:44",
+      "updatedAt": "2025-11-13 22:00:44"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tdescription\torigin\tdepartureDate\treturnDate\ttravelers\tprice\timageUrl\tcreatedAt\tupdatedAt\n1\tParis\tCidade da Luz - Conheça a Torre Eiffel, Louvre e muito mais\tSão Paulo\t2024-12-15\t2024-12-22\t2\t5000.00\t/paris.jpg\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n2\tNova York\tA Cidade que Nunca Dorme - Times Square, Central Park e Estátua da Liberdade\tRio de Janeiro\t2024-12-20\t2024-12-27\t2\t6500.00\t/newyork.jpg\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n3\tTóquio\tTradição e Modernidade - Templos, tecnologia e cultura japonesa\tSão Paulo\t2025-01-10\t2025-01-17\t2\t8500.00\t/tokyo.jpg\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n4\tBali\tParaíso Tropical - Praias, templos e natureza exuberante\tBrasília\t2025-02-05\t2025-02-15\t2\t4500.00\t/bali.jpg\t2025-11-13 22:00:44\t2025-11-13 22:00:44\n",
+  "stderr": "",
+  "execution_time_ms": 688
+}

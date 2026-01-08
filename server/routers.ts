@@ -1,0 +1,282 @@
+import { COOKIE_NAME } from "@shared/const";
+import { getSessionCookieOptions } from "./_core/cookies";
+import { systemRouter } from "./_core/systemRouter";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import * as db from "./db";
+import { TRPCError } from "@trpc/server";
+import { storagePut } from "./storage";
+import crypto from "crypto";
+import { verifyGoogleToken } from "./_core/googleAuth";
+
+export const appRouter = router({
+  system: systemRouter,
+  auth: router({
+    me: publicProcedure.query(opts => opts.ctx.user),
+    logout: publicProcedure.mutation(({ ctx }) => {
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      return {
+        success: true,
+      } as const;
+    }),
+  }),
+
+  travels: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllTravels();
+    }),
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getTravelById(input.id);
+      }),
+  }),
+
+  categories: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllCategories();
+    }),
+  }),
+
+  companySettings: router({
+    get: publicProcedure.query(async () => {
+      return await db.getCompanySettings();
+    }),
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          companyName: z.string().optional(),
+          cnpj: z.string().optional(),
+          foundedDate: z.string().optional(),
+          email: z.string().optional(),
+          phone: z.string().optional(),
+          whatsapp: z.string().optional(),
+          instagram: z.string().optional(),
+          facebook: z.string().optional(),
+          linkedin: z.string().optional(),
+          twitter: z.string().optional(),
+          quotationLink: z.string().optional(),
+          googleAnalyticsId: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...settings } = input;
+        await db.updateCompanySettings(id, settings);
+        return { success: true };
+      }),
+  }),
+
+  heroSlides: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllHeroSlides();
+    }),
+    listActive: publicProcedure.query(async () => {
+      return await db.getActiveHeroSlides();
+    }),
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getHeroSlideById(input.id);
+      }),
+    create: publicProcedure
+      .input(
+        z.object({
+          imageUrl: z.string(),
+          title: z.string(),
+          subtitle: z.string().optional(),
+          order: z.number().default(0),
+          isActive: z.number().default(1),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createHeroSlide(input);
+      }),
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          imageUrl: z.string().optional(),
+          title: z.string().optional(),
+          subtitle: z.string().optional(),
+          order: z.number().optional(),
+          isActive: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateHeroSlide(id, data);
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteHeroSlide(input.id);
+        return { success: true };
+      }),
+    uploadImage: publicProcedure
+      .input(
+        z.object({
+          fileName: z.string(),
+          fileData: z.string(),
+          mimeType: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        
+        const buffer = Buffer.from(input.fileData, "base64");
+        const randomSuffix = crypto.randomBytes(8).toString("hex");
+        const ext = input.fileName.split(".").pop() || "jpg";
+        const fileKey = `hero-slides/${randomSuffix}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        
+        return { url };
+      }),
+  }),
+
+  quotations: router({
+    create: publicProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          email: z.string().email(),
+          phone: z.string().optional(),
+          destination: z.string(),
+          departureDate: z.string().optional(),
+          returnDate: z.string().optional(),
+          travelers: z.number(),
+          budget: z.string().optional(),
+          message: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createQuotation({
+          ...input,
+          status: "pending",
+        });
+      }),
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      return await db.getAllQuotations();
+    }),
+    updateStatus: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["pending", "contacted", "completed", "cancelled"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        await db.updateQuotationStatus(input.id, input.status);
+        return { success: true };
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        await db.deleteQuotation(input.id);
+        return { success: true };
+      }),
+  }),
+
+  reviews: router({    
+    // Verify Google token and return user info
+    verifyGoogle: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        try {
+          const userInfo = await verifyGoogleToken(input.token);
+          
+          // Upsert review author
+          const author = await db.upsertReviewAuthor({
+            googleId: userInfo.googleId,
+            name: userInfo.name,
+            email: userInfo.email,
+            avatarUrl: userInfo.picture,
+          });
+          
+          return {
+            success: true,
+            author: {
+              id: author.id,
+              name: author.name,
+              email: author.email,
+              avatarUrl: author.avatarUrl,
+            },
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Failed to verify Google token",
+          });
+        }
+      }),
+    
+    // Create a new review
+    create: publicProcedure
+      .input(
+        z.object({
+          authorId: z.number(),
+          rating: z.number().min(1).max(5),
+          comment: z.string().min(10),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.createReview({
+          ...input,
+          status: "pending", // All reviews start as pending
+        });
+        return { success: true };
+      }),
+    
+    // List all reviews (admin only)
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      return await db.getAllReviews();
+    }),
+    
+    // List approved reviews (public)
+    listApproved: publicProcedure.query(async () => {
+      return await db.getApprovedReviews();
+    }),
+    
+    // Update review status (admin only)
+    updateStatus: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          status: z.enum(["pending", "approved", "rejected"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        await db.updateReviewStatus(input.id, input.status);
+        return { success: true };
+      }),
+    
+    // Delete review (admin only)
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        await db.deleteReview(input.id);
+        return { success: true };
+      }),
+  }),
+});
+
+export type AppRouter = typeof appRouter;

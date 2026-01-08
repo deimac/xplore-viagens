@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, title, departureDate, returnDate FROM travels WHERE id IN (2, 3);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT id, title, departureDate, returnDate FROM travels WHERE id IN (2, 3);",
+  "rows": [
+    {
+      "id": "2",
+      "title": "Nova York",
+      "departureDate": "10/Fev",
+      "returnDate": "17/Fev"
+    },
+    {
+      "id": "3",
+      "title": "Tóquio",
+      "departureDate": "10/Jan",
+      "returnDate": "18/Jan"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tdepartureDate\treturnDate\n2\tNova York\t10/Fev\t17/Fev\n3\tTóquio\t10/Jan\t18/Jan\n",
+  "stderr": "",
+  "execution_time_ms": 46
+}

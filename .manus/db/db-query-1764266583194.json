@@ -1,0 +1,27 @@
+{
+  "query": "SELECT * FROM companySettings ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT * FROM companySettings ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "companyName": "Xplore Viagens",
+      "cnpj": "",
+      "foundedDate": "",
+      "email": "contato@xplore.com.br",
+      "phone": "(11) 1234-5678",
+      "whatsapp": "(11) 91234-5678",
+      "instagram": "https://instagram.com/xplore",
+      "facebook": "https://facebook.com/xplore",
+      "linkedin": "https://linkedin.com/company/xplore",
+      "twitter": "",
+      "quotationLink": "",
+      "googleAnalyticsId": "G-XXXXXXXXXX",
+      "createdAt": "2025-11-27 17:29:53",
+      "updatedAt": "2025-11-27 17:46:35"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompanyName\tcnpj\tfoundedDate\temail\tphone\twhatsapp\tinstagram\tfacebook\tlinkedin\ttwitter\tquotationLink\tgoogleAnalyticsId\tcreatedAt\tupdatedAt\n1\tXplore Viagens\t\t\tcontato@xplore.com.br\t(11) 1234-5678\t(11) 91234-5678\thttps://instagram.com/xplore\thttps://facebook.com/xplore\thttps://linkedin.com/company/xplore\t\t\tG-XXXXXXXXXX\t2025-11-27 17:29:53\t2025-11-27 17:46:35\n",
+  "stderr": "",
+  "execution_time_ms": 87
+}

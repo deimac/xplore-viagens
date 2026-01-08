@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1763069299122,
+      "tag": "0000_nice_norrin_radd",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1763069346639,
+      "tag": "0001_groovy_nighthawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1763071170703,
+      "tag": "0002_ordinary_marauders",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1765635519399,
+      "tag": "0003_cynical_mister_sinister",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1766235471172,
+      "tag": "0004_safe_skrulls",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1766429350169,
+      "tag": "0005_amusing_nehzno",
+      "breakpoints": true
+    }
+  ]
+}

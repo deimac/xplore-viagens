@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE travels SET promotion = '15% OFF', promotionColor = '#EF4444' WHERE title = 'Paris';\nUPDATE travels SET promotion = 'Oferta Imperdível', promotionColor = '#F97316' WHERE title = 'Dubai';\nUPDATE travels SET promotion = 'Exclusivo', promotionColor = '#8B5CF6' WHERE title = 'Tóquio';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute UPDATE travels SET promotion = '15% OFF', promotionColor = '#EF4444' WHERE title = 'Paris';\nUPDATE travels SET promotion = 'Oferta Imperdível', promotionColor = '#F97316' WHERE title = 'Dubai';\nUPDATE travels SET promotion = 'Exclusivo', promotionColor = '#8B5CF6' WHERE title = 'Tóquio';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 124
+}

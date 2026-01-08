@@ -1,0 +1,31 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "categories"
+    },
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "companySettings"
+    },
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "quotations"
+    },
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "travelCategories"
+    },
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "travels"
+    },
+    {
+      "Tables_in_68NAJXV5RPrwLxMs5uvKbz": "users"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_68NAJXV5RPrwLxMs5uvKbz\n__drizzle_migrations\ncategories\ncompanySettings\nquotations\ntravelCategories\ntravels\nusers\n",
+  "stderr": "",
+  "execution_time_ms": 241
+}

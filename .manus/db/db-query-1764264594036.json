@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO companySettings (companyName, cnpj, foundedDate, email, phone, whatsapp, instagram, facebook, linkedin, twitter, quotationLink)\nVALUES (\n  'Xplore Viagens',\n  '',\n  '',\n  'contato@xplore.com.br',\n  '(11) 1234-5678',\n  '(11) 91234-5678',\n  'https://instagram.com/xplore',\n  'https://facebook.com/xplore',\n  'https://linkedin.com/company/xplore',\n  '',\n  ''\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute INSERT INTO companySettings (companyName, cnpj, foundedDate, email, phone, whatsapp, instagram, facebook, linkedin, twitter, quotationLink)\nVALUES (\n  'Xplore Viagens',\n  '',\n  '',\n  'contato@xplore.com.br',\n  '(11) 1234-5678',\n  '(11) 91234-5678',\n  'https://instagram.com/xplore',\n  'https://facebook.com/xplore',\n  'https://linkedin.com/company/xplore',\n  '',\n  ''\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 918
+}

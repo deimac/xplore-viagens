@@ -1,0 +1,58 @@
+{
+  "query": "SELECT id, title, departureDate, returnDate, price, travelers FROM travels ORDER BY departureDate;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT id, title, departureDate, returnDate, price, travelers FROM travels ORDER BY departureDate;",
+  "rows": [
+    {
+      "id": "3",
+      "title": "Tóquio",
+      "departureDate": "05/03/2026",
+      "returnDate": "15/03/2026",
+      "price": "8500.00",
+      "travelers": "8"
+    },
+    {
+      "id": "2",
+      "title": "Nova York",
+      "departureDate": "10/01/2026",
+      "returnDate": "17/01/2026",
+      "price": "6500.00",
+      "travelers": "10"
+    },
+    {
+      "id": "30003",
+      "title": "Dubai",
+      "departureDate": "10/02/2026",
+      "returnDate": "18/02/2026",
+      "price": "9000",
+      "travelers": "2"
+    },
+    {
+      "id": "30002",
+      "title": "Londres",
+      "departureDate": "15/05/2026",
+      "returnDate": "22/05/2026",
+      "price": "7500",
+      "travelers": "2"
+    },
+    {
+      "id": "1",
+      "title": "Paris",
+      "departureDate": "15/12/2025",
+      "returnDate": "22/12/2025",
+      "price": "5000.00",
+      "travelers": "15"
+    },
+    {
+      "id": "4",
+      "title": "Bali",
+      "departureDate": "20/04/2026",
+      "returnDate": "30/04/2026",
+      "price": "4500.00",
+      "travelers": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tdepartureDate\treturnDate\tprice\ttravelers\n3\tTóquio\t05/03/2026\t15/03/2026\t8500.00\t8\n2\tNova York\t10/01/2026\t17/01/2026\t6500.00\t10\n30003\tDubai\t10/02/2026\t18/02/2026\t9000\t2\n30002\tLondres\t15/05/2026\t22/05/2026\t7500\t2\n1\tParis\t15/12/2025\t22/12/2025\t5000.00\t15\n4\tBali\t20/04/2026\t30/04/2026\t4500.00\t2\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

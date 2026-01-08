@@ -1,0 +1,58 @@
+{
+  "query": "SELECT tc.*, t.title, c.name as category_name FROM travelCategories tc JOIN travels t ON tc.travelId = t.id JOIN categories c ON tc.categoryId = c.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT tc.*, t.title, c.name as category_name FROM travelCategories tc JOIN travels t ON tc.travelId = t.id JOIN categories c ON tc.categoryId = c.id;",
+  "rows": [
+    {
+      "travelId": "4",
+      "categoryId": "1",
+      "title": "Bali",
+      "category_name": "Pacotes"
+    },
+    {
+      "travelId": "3",
+      "categoryId": "1",
+      "title": "Tóquio",
+      "category_name": "Pacotes"
+    },
+    {
+      "travelId": "2",
+      "categoryId": "1",
+      "title": "Nova York",
+      "category_name": "Pacotes"
+    },
+    {
+      "travelId": "1",
+      "categoryId": "1",
+      "title": "Paris",
+      "category_name": "Pacotes"
+    },
+    {
+      "travelId": "4",
+      "categoryId": "4",
+      "title": "Bali",
+      "category_name": "Black Friday"
+    },
+    {
+      "travelId": "1",
+      "categoryId": "4",
+      "title": "Paris",
+      "category_name": "Black Friday"
+    },
+    {
+      "travelId": "3",
+      "categoryId": "5",
+      "title": "Tóquio",
+      "category_name": "Promoção"
+    },
+    {
+      "travelId": "2",
+      "categoryId": "5",
+      "title": "Nova York",
+      "category_name": "Promoção"
+    }
+  ],
+  "messages": [],
+  "stdout": "travelId\tcategoryId\ttitle\tcategory_name\n4\t1\tBali\tPacotes\n3\t1\tTóquio\tPacotes\n2\t1\tNova York\tPacotes\n1\t1\tParis\tPacotes\n4\t4\tBali\tBlack Friday\n1\t4\tParis\tBlack Friday\n3\t5\tTóquio\tPromoção\n2\t5\tNova York\tPromoção\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}

@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO heroSlides (imageUrl, title, subtitle, `order`, isActive) VALUES \n('/hero-santorini.jpg', 'Viva experiências inesquecíveis', 'Descubra a magia de Santorini e deixe-se encantar pelo pôr do sol mais bonito do mundo', 0, 1),\n('/hero-salinas-maragogi.jpg', 'Paraíso All-Inclusive no Nordeste', 'Relaxe nas águas cristalinas de Maragogi e desfrute do melhor resort de praia do Brasil', 1, 1)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute INSERT INTO heroSlides (imageUrl, title, subtitle, `order`, isActive) VALUES \n('/hero-santorini.jpg', 'Viva experiências inesquecíveis', 'Descubra a magia de Santorini e deixe-se encantar pelo pôr do sol mais bonito do mundo', 0, 1),\n('/hero-salinas-maragogi.jpg', 'Paraíso All-Inclusive no Nordeste', 'Relaxe nas águas cristalinas de Maragogi e desfrute do melhor resort de praia do Brasil', 1, 1)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 91
+}

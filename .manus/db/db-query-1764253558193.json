@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, title, travelers FROM travels LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute SELECT id, title, travelers FROM travels LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "title": "Paris",
+      "travelers": "2-15 pessoas"
+    },
+    {
+      "id": "2",
+      "title": "Nova York",
+      "travelers": "2-10 pessoas"
+    },
+    {
+      "id": "3",
+      "title": "Tóquio",
+      "travelers": "Até 12 pessoas"
+    },
+    {
+      "id": "4",
+      "title": "Bali",
+      "travelers": "2"
+    },
+    {
+      "id": "30002",
+      "title": "Londres",
+      "travelers": "2"
+    },
+    {
+      "id": "30003",
+      "title": "Dubai",
+      "travelers": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\ttravelers\n1\tParis\t2-15 pessoas\n2\tNova York\t2-10 pessoas\n3\tTóquio\tAté 12 pessoas\n4\tBali\t2\n30002\tLondres\t2\n30003\tDubai\t2\n",
+  "stderr": "",
+  "execution_time_ms": 84
+}

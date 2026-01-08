@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO travels (title, description, imageUrl, price, origin, departureDate, returnDate, travelers) VALUES \n('Londres', 'Reino Unido - Big Ben, Palácio de Buckingham e cultura britânica', 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&h=600&fit=crop', 7500, 'São Paulo', '2024-12-20', '2024-12-28', 2),\n('Dubai', 'Emirados Árabes - Burj Khalifa, luxo e modernidade no deserto', 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&h=600&fit=crop', 9000, 'Rio de Janeiro', '2025-01-10', '2025-01-18', 2);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Jn8jAXNv7oTvPT.83188986a159 --database 68NAJXV5RPrwLxMs5uvKbz --execute INSERT INTO travels (title, description, imageUrl, price, origin, departureDate, returnDate, travelers) VALUES \n('Londres', 'Reino Unido - Big Ben, Palácio de Buckingham e cultura britânica', 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&h=600&fit=crop', 7500, 'São Paulo', '2024-12-20', '2024-12-28', 2),\n('Dubai', 'Emirados Árabes - Burj Khalifa, luxo e modernidade no deserto', 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&h=600&fit=crop', 9000, 'Rio de Janeiro', '2025-01-10', '2025-01-18', 2);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 68
+}
