@@ -16,7 +16,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { ENV } from './env';
+import { ENV } from './_core/env';
 
 const UPLOADS_DIR = path.join(process.cwd(), ENV.uploadsDir);
 
