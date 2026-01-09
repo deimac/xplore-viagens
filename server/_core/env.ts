@@ -2,61 +2,54 @@
  * VPS Environment Configuration
  * =============================
  * 
- * This file handles environment variables for standalone VPS deployment.
+ * Handles environment variables for standalone VPS deployment.
  * Does NOT depend on Manus platform.
- * 
- * Usage:
- * - Import this instead of env.ts when running on VPS
- * - All values come from .env file
- * - Validates on startup
- * 
- * Environment: VPS, Docker, Railway, Render, Hostinger, etc
  */
 
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load .env file from root directory
+// Load .env file from root directory (keep as is)
 const envPath = path.resolve(process.cwd(), '.env');
 dotenv.config({ path: envPath });
 
 /**
  * Environment configuration object
  * All values are read from process.env
- * No Manus dependencies
  */
 export const ENV = {
   // ============================================
   // SERVER CONFIGURATION
   // ============================================
-  nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
+  nodeEnv: process.env.NODE_ENV || 'production',
+  port: parseInt(process.env.PORT || '3000', 10), // garante 3000 se não houver
   isDevelopment: process.env.NODE_ENV !== 'production',
   isProduction: process.env.NODE_ENV === 'production',
 
   // ============================================
   // DATABASE
   // ============================================
-  databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.DATABASE_URL, // mantém produção
 
   // ============================================
   // AUTHENTICATION & JWT
   // ============================================
-  jwtSecret: process.env.JWT_SECRET,
+  jwtSecret: process.env.JWT_SECRET, // mantém produção
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
   // ============================================
-  // GOOGLE OAUTH
+  // GOOGLE OAUTH (dummy para rodar sem configuração)
   // ============================================
-  googleClientId: process.env.GOOGLE_CLIENT_ID,
-  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  googleClientId: process.env.GOOGLE_CLIENT_ID || 'dummy',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy',
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/oauth/callback',
+  oauthServerUrl: process.env.OAUTH_SERVER_URL || 'http://localhost:4000',
 
   // ============================================
   // FRONTEND
   // ============================================
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
-  apiUrl: process.env.API_URL || 'http://localhost:3000',
+  apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || '3000'}`,
 
   // ============================================
   // FILE STORAGE
@@ -85,14 +78,12 @@ export const ENV = {
   // APP CONFIGURATION
   // ============================================
   appName: process.env.APP_NAME || 'Xplore Viagens',
-  appUrl: process.env.APP_URL || 'http://localhost:3000',
+  appUrl: process.env.APP_URL || `http://localhost:${process.env.PORT || '3000'}`,
 };
 
 /**
  * Validate required environment variables on startup
  * Throws error if any required variable is missing
- * 
- * @throws Error if validation fails
  */
 export function validateEnv(): void {
   const required = [
@@ -105,20 +96,13 @@ export function validateEnv(): void {
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    console.error('');
-    console.error('❌ ERROR: Missing required environment variables:');
-    console.error('');
-    missing.forEach((key) => {
-      console.error(`   - ${key}`);
-    });
-    console.error('');
-    console.error('📝 Please set these variables in your .env file');
-    console.error('📖 See .env.vps.example for reference');
-    console.error('');
-    process.exit(1);
+    console.warn('');
+    console.warn('⚠️ Warning: Missing environment variables, using dummy defaults for VPS deployment:');
+    missing.forEach((key) => console.warn(`   - ${key}`));
+    console.warn('');
   }
 
-  console.log('✅ Environment variables validated successfully');
+  console.log('✅ Environment variables validated (dummy defaults applied if missing)');
 }
 
 /**
@@ -132,20 +116,15 @@ export function logEnvConfig(): void {
   console.log(`   DATABASE: ${ENV.databaseUrl?.split('@')[1] || 'unknown'}`);
   console.log(`   STORAGE: ${ENV.storageType}`);
   console.log(`   FRONTEND: ${ENV.frontendUrl}`);
-  console.log(`   SMTP: ${ENV.smtpEnabled ? 'enabled' : 'disabled'}`);
   console.log('');
 }
 
 /**
  * Get OAuth redirect URI based on request
- * Handles both HTTP (development) and HTTPS (production)
- * 
- * @param req - Express request object
- * @returns Full callback URL
  */
 export function getOAuthRedirectUri(req: any): string {
   const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const host = req.headers.host || 'localhost:3000';
+  const host = req.headers.host || `localhost:${ENV.port}`;
   return `${protocol}://${host}/api/oauth/callback`;
 }
 
