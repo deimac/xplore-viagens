@@ -1,8 +1,13 @@
-import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-// Carrega o .env da raiz
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Converte o metaURL do ES Module para caminho de arquivo
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Carrega o .env da raiz do projeto
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 export const ENV = {
   // SERVER
