@@ -309,11 +309,8 @@ export const appRouter = router({
         return { success: true };
       }),
     
-    // List all reviews (admin only)
-    list: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-      }
+    // List all reviews (temporarily public)
+    list: publicProcedure.query(async () => {
       return await db.getAllReviews();
     }),
     
