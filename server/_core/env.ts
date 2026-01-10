@@ -1,14 +1,3 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-
-// Converte o metaURL do ES Module para caminho de arquivo
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Carrega o .env da raiz do projeto
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-
 export const ENV = {
   // SERVER
   nodeEnv: process.env.NODE_ENV || 'production',
