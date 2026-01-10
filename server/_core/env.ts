@@ -22,6 +22,11 @@ export const ENV = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT}`,
 
+    // APP / OAUTH
+  appId: process.env.APP_ID || 'xplore-viagens',
+  cookieSecret: process.env.COOKIE_SECRET || 'dev-cookie-secret',
+
+
   // SPA / Caddy
   spaOutputDir: process.env.NIXPACKS_SPA_OUTPUT_DIR || 'dist/public',
 
