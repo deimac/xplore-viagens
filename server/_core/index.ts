@@ -7,6 +7,12 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 
+const cookieSecret = process.env.COOKIE_SECRET;
+
+if (!cookieSecret) {
+  throw new Error("COOKIE_SECRET não definido");
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
