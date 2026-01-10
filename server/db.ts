@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, travels, categories, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview } from "../drizzle/schema";
+import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -163,11 +163,49 @@ export async function getTravelById(id: number) {
   return travel;
 }
 
+export async function createTravel(travel: InsertTravel) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(travels).values(travel);
+  return result;
+}
+
+export async function updateTravel(id: number, travel: Partial<InsertTravel>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(travels).set(travel).where(eq(travels.id, id));
+}
+
+export async function deleteTravel(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(travels).where(eq(travels.id, id));
+}
+
 // Categories queries
 export async function getAllCategories() {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(categories);
+}
+
+export async function createCategory(category: InsertCategory) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(categories).values(category);
+  return result;
+}
+
+export async function updateCategory(id: number, category: Partial<InsertCategory>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(categories).set(category).where(eq(categories.id, id));
+}
+
+export async function deleteCategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(categories).where(eq(categories.id, id));
 }
 
 // Quotations queries
@@ -305,7 +343,27 @@ export async function getAllReviews() {
       author: reviewAuthors,
     })
     .from(reviews)
-    .leftJoin(reviewAuthors, eq(reviews.authorId, reviewAuthors.id));
+    .leftJoin(reviewAuthors, eq(reviews.authorId, reviewAuthors.id))
+    .orderBy(desc(reviews.createdAt));
+  
+  return result.map((row) => ({
+    ...row.review,
+    author: row.author,
+  }));
+}
+
+export async function getPendingReviews() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      review: reviews,
+      author: reviewAuthors,
+    })
+    .from(reviews)
+    .leftJoin(reviewAuthors, eq(reviews.authorId, reviewAuthors.id))
+    .where(eq(reviews.status, "pending"));
   
   return result.map((row) => ({
     ...row.review,

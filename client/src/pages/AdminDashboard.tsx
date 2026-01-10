@@ -295,8 +295,8 @@ export default function AdminDashboard() {
     toast.success("Logout realizado com sucesso");
   };
 
-  const categories = (categoriesQuery.data as any)?.json || categoriesQuery.data || [];
-  const travels = (travelsQuery.data as any)?.json || travelsQuery.data || [];
+  const categories: Category[] = (categoriesQuery.data as any)?.json || categoriesQuery.data || [];
+  const travels: Travel[] = (travelsQuery.data as any)?.json || travelsQuery.data || [];
   const slides = (slidesQuery.data as any)?.json || slidesQuery.data || [];
 
   return (
@@ -631,7 +631,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-accent">Avaliações</h2>
               <div className="text-sm text-muted-foreground">
-                {reviewsQuery.data?.filter(r => r.status === 'pending').length || 0} pendentes
+                {reviewsQuery.data?.filter(r => r.status === 'pending').length || 0} pendente{reviewsQuery.data?.filter(r => r.status === 'pending').length !== 1 ? 's' : ''}
               </div>
             </div>
 

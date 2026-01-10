@@ -31,12 +31,84 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getTravelById(input.id);
       }),
+    create: publicProcedure
+      .input(
+        z.object({
+          title: z.string(),
+          description: z.string(),
+          origin: z.string(),
+          departureDate: z.string().optional(),
+          returnDate: z.string().optional(),
+          travelers: z.string().optional(),
+          price: z.string(),
+          imageUrl: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createTravel(input);
+      }),
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().optional(),
+          description: z.string().optional(),
+          origin: z.string().optional(),
+          departureDate: z.string().optional(),
+          returnDate: z.string().optional(),
+          travelers: z.string().optional(),
+          price: z.string().optional(),
+          imageUrl: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateTravel(id, data);
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteTravel(input.id);
+        return { success: true };
+      }),
   }),
 
   categories: router({
     list: publicProcedure.query(async () => {
       return await db.getAllCategories();
     }),
+    create: publicProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          description: z.string().optional(),
+          icon: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createCategory(input);
+      }),
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          description: z.string().optional(),
+          icon: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateCategory(id, data);
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCategory(input.id);
+        return { success: true };
+      }),
   }),
 
   companySettings: router({

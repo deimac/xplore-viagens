@@ -48,6 +48,7 @@ export const ENV = {
   smtpPass: process.env.SMTP_PASS,
   smtpFrom: process.env.SMTP_FROM || 'noreply@xploreviagens.com.br',
   ownerEmail: process.env.OWNER_EMAIL,
+  ownerOpenId: process.env.OWNER_OPEN_ID,
 
   // APP
   appName: process.env.APP_NAME || 'Xplore Viagens',
