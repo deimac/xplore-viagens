@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import { z } from "zod";
 import * as db from "./db";
@@ -268,13 +268,10 @@ export const appRouter = router({
           status: "pending",
         });
       }),
-    list: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-      }
+    list: adminProcedure.query(async ({ ctx }) => {
       return await db.getAllQuotations();
     }),
-    updateStatus: protectedProcedure
+    updateStatus: adminProcedure
       .input(
         z.object({
           id: z.number(),
@@ -282,18 +279,12 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-        }
         await db.updateQuotationStatus(input.id, input.status);
         return { success: true };
       }),
-    delete: protectedProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-        }
         await db.deleteQuotation(input.id);
         return { success: true };
       }),
@@ -350,11 +341,14 @@ export const appRouter = router({
       }),
     
     // List all reviews (admin only)
-    list: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    list: adminProcedure.query(async ({ ctx }) => {
+      const reviews = await db.getAllReviews();
+      try {
+        console.log(`[Admin Debug] reviews.list called by user=${ctx.user?.id}-${ctx.user?.email} role=${ctx.user?.role} reviews_count=${Array.isArray(reviews) ? reviews.length : 'unknown'}`);
+      } catch (e) {
+        // ignore logging failures
       }
-      return await db.getAllReviews();
+      return reviews;
     }),
     
     // List approved reviews (public)
@@ -363,7 +357,7 @@ export const appRouter = router({
     }),
     
     // Update review status (admin only)
-    updateStatus: protectedProcedure
+    updateStatus: adminProcedure
       .input(
         z.object({
           id: z.number(),
@@ -371,20 +365,14 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-        }
         await db.updateReviewStatus(input.id, input.status);
         return { success: true };
       }),
     
     // Delete review (admin only)
-    delete: protectedProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-        }
         await db.deleteReview(input.id);
         return { success: true };
       }),

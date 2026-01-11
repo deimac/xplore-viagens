@@ -3,6 +3,8 @@ import { Home, Settings, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { APP_LOGO, APP_TITLE } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -11,6 +13,8 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const userQuery = trpc.auth.me.useQuery();
+  const logoutMutation = trpc.auth.logout.useMutation();
 
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: Home },
@@ -122,6 +126,36 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Main Content */}
         <div className="lg:pl-64 flex-1">
+          {/* Top bar with user info */}
+          <div className="hidden lg:flex items-center justify-end gap-4 p-4 border-b border-gray-200 bg-white">
+            {userQuery.isLoading ? (
+              <div className="text-sm text-gray-500">Carregando...</div>
+            ) : userQuery.data ? (
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-gray-700">
+                  <div className="font-medium">{userQuery.data.name || userQuery.data.email}</div>
+                  <div className="text-xs text-gray-500">{userQuery.data.email}</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    try {
+                      await logoutMutation.mutateAsync();
+                      toast.success("Logout realizado");
+                      // navigate to site root
+                      window.location.href = "/";
+                    } catch (e) {
+                      toast.error("Erro ao deslogar");
+                    }
+                  }}
+                >
+                  Sair
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">Não autenticado</div>
+            )}
+          </div>
           <main className="p-4 lg:p-8">{children}</main>
         </div>
       </div>
