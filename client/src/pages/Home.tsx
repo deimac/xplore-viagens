@@ -15,6 +15,7 @@ import HeroSlider from "@/components/HeroSlider";
 import TravelerTypesSection from "@/components/TravelerTypesSection";
 import { SectionTitle } from "@/components/SectionTitle";
 import ReviewsSection from "@/components/ReviewsSection";
+import ReviewsMarqueeSection from "@/components/ReviewsMarqueeSection";
 
 
 import {
@@ -507,6 +508,9 @@ export default function Home() {
 
         {/* Reviews Section - Real client reviews with Google OAuth */}
         <ReviewsSection />
+
+        {/* Reviews Marquee Section - additional marquee testimonials below main reviews */}
+        <ReviewsMarqueeSection />
 
         {/* Testimonials Section (fallback/additional) */}
         <section id="depoimentos-adicionais" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative" style={{ display: 'none' }}>
