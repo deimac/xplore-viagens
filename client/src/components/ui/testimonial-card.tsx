@@ -29,7 +29,7 @@ export function TestimonialCard({
       {...(href ? { href, target: "_blank", rel: "noopener noreferrer" } : {})}
       className={cn(
         // Estilo padrão do site - StandardContainer pattern
-        "flex flex-col rounded-lg border-2 border-muted/40 bg-white p-6",
+        "flex flex-col rounded-lg border-2 border-muted/40 bg-white p-6 text-left",
         "w-[320px] sm:w-[360px] shrink-0",
         "transition-all duration-300 hover:border-accent/30",
         href && "cursor-pointer",

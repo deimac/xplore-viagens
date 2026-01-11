@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { TestimonialsSection } from "@/components/ui/testimonials-with-marquee";
+import { SectionTitle } from "@/components/SectionTitle";
 import { TestimonialAuthor } from "@/components/ui/testimonial-card";
 
 /**
@@ -68,10 +69,17 @@ export default function ReviewsMarqueeSection() {
   }));
 
   return (
-    <TestimonialsSection
-      title="O que Nossos Clientes Dizem"
-      description="Avaliações reais de quem viajou conosco"
-      testimonials={testimonials}
-    />
+    <section className="py-12 sm:py-24 md:py-32 px-0" style={{ background: "#F7F7F7" }}>
+      <div className="max-w-6xl mx-auto">
+        <SectionTitle
+          title="O que Nossos Clientes"
+          highlight="Dizem"
+          subtitle="Avaliações reais de quem viajou conosco"
+        />
+        <TestimonialsSection
+          testimonials={testimonials}
+        />
+      </div>
+    </section>
   );
 }
