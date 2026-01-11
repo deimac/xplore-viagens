@@ -506,98 +506,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Reviews Section - Real client reviews with Google OAuth */}
-        <ReviewsSection />
 
-        {/* Reviews Marquee Section - additional marquee testimonials below main reviews */}
-        <ReviewsMarqueeSection />
+        {/* Nova seção de testemunhos com marquee e FadeInContainer */}
+        <FadeInContainer>
+          <ReviewsMarqueeSection />
+        </FadeInContainer>
 
-        {/* Testimonials Section (fallback/additional) */}
-        <section id="depoimentos-adicionais" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative" style={{ display: 'none' }}>
-          <div className="max-w-4xl w-full section-transition">
-            <FadeInContainer>
-            <SectionTitle
-              title="O que Nossos Clientes"
-              highlight="Dizem"
-              subtitle="Depoimentos reais de quem confiou em nosso trabalho"
-            />
-            </FadeInContainer>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Testimonial 1 */}
-              <FadeInContainer delay="0">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-4 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-accent/80 font-light italic">
-                  "A Xplore transformou minha viagem para Paris em algo inesquecível. Cada detalhe foi perfeito!"
-                </p>
-                <div>
-                  <p className="font-medium text-accent">Maria Silva</p>
-                  <p className="text-sm text-accent/60">Paris, França</p>
-                </div>
-              </div>
-              </FadeInContainer>
-
-              {/* Testimonial 2 */}
-              <FadeInContainer delay="1">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-4 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-accent/80 font-light italic">
-                  "Profissionalismo, dedicação e atenção aos detalhes. Recomendo a Xplore para todos!"
-                </p>
-                <div>
-                  <p className="font-medium text-accent">João Santos</p>
-                  <p className="text-sm text-accent/60">Tóquio, Japão</p>
-                </div>
-              </div>
-              </FadeInContainer>
-
-              {/* Testimonial 3 */}
-              <FadeInContainer delay="2">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-4 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-accent/80 font-light italic">
-                  "Melhor agência de viagens que já contratei. Voltarei com certeza!"
-                </p>
-                <div>
-                  <p className="font-medium text-accent">Ana Costa</p>
-                  <p className="text-sm text-accent/60">Bali, Indonésia</p>
-                </div>
-              </div>
-              </FadeInContainer>
-
-              {/* Testimonial 4 */}
-              <FadeInContainer delay="3">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-4 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-accent/80 font-light italic">
-                  "Experiência incrível! A Xplore superou todas as minhas expectativas."
-                </p>
-                <div>
-                  <p className="font-medium text-accent">Carlos Oliveira</p>
-                  <p className="text-sm text-accent/60">Nova York, EUA</p>
-                </div>
-              </div>
-              </FadeInContainer>
-            </div>
-          </div>
-        </section>
 
         {/* Contact Section */}
         <section id="contato" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative">
