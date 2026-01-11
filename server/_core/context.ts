@@ -19,6 +19,11 @@ export async function createContext(
   try {
     // First, try cookie-based session (JWT)
     const cookieHeader = opts.req.headers?.cookie as string | undefined;
+    if (!cookieHeader) {
+      console.log('[Auth] createContext: no cookie header on request');
+    } else {
+      console.log('[Auth] createContext incoming cookie header:', cookieHeader);
+    }
     if (cookieHeader) {
       const match = cookieHeader
         .split(";")

@@ -50,6 +50,11 @@ export const appRouter = router({
         const cookieOptions = getSessionCookieOptions(ctx.req);
         const maxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 days
         ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: maxAgeMs });
+        try {
+          console.log(`[Auth] Set cookie ${COOKIE_NAME} for user=${user.email} secure=${cookieOptions.secure} sameSite=${cookieOptions.sameSite}`);
+        } catch (e) {
+          // ignore
+        }
 
         return { success: true } as const;
       }),
