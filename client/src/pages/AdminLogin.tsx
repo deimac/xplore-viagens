@@ -23,15 +23,10 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      // Call server mutation to get dev admin token
-      const res = await loginMutation.mutateAsync({ password });
-      if (res?.token) {
-        sessionStorage.setItem("adminToken", res.token);
-        toast.success("Login realizado com sucesso!");
-        navigate("/admin");
-      } else {
-        toast.error("Erro ao fazer login");
-      }
+      // Call server mutation to login; server will set HttpOnly cookie
+      await loginMutation.mutateAsync({ email, password });
+      toast.success("Login realizado com sucesso!");
+      navigate("/admin");
     } catch (error) {
       toast.error("Email ou senha incorretos");
     } finally {

@@ -170,6 +170,8 @@ export default function AdminDashboard() {
     },
   });
 
+  const logoutMutation = trpc.auth.logout.useMutation();
+
   // Category handlers
   const handleAddCategory = () => {
     setSelectedCategory(undefined);
@@ -289,7 +291,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+    } catch (e) {
+      // ignore
+    }
     sessionStorage.removeItem("adminToken");
     navigate("/");
     toast.success("Logout realizado com sucesso");

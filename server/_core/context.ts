@@ -2,6 +2,8 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
 import { ENV } from "./env";
+import { jwtVerify } from "jose";
+import * as db from "../db";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -14,25 +16,41 @@ export async function createContext(
 ): Promise<TrpcContext> {
   let user: User | null = null;
 
-  // Allow a development admin token via header `x-admin-token` for local testing.
   try {
-    const adminToken = (opts.req.headers["x-admin-token"] as string) || (opts.req.headers["X-Admin-Token"] as string);
-    if (adminToken && adminToken === ENV.adminToken) {
-      // synthetic admin user for dev purposes
-      user = {
-        id: -1,
-        openId: "admin",
-        name: "Admin",
-        email: ENV.adminEmail || "admin@localhost",
-        passwordHash: "",
-        loginMethod: "admin",
-        role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastSignedIn: new Date(),
-      } as unknown as User;
-    } else {
-      user = await sdk.authenticateRequest(opts.req);
+    // First, try cookie-based session (JWT)
+    const cookieHeader = opts.req.headers?.cookie as string | undefined;
+    if (cookieHeader) {
+      const match = cookieHeader
+        .split(";")
+        .map((s) => s.trim())
+        .find((c) => c.startsWith("app_session_id="));
+      if (match) {
+        const token = match.split("=")[1];
+        try {
+          const secret = new TextEncoder().encode(ENV.cookieSecret);
+          const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
+          const userId = (payload as any).id as number | undefined;
+          if (userId) {
+            const found = await db.getUserById(userId);
+            if (found) {
+              user = found as User;
+            }
+          }
+        } catch (err) {
+          // invalid token, fall through to other auth methods
+        }
+      }
+    }
+
+    // No dev header token support anymore; rely on cookie or SDK fallback
+
+    // Fallback: existing Manus-based SDK authentication (if configured)
+    if (!user) {
+      try {
+        user = await sdk.authenticateRequest(opts.req);
+      } catch (err) {
+        user = null;
+      }
     }
   } catch (error) {
     // Authentication is optional for public procedures.

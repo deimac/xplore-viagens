@@ -9,6 +9,9 @@ import { TRPCError } from "@trpc/server";
 import { storagePut } from "./storage";
 import crypto from "crypto";
 import { verifyGoogleToken } from "./_core/googleAuth";
+import { SignJWT } from "jose";
+import bcrypt from 'bcryptjs';
+
 
 export const appRouter = router({
   system: systemRouter,
@@ -17,15 +20,38 @@ export const appRouter = router({
     login: publicProcedure
       .input(
         z.object({
+          email: z.string().email(),
           password: z.string(),
         })
       )
-      .mutation(async ({ input }) => {
-        // simple dev authentication using ADMIN_PASSWORD / ADMIN_TOKEN
-        if (input.password !== ENV.adminPassword) {
+      .mutation(async ({ input, ctx }) => {
+        // authenticate against users table
+        const user = await db.getUserByEmail(input.email);
+        if (!user) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
         }
-        return { success: true, token: ENV.adminToken } as const;
+        if (!user.passwordHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        const ok = await bcrypt.compare(input.password, user.passwordHash);
+        if (!ok) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        }
+        if (user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+
+        const secret = new TextEncoder().encode(ENV.cookieSecret);
+        const token = await new SignJWT({ id: user.id, email: user.email, role: user.role, name: user.name || "" })
+          .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+          .setExpirationTime(ENV.jwtExpiresIn || "7d")
+          .sign(secret);
+
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        const maxAgeMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: maxAgeMs });
+
+        return { success: true } as const;
       }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -323,8 +349,11 @@ export const appRouter = router({
         return { success: true };
       }),
     
-    // List all reviews (temporarily public)
-    list: publicProcedure.query(async () => {
+    // List all reviews (admin only)
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
       return await db.getAllReviews();
     }),
     
