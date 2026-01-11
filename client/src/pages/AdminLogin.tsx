@@ -11,6 +11,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const loginMutation = trpc.auth.login.useMutation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,7 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       // Call server mutation to get dev admin token
-      const res = await trpc.auth.login.mutate({ password });
+      const res = await loginMutation.mutateAsync({ password });
       if (res?.token) {
         sessionStorage.setItem("adminToken", res.token);
         toast.success("Login realizado com sucesso!");
