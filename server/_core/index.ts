@@ -5,6 +5,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 // import { registerOAuthRoutes } from "./oauth"; // removido
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 
 const cookieSecret = process.env.COOKIE_SECRET;
@@ -34,6 +35,32 @@ async function startServer() {
   );
 
   // Dev = Vite | Prod = build estático
+  // Server-side guard: redirect /admin HTML requests to login when no valid session
+  app.use(async (req, res, next) => {
+    try {
+      const url = req.originalUrl || req.url || "";
+      if (url.startsWith("/admin") && !url.startsWith("/api")) {
+        const cookieHeader = req.headers.cookie as string | undefined;
+        const cookies = cookieHeader || undefined;
+        const parsed = (cookies || "");
+        const match = parsed
+          .split(";")
+          .map((s) => s.trim())
+          .find((c) => c.startsWith("app_session_id="));
+        const token = match ? match.split("=")[1] : undefined;
+        const session = await sdk.verifySession(token);
+        if (!session) {
+          // if it's the login page itself, allow
+          if (url === "/admin/login") return next();
+          return res.redirect("/admin/login");
+        }
+      }
+    } catch (e) {
+      // ignore errors and continue
+    }
+    return next();
+  });
+
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {

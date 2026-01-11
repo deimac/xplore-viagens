@@ -8,6 +8,7 @@ import TravelModal from "@/components/TravelModal";
 import HeroSlideModal from "@/components/HeroSlideModal";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface Category {
   id?: number;
@@ -54,6 +55,12 @@ export default function AdminDashboard() {
   const [selectedTravel, setSelectedTravel] = useState<Travel | undefined>();
   const [slideModalOpen, setSlideModalOpen] = useState(false);
   const [selectedSlide, setSelectedSlide] = useState<HeroSlide | undefined>();
+  const [confirm, setConfirm] = useState<{
+    open: boolean;
+    type: "category" | "travel" | "slide" | "review" | null;
+    id?: number;
+    title?: string;
+  }>({ open: false, type: null, id: undefined, title: "" });
 
   // tRPC queries
   const categoriesQuery = trpc.categories.list.useQuery(undefined);
@@ -185,9 +192,7 @@ export default function AdminDashboard() {
 
   const handleDeleteCategory = (id: number | undefined) => {
     if (!id) return;
-    if (confirm("Tem certeza que deseja deletar esta categoria?")) {
-      deleteCategoryMutation.mutate({ id });
-    }
+    setConfirm({ open: true, type: "category", id, title: "Deletar categoria" });
   };
 
   const handleSaveCategory = (category: Category) => {
@@ -220,9 +225,7 @@ export default function AdminDashboard() {
 
   const handleDeleteTravel = (id: number | undefined) => {
     if (!id) return;
-    if (confirm("Tem certeza que deseja deletar esta viagem?")) {
-      deleteTravelMutation.mutate({ id });
-    }
+    setConfirm({ open: true, type: "travel", id, title: "Deletar viagem" });
   };
 
   const handleSaveTravel = (travel: Travel) => {
@@ -265,9 +268,7 @@ export default function AdminDashboard() {
 
   const handleDeleteSlide = (id: number | undefined) => {
     if (!id) return;
-    if (confirm("Tem certeza que deseja deletar este slide?")) {
-      deleteSlideMutation.mutate({ id });
-    }
+    setConfirm({ open: true, type: "slide", id, title: "Deletar slide" });
   };
 
   const handleSaveSlide = (slide: HeroSlide) => {
@@ -750,15 +751,7 @@ export default function AdminDashboard() {
                                   <Check className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    updateReviewStatusMutation.mutate(
-                                      { id: review.id, status: 'rejected' },
-                                      {
-                                        onSuccess: () => toast.success('Avaliação rejeitada'),
-                                        onError: () => toast.error('Erro ao rejeitar avaliação'),
-                                      }
-                                    );
-                                  }}
+                                  onClick={() => setConfirm({ open: true, type: 'review', id: review.id, title: 'Excluir avaliação' })}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                   title="Rejeitar"
                                 >
@@ -767,17 +760,7 @@ export default function AdminDashboard() {
                               </>
                             )}
                             <button
-                              onClick={() => {
-                                if (confirm('Tem certeza que deseja excluir esta avaliação?')) {
-                                  deleteReviewMutation.mutate(
-                                    { id: review.id },
-                                    {
-                                      onSuccess: () => toast.success('Avaliação excluída'),
-                                      onError: () => toast.error('Erro ao excluir avaliação'),
-                                    }
-                                  );
-                                }
-                              }}
+                              onClick={() => setConfirm({ open: true, type: 'review', id: review.id, title: 'Excluir avaliação' })}
                               className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                               title="Excluir"
                             >
@@ -798,6 +781,23 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+            <ConfirmDialog
+              open={confirm.open}
+              title={confirm.title}
+              description={`Confirma a ação? Esta operação não pode ser desfeita.`}
+              confirmLabel="Sim, excluir"
+              cancelLabel="Cancelar"
+              onCancel={() => setConfirm({ open: false, type: null, id: undefined, title: "" })}
+              onConfirm={() => {
+                const { type, id } = confirm;
+                setConfirm({ open: false, type: null, id: undefined, title: "" });
+                if (!id) return;
+                if (type === "category") deleteCategoryMutation.mutate({ id });
+                if (type === "travel") deleteTravelMutation.mutate({ id });
+                if (type === "slide") deleteSlideMutation.mutate({ id });
+                if (type === "review") deleteReviewMutation.mutate({ id });
+              }}
+            />
           </div>
         )}
 

@@ -12,6 +12,7 @@ import QuotationForm from "./pages/QuotationForm";
 import Quotation from "./pages/Quotation";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminRoute from "./components/AdminRoute";
 import TravelDetails from "./pages/TravelDetails";
 import CompanySettings from "./pages/CompanySettings";
 import ReviewPage from "./pages/ReviewPage";
@@ -24,8 +25,8 @@ function Router() {
       <Route path={"/orcamento"} component={Quotation} />
       <Route path={"/quotation"} component={QuotationForm} />
       <Route path={"/admin/login"} component={AdminLogin} />
-      <Route path={"/admin"} component={AdminDashboard} />
-      <Route path={"/admin/configuracoes"} component={CompanySettings} />
+      <Route path={"/admin"} component={() => <AdminRoute component={AdminDashboard} />} />
+      <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
