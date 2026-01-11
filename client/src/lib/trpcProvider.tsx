@@ -11,6 +11,12 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
       links: [
         httpBatchLink({
           url: "/api/trpc",
+          fetch: (input, init) => {
+            const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('adminToken') : null;
+            const headers = new Headers(init?.headers as HeadersInit);
+            if (adminToken) headers.set('x-admin-token', adminToken);
+            return fetch(input as RequestInfo, { ...init, credentials: 'include', headers });
+          },
         }),
       ],
       // transformer: superjson,

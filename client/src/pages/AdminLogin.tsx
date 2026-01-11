@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Lock, Mail } from "lucide-react";
 import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
 
 export default function AdminLogin() {
   const [, navigate] = useLocation();
@@ -21,18 +22,17 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      // TODO: Implementar login via tRPC
-      // Por enquanto, vamos fazer um login simulado
-      if (email === "deimac@gmail.com" && password === "123Xplore#") {
-        // Salvar token na sessão
-        sessionStorage.setItem("adminToken", "logged-in");
+      // Call server mutation to get dev admin token
+      const res = await trpc.auth.login.mutate({ password });
+      if (res?.token) {
+        sessionStorage.setItem("adminToken", res.token);
         toast.success("Login realizado com sucesso!");
         navigate("/admin");
       } else {
-        toast.error("Email ou senha incorretos");
+        toast.error("Erro ao fazer login");
       }
     } catch (error) {
-      toast.error("Erro ao fazer login");
+      toast.error("Email ou senha incorretos");
     } finally {
       setLoading(false);
     }

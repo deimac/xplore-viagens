@@ -59,6 +59,10 @@ export const ENV = {
   viteTitle: process.env.VITE_APP_TITLE,
   viteAnalyticsEndpoint: process.env.VITE_ANALYTICS_ENDPOINT,
   viteAnalyticsWebsiteId: process.env.VITE_ANALYTICS_WEBSITE_ID,
+  // Admin dev token (for local/dev admin authentication)
+  adminToken: process.env.ADMIN_TOKEN || '1f14e7f4e2ae2bbf08a13d16819892b7a16723fedda7e5f0cf5fd81f50d7de20',
+  adminPassword: process.env.ADMIN_PASSWORD || '7gRfkkkKiMpiZribQXicM+C0hs7jBQ0iDMqiuSXpXlI=',
+  adminEmail: process.env.ADMIN_EMAIL || 'voe@xploreviagens.com.br',
 };
 
 export function validateEnv(): void {
