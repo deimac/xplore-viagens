@@ -290,23 +290,20 @@ export default function Home() {
             </FadeInContainer>
 
             {/* Stats Containers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pt-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 pt-6">
               <FadeInContainer delay="0">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-2 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <p className="text-3xl md:text-4xl font-light text-accent">40+</p>
-                <p className="text-xs md:text-sm text-accent/60 font-light">Viagens Completas</p>
+              <div className="bg-muted/15 rounded-lg p-4 md:p-6 border-2 border-muted/40 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
+                <p className="text-xl md:text-2xl font-semibold text-accent">+1000 Viagens Completas</p>
               </div>
               </FadeInContainer>
               <FadeInContainer delay="1">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-2 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <p className="text-3xl md:text-4xl font-light text-accent">52+</p>
-                <p className="text-xs md:text-sm text-accent/60 font-light">Clientes Felizes</p>
+              <div className="bg-muted/15 rounded-lg p-4 md:p-6 border-2 border-muted/40 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
+                <p className="text-xl md:text-2xl font-semibold text-accent">+2000 Clientes Felizes</p>
               </div>
               </FadeInContainer>
               <FadeInContainer delay="2">
-              <div className="bg-muted/15 rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-2 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <p className="text-3xl md:text-4xl font-light text-accent">6+</p>
-                <p className="text-xs md:text-sm text-accent/60 font-light">Anos de Experiência</p>
+              <div className="bg-muted/15 rounded-lg p-4 md:p-6 border-2 border-muted/40 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
+                <p className="text-xl md:text-2xl font-semibold text-accent">+4 Anos de Experiência</p>
               </div>
               </FadeInContainer>
             </div>
