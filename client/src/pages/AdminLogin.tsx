@@ -12,10 +12,11 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const loginMutation = trpc.auth.login.useMutation();
+  const userQuery = trpc.auth.me.useQuery();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error("Preencha todos os campos");
       return;
@@ -26,6 +27,13 @@ export default function AdminLogin() {
       // Call server mutation to login; server will set HttpOnly cookie
       await loginMutation.mutateAsync({ email, password });
       toast.success("Login realizado com sucesso!");
+
+      // Aguardar um pequeno delay para o cookie ser enviado, depois verificar se está autenticado
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Refetch user data para validar que o cookie foi recebido
+      await userQuery.refetch();
+
       navigate("/admin");
     } catch (error) {
       toast.error("Email ou senha incorretos");

@@ -14,6 +14,7 @@ const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
   if (!ctx.user) {
+    console.warn('[Auth] Acesso negado: usuário não autenticado');
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
@@ -32,6 +33,10 @@ export const adminProcedure = t.procedure.use(
     const { ctx, next } = opts;
 
     if (!ctx.user || ctx.user.role !== 'admin') {
+      console.warn('[Auth] Acesso negado: permissão de admin necessária', {
+        hasUser: !!ctx.user,
+        role: ctx.user?.role
+      });
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
