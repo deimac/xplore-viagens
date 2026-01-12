@@ -273,14 +273,11 @@ export default function Home() {
           <div className="max-w-4xl w-full">
             {/* Hero Container */}
             <FadeInContainer>
-            <StandardContainer variant="muted" padding="lg" className="space-y-8 section-transition relative overflow-hidden">
+            <StandardContainer variant="muted" padding="lg" className="section-transition relative overflow-hidden">
               {/* Background Image - Desktop Only */}
-              <div className="hidden md:block absolute right-0 top-0 w-1/2 h-full opacity-100 pointer-events-none" style={{backgroundImage: 'url(/NovaMao.png)', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center'}}></div>
-              <div className="relative z-10 max-w-xl">
-                <div className="inline-block px-4 py-2 bg-muted rounded-lg text-sm font-medium border-2 border-muted text-accent">
-                  ✨ Disponível para Viagens
-                </div>
-                <div className="space-y-4 mt-8">
+              <div className="hidden md:block absolute right-0 top-0 w-1/2 h-[120%] opacity-100 pointer-events-none" style={{backgroundImage: 'url(/NovaMao.png)', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'right top'}}></div>
+              <div className="relative z-10 max-w-xl py-8">
+                <div className="space-y-6">
                   <h1 className="text-4xl md:text-5xl font-light leading-tight text-accent">
                     Explore o mundo com a gente
                   </h1>
@@ -288,30 +285,6 @@ export default function Home() {
                     Descubra destinos incríveis, crie memórias inesquecíveis e viva experiências transformadoras.
                   </p>
                 </div>
-              </div>
-
-              <div className="relative z-10 flex flex-col sm:flex-row gap-4 pt-4">
-                <Button
-                  size="lg"
-                  className="bg-accent text-accent-foreground hover:opacity-90 border-2 border-accent rounded-lg font-medium micro-shadow"
-                  onClick={() => {
-                    if (companySettings?.whatsapp) {
-                      const phoneNumber = companySettings.whatsapp.replace(/\D/g, '');
-                      window.open(`https://wa.me/55${phoneNumber}`, '_blank');
-                    }
-                  }}
-                >
-                  Fale Conosco
-                  <MessageCircle className="ml-2 w-4 h-4" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-muted bg-background text-accent hover:bg-muted rounded-lg font-medium"
-                  onClick={() => navigate('/orcamento')}
-                >
-                  Solicite Orçamento
-                </Button>
               </div>
             </StandardContainer>
             </FadeInContainer>
