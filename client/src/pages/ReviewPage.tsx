@@ -68,9 +68,15 @@ export default function ReviewPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6 py-20" style={{ background: '#F7F7F7' }}>
-        <div className="max-w-2xl w-full text-center">
-          <div className="bg-white rounded-lg p-12 border-2 border-muted/40" style={{ boxShadow: '0 0 0 6px #fff' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 py-20" style={{ background: '#1A2B4C' }}>
+        <div className="max-w-2xl w-full">
+          {/* Logo - Above Container */}
+          {APP_LOGO && (
+            <div className="text-center mb-12">
+              <img src={APP_LOGO} alt={APP_TITLE} className="h-24 md:h-32 mx-auto" />
+            </div>
+          )}
+          <div className="bg-white rounded-lg p-12 border-2 border-muted/40 text-center" style={{ boxShadow: '0 0 0 6px #fff' }}>
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -108,14 +114,17 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-20" style={{ background: '#F7F7F7' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-20" style={{ background: '#1A2B4C' }}>
       <div className="max-w-2xl w-full">
+        {/* Logo - Above Container */}
+        {APP_LOGO && (
+          <div className="text-center mb-12">
+            <img src={APP_LOGO} alt={APP_TITLE} className="h-24 md:h-32 mx-auto" />
+          </div>
+        )}
         <div className="bg-white rounded-lg p-8 md:p-12 border-2 border-muted/40" style={{ boxShadow: '0 0 0 6px #fff' }}>
           {/* Header */}
           <div className="text-center mb-8">
-            {APP_LOGO && (
-              <img src={APP_LOGO} alt={APP_TITLE} className="h-16 mx-auto mb-4" />
-            )}
             <h1 className="text-3xl md:text-4xl font-light text-accent mb-2">
               Avalie Sua <span className="font-semibold">Experiência</span>
             </h1>
