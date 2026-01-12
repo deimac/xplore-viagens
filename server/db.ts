@@ -115,7 +115,6 @@ export async function getUserByEmail(email: string) {
 export async function getAllTravels() {
   const db = await getDb();
   if (!db) return [];
-  
   const result = await db
     .select({
       travel: travels,
@@ -142,22 +141,17 @@ export async function getAllTravels() {
   // Filter out past travels (only show future trips)
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset time to start of day
-  
   const futureTravels = Array.from(travelsMap.values()).filter((travel) => {
     if (!travel.departureDate) return true; // Keep if no date
-    
     // Parse DD/MM/AAAA format
     const parts = travel.departureDate.split('/');
     if (parts.length !== 3) return true; // Keep if invalid format
-    
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
     const year = parseInt(parts[2], 10);
-    
     const departureDate = new Date(year, month, day);
     return departureDate > today; // Only future trips, not today
   });
-  
   return futureTravels;
 }
 
@@ -322,10 +316,8 @@ export async function deleteHeroSlide(id: number) {
 export async function upsertReviewAuthor(author: InsertReviewAuthor) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
   // Check if author exists
   const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.googleId, author.googleId)).limit(1);
-  
   if (existing.length > 0) {
     // Update existing
     await db.update(reviewAuthors)
@@ -358,7 +350,6 @@ export async function createReview(review: InsertReview) {
 export async function getAllReviews() {
   const db = await getDb();
   if (!db) return [];
-  
   const result = await db
     .select({
       review: reviews,
@@ -367,7 +358,6 @@ export async function getAllReviews() {
     .from(reviews)
     .leftJoin(reviewAuthors, eq(reviews.authorId, reviewAuthors.id))
     .orderBy(desc(reviews.createdAt));
-  
   return result.map((row) => ({
     ...row.review,
     author: row.author,
@@ -377,7 +367,6 @@ export async function getAllReviews() {
 export async function getPendingReviews() {
   const db = await getDb();
   if (!db) return [];
-  
   const result = await db
     .select({
       review: reviews,
@@ -386,7 +375,6 @@ export async function getPendingReviews() {
     .from(reviews)
     .leftJoin(reviewAuthors, eq(reviews.authorId, reviewAuthors.id))
     .where(eq(reviews.status, "pending"));
-  
   return result.map((row) => ({
     ...row.review,
     author: row.author,
@@ -396,7 +384,6 @@ export async function getPendingReviews() {
 export async function getApprovedReviews() {
   const db = await getDb();
   if (!db) return [];
-  
   const result = await db
     .select({
       review: reviews,
@@ -405,7 +392,6 @@ export async function getApprovedReviews() {
     .from(reviews)
     .leftJoin(reviewAuthors, eq(reviews.authorId, reviewAuthors.id))
     .where(eq(reviews.status, "approved"));
-  
   return result.map((row) => ({
     ...row.review,
     author: row.author,

@@ -27,12 +27,11 @@ export default defineConfig({
   },
   server: {
     host: true,
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/trpc': 'http://localhost:3000',
+    },
     allowedHosts: [
-      ".manuspre.computer",
-      ".manus.computer",
-      ".manus-asia.computer",
-      ".manuscomputer.ai",
-      ".manusvm.computer",
       "localhost",
       "127.0.0.1",
     ],

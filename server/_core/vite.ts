@@ -24,6 +24,11 @@ export async function setupVite(app: Express, server: Server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
+    // Se a URL começar com /api ou /trpc, ignore o HTML e vá para o próximo middleware
+    if (url.startsWith("/api") || url.startsWith("/trpc")) {
+      return next();
+    }
+
     try {
       const clientTemplate = path.resolve(
         import.meta.dirname,
