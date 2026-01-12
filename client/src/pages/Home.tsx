@@ -275,7 +275,7 @@ export default function Home() {
             <FadeInContainer>
             <StandardContainer variant="muted" padding="lg" className="section-transition relative overflow-hidden">
               {/* Background Image - Desktop Only */}
-              <div className="hidden md:block absolute right-0 top-0 w-1/2 h-[120%] opacity-100 pointer-events-none" style={{backgroundImage: 'url(/NovaMao.png)', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'right top'}}></div>
+              <div className="hidden md:block absolute right-0 -top-8 w-1/2 h-[110%] opacity-100 pointer-events-none" style={{backgroundImage: 'url(/NovaMao.png)', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'right top'}}></div>
               <div className="relative z-10 max-w-xl py-8">
                 <div className="space-y-6">
                   <h1 className="text-4xl md:text-5xl font-light leading-tight text-accent">

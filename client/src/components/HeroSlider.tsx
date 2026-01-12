@@ -200,8 +200,8 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
             onClick={() => goToSlide(index)}
             className={`w-3 h-3 rounded-full transition-all ${
               index === currentSlide
-                ? "bg-accent w-8"
-                : "bg-accent/50 hover:bg-accent/75"
+                ? "bg-amber-500 w-8"
+                : "bg-gray-400 hover:bg-gray-500"
             }`}
             aria-label={`Ir para slide ${index + 1}`}
           />
