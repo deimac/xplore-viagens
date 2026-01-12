@@ -1,6 +1,6 @@
 # SERVER
 PORT=3000
-NODE_ENV=development
+NODE_ENV=production
 
 # DATABASE
 DATABASE_URL=mysql://xplore:3PIbucxhrETl8pLJdovu3aajBKYEekhEEZWAThXHsghOonLXCbdTIGUo31vG9Y5x@31.97.249.115:3306/xplore_db

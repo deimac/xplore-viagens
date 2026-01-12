@@ -299,21 +299,21 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 pt-6">
               <FadeInContainer delay="0">
               <div ref={travelsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <p className="text-lg md:text-xl text-accent text-center">
+                <p className="text-base md:text-lg text-accent text-center leading-relaxed">
                   <span className="font-semibold text-amber-500">+{travelsCount}</span> <span className="font-light">Viagens Completas</span>
                 </p>
               </div>
               </FadeInContainer>
               <FadeInContainer delay="1">
               <div ref={clientsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <p className="text-lg md:text-xl text-accent text-center">
+                <p className="text-base md:text-lg text-accent text-center leading-relaxed">
                   <span className="font-semibold text-amber-500">+{clientsCount}</span> <span className="font-light">Clientes Felizes</span>
                 </p>
               </div>
               </FadeInContainer>
               <FadeInContainer delay="2">
               <div ref={yearsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{boxShadow: '0 0 0 6px #fff'}}>
-                <p className="text-lg md:text-xl text-accent text-center">
+                <p className="text-base md:text-lg text-accent text-center leading-relaxed">
                   <span className="font-semibold text-amber-500">+{yearsCount}</span> <span className="font-light">Anos de Experiência</span>
                 </p>
               </div>
