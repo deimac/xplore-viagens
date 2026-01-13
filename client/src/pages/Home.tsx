@@ -281,10 +281,10 @@ export default function Home() {
                     <div className="hidden md:block absolute right-0 -top-8 w-1/2 h-[110%] opacity-100 pointer-events-none" style={{ backgroundImage: 'url(/NovaMao.png)', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'right top' }}></div>
                     <div className="relative z-10 max-w-xl py-8">
                       <div className="space-y-6">
-                        <h1 className="text-4xl md:text-5xl font-light leading-tight text-accent">
+                        <h1 className="text-4xl md:text-5xl font-light leading-tight text-accent text-center md:text-left">
                           Explore o mundo com a gente
                         </h1>
-                        <p className="text-base md:text-lg text-accent/70 leading-relaxed font-light">
+                        <p className="text-base md:text-lg text-accent/70 leading-relaxed font-light text-center md:text-left">
                           Descubra destinos incríveis, crie memórias inesquecíveis e viva experiências transformadoras.
                         </p>
                       </div>
