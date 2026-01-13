@@ -17,6 +17,7 @@ import TravelerTypesSection from "@/components/TravelerTypesSection";
 import { SectionTitle } from "@/components/SectionTitle";
 import ReviewsSection from "@/components/ReviewsSection";
 import ReviewsMarqueeSection from "@/components/ReviewsMarqueeSection";
+import { textStyles } from "@/types/textStyles";
 
 
 import {
@@ -295,21 +296,21 @@ export default function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 pt-6">
                   <FadeInContainer delay="0">
                     <div ref={travelsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <p className="text-base md:text-lg text-accent text-center leading-relaxed">
+                      <p className={`${textStyles.baseCorpo} text-center`}>
                         <span className="font-semibold text-amber-500">+{travelsCount}</span> <span className="font-light">Viagens Completas</span>
                       </p>
                     </div>
                   </FadeInContainer>
                   <FadeInContainer delay="1">
                     <div ref={clientsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <p className="text-base md:text-lg text-accent text-center leading-relaxed">
+                      <p className={`${textStyles.baseCorpo} text-center`}>
                         <span className="font-semibold text-amber-500">+{clientsCount}</span> <span className="font-light">Clientes Felizes</span>
                       </p>
                     </div>
                   </FadeInContainer>
                   <FadeInContainer delay="2">
                     <div ref={yearsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <p className="text-base md:text-lg text-accent text-center leading-relaxed">
+                      <p className={`${textStyles.baseCorpo} text-center`}>
                         <span className="font-semibold text-amber-500">+{yearsCount}</span> <span className="font-light">Anos de Experiência</span>
                       </p>
                     </div>
@@ -339,8 +340,8 @@ export default function Home() {
                       <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
                         <MapPin className="w-6 h-6 text-accent-foreground" />
                       </div>
-                      <h3 className="text-lg font-medium mb-2 text-accent">Destinos Curados</h3>
-                      <p className="text-sm text-accent/70 font-light">
+                      <h3 className={`${textStyles.tituloDestaqueMenor} mb-2`}>Destinos Curados</h3>
+                      <p className={textStyles.baseCorpo}>
                         Selecionamos os melhores destinos do mundo para você descobrir lugares incríveis.
                       </p>
                     </div>
@@ -352,8 +353,8 @@ export default function Home() {
                       <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
                         <Compass className="w-6 h-6 text-accent-foreground" />
                       </div>
-                      <h3 className="text-lg font-medium mb-2 text-accent">Roteiros Personalizados</h3>
-                      <p className="text-sm text-accent/70 font-light">
+                      <h3 className={`${textStyles.tituloDestaqueMenor} mb-2`}>Roteiros Personalizados</h3>
+                      <p className={textStyles.baseCorpo}>
                         Criamos roteiros sob medida para suas preferências e orçamento.
                       </p>
                     </div>
@@ -365,8 +366,8 @@ export default function Home() {
                       <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
                         <Users className="w-6 h-6 text-accent-foreground" />
                       </div>
-                      <h3 className="text-lg font-medium mb-2 text-accent">Suporte 24/7</h3>
-                      <p className="text-sm text-accent/70 font-light">
+                      <h3 className={`${textStyles.tituloDestaqueMenor} mb-2`}>Suporte 24/7</h3>
+                      <p className={textStyles.baseCorpo}>
                         Nossa equipe está sempre disponível para ajudar durante sua jornada.
                       </p>
                     </div>
@@ -417,7 +418,7 @@ export default function Home() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
                           <div>
                             <h3 className="text-2xl font-light text-white mb-1">Paris - Cidade do Amor</h3>
-                            <p className="text-sm text-white/80">Experimente a magia parisiense</p>
+                            <p className="text-sm text-white/90 font-light">Experimente a magia parisiense</p>
                           </div>
                         </div>
                       </div>
@@ -436,7 +437,7 @@ export default function Home() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
                           <div>
                             <h3 className="text-2xl font-light text-white mb-1">Tóquio - Tradição e Modernidade</h3>
-                            <p className="text-sm text-white/80">Descubra a cultura japonesa</p>
+                            <p className="text-sm text-white/90 font-light">Descubra a cultura japonesa</p>
                           </div>
                         </div>
                       </div>
@@ -529,22 +530,22 @@ export default function Home() {
               <div className="max-w-4xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                   <div>
-                    <h4 className="font-medium mb-4">Sobre Nós</h4>
-                    <p className="text-sm opacity-80">
+                    <h4 className={`${textStyles.tituloDestaqueMenor} mb-4`}>Sobre Nós</h4>
+                    <p className={`${textStyles.baseCorpo} opacity-80`}>
                       {companySettings?.companyName || "Xplore Viagens"} é uma agência de viagens premium dedicada a criar experiências inesquecíveis.
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-medium mb-4">Links Rápidos</h4>
-                    <ul className="text-sm space-y-2 opacity-80">
+                    <h4 className={`${textStyles.tituloDestaqueMenor} mb-4`}>Links Rápidos</h4>
+                    <ul className={`${textStyles.baseCorpo} space-y-2 opacity-80`}>
                       <li><button onClick={() => scrollToSection('servicos')} className="hover:opacity-100 transition-opacity">Serviços</button></li>
                       <li><button onClick={() => scrollToSection('portfolio')} className="hover:opacity-100 transition-opacity">Portfólio</button></li>
                       <li><button onClick={() => scrollToSection('contato')} className="hover:opacity-100 transition-opacity">Contato</button></li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-medium mb-4">Contato</h4>
-                    <div className="text-sm opacity-80 space-y-2">
+                    <h4 className={`${textStyles.tituloDestaqueMenor} mb-4`}>Contato</h4>
+                    <div className={`${textStyles.baseCorpo} space-y-2 opacity-80`}>
                       {companySettings?.email && (
                         <p className="flex items-center gap-2">
                           <Mail className="w-4 h-4" />

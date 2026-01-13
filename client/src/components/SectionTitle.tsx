@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { textStyles } from "@/types/textStyles";
 
 interface SectionTitleProps {
   /**
@@ -6,30 +7,35 @@ interface SectionTitleProps {
    * Exemplo: "Soluções para Cada Tipo de"
    */
   title?: string;
-  
+
   /**
    * Palavra ou frase em destaque (negrito)
    * Exemplo: "Viajante"
    */
   highlight?: string;
-  
+
   /**
    * Título completo quando não há palavra em destaque
    * Exemplo: "Ofertas de Destinos"
    */
   fullTitle?: string;
-  
+
   /**
    * Subtítulo descritivo abaixo do título
    */
-  subtitle?: string;
-  
+  subtitle?: string | React.ReactNode;
+
+  /**
+   * Subtítulo alternativo apenas para versão mobile
+   */
+  subtitleMobile?: string | React.ReactNode;
+
   /**
    * Alinhamento do texto
    * @default "center"
    */
   align?: "left" | "center" | "right";
-  
+
   /**
    * Classes CSS adicionais para customização
    */
@@ -62,6 +68,7 @@ export function SectionTitle({
   highlight,
   fullTitle,
   subtitle,
+  subtitleMobile,
   align = "center",
   className,
 }: SectionTitleProps) {
@@ -85,10 +92,24 @@ export function SectionTitle({
           </>
         )}
       </h2>
-      
-      {/* Subtítulo */}
+
+      {/* Subtítulo - Desktop */}
       {subtitle && (
-        <p className="text-muted-foreground">
+        <p className={`${textStyles.baseCorpo} hidden md:block`}>
+          {subtitle}
+        </p>
+      )}
+
+      {/* Subtítulo - Mobile */}
+      {subtitleMobile && (
+        <p className={`${textStyles.baseCorpo} md:hidden`}>
+          {subtitleMobile}
+        </p>
+      )}
+
+      {/* Fallback: Se não houver subtitleMobile, mostrar subtitle em mobile */}
+      {!subtitleMobile && subtitle && (
+        <p className={`${textStyles.baseCorpo} md:hidden`}>
           {subtitle}
         </p>
       )}

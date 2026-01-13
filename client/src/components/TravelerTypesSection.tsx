@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { StandardContainer } from "./StandardContainer";
 import FadeInContainer from "./FadeInContainer";
 import { SectionTitle } from "./SectionTitle";
+import { textStyles } from "../types/textStyles";
 
 interface TravelerType {
   id: string;
@@ -76,83 +77,117 @@ export default function TravelerTypesSection() {
       <div className="container">
         {/* Header */}
         <FadeInContainer>
-        <SectionTitle
-          title="Soluções para Cada Tipo de"
-          highlight="Viajante"
-          subtitle="Contamos com um suporte completo para quem busca um simples deslocamento ou um acompanhamento completo para conhecer seu destino em detalhes. Prezando sempre por experiências bem planejadas, seguras e alinhadas a cada estilo de viajante."
-        />
+          <SectionTitle
+            title="Soluções para Cada Tipo de"
+            highlight="Viajante"
+            subtitle={<>Contamos com um suporte completo para quem busca um simples deslocamento ou um acompanhamento completo para conhecer seu<br />destino em detalhes. Prezando sempre por experiências bem planejadas, seguras e alinhadas a cada estilo de viajante.</>}
+            subtitleMobile="Sua viagem com mais tranquilidade: planejamento sob medida para o seu jeito de viajar"
+          />
         </FadeInContainer>
 
-        {/* Two Column Layout */}
+        {/* Two Column Layout - Desktop, Single Column Accordion - Mobile */}
         <FadeInContainer delay="1">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left Column - Tabs (Compact) */}
-          <div className="flex flex-col gap-2">
-            {travelerTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => setActiveTab(type.id)}
-                className={`w-full flex items-center gap-3 p-3 md:p-4 rounded-lg transition-all duration-300 text-left ${
-                  activeTab === type.id
-                    ? "bg-blue-50 border-2 border-blue-500 shadow-md"
-                    : "bg-white border-2 border-muted/40 hover:bg-blue-50 hover:border-blue-500 hover:shadow-md"
-                }`}
-                style={activeTab !== type.id ? {boxShadow: '0 0 0 6px #fff'} : undefined}
-              >
-                {/* Avatar */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={type.avatar}
-                    alt={type.title}
-                    className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-full"
-                  />
-                </div>
-
-                {/* Title */}
-                <div className="flex-1">
-                  <h3
-                    className={`text-sm md:text-base font-semibold transition-colors ${
-                      activeTab === type.id ? "text-blue-700" : "text-gray-900"
-                    }`}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left Column - Tabs (Compact) */}
+            <div className="flex flex-col gap-2">
+              {travelerTypes.map((type) => (
+                <div key={type.id} className="lg:contents">
+                  {/* Tab Button */}
+                  <button
+                    onClick={() => setActiveTab(type.id)}
+                    className={`w-full flex items-center gap-3 p-3 md:p-4 rounded-lg transition-all duration-300 text-left ${activeTab === type.id
+                      ? "bg-blue-50 border-2 border-blue-500 shadow-md"
+                      : "bg-white border-2 border-muted/40 hover:bg-blue-50 hover:border-blue-500 hover:shadow-md"
+                      }`}
+                    style={activeTab !== type.id ? { boxShadow: '0 0 0 6px #fff' } : undefined}
                   >
-                    {type.title}
-                  </h3>
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src={type.avatar}
+                        alt={type.title}
+                        className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-full"
+                      />
+                    </div>
+
+                    {/* Title */}
+                    <div className="flex-1">
+                      <h3
+                        className={`${textStyles.tituloDestaqueMenor} transition-colors ${activeTab === type.id ? "text-blue-700" : "text-gray-900"
+                          }`}
+                      >
+                        {type.title}
+                      </h3>
+                    </div>
+                  </button>
+
+                  {/* Mobile - Content Below Tab */}
+                  {activeTab === type.id && (
+                    <div className="lg:hidden mt-2 mb-0">
+                      <StandardContainer className="flex flex-col">
+                        <div className="space-y-4">
+                          {/* Intro Paragraph */}
+                          <p className={textStyles.baseCorpo}>
+                            {type.intro}
+                          </p>
+
+                          {/* Divider */}
+                          <div className="border-b border-gray-200"></div>
+
+                          {/* Items List */}
+                          <ul className="space-y-3">
+                            {type.items.map((item, index) => (
+                              <li
+                                key={index}
+                                className="flex items-start gap-3 animate-in fade-in slide-in-from-right-4 duration-500"
+                                style={{ animationDelay: `${index * 100}ms` }}
+                              >
+                                <div className="flex-shrink-0 mt-1">
+                                  <Check className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <span className={textStyles.baseCorpo}>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </StandardContainer>
+                    </div>
+                  )}
                 </div>
-              </button>
-            ))}
+              ))}
+            </div>
+
+            {/* Right Column - Single Container with Content (Desktop Only) */}
+            <div className="hidden lg:block lg:h-full">
+              <StandardContainer className="h-full flex flex-col">
+                <div className="space-y-6 flex-1 overflow-y-auto">
+                  {/* Intro Paragraph */}
+                  <p className={textStyles.baseCorpo}>
+                    {activeContent?.intro}
+                  </p>
+
+                  {/* Divider */}
+                  <div className="border-b border-gray-200"></div>
+
+                  {/* Items List */}
+                  <ul className="space-y-4">
+                    {activeContent?.items.map((item, index) => (
+                      <li
+                        key={index}
+                        className="flex items-start gap-3 animate-in fade-in slide-in-from-right-4 duration-500"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          <Check className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <span className={textStyles.baseCorpo}>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </StandardContainer>
+            </div>
           </div>
-
-          {/* Right Column - Single Container with Content */}
-          <div className="lg:h-full">
-            <StandardContainer className="h-full flex flex-col">
-              <div className="space-y-6 flex-1 overflow-y-auto">
-                {/* Intro Paragraph */}
-                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-                  {activeContent?.intro}
-                </p>
-
-                {/* Divider */}
-                <div className="border-b border-gray-200"></div>
-
-                {/* Items List */}
-                <ul className="space-y-4">
-                  {activeContent?.items.map((item, index) => (
-                    <li
-                      key={index}
-                      className="flex items-start gap-3 animate-in fade-in slide-in-from-right-4 duration-500"
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <div className="flex-shrink-0 mt-1">
-                        <Check className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <span className="text-gray-700 leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </StandardContainer>
-          </div>
-        </div>
         </FadeInContainer>
       </div>
     </section>
