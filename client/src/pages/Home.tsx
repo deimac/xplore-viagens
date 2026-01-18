@@ -14,10 +14,12 @@ import { trpc } from "@/lib/trpc";
 import FadeInContainer from "@/components/FadeInContainer";
 import HeroSlider from "@/components/HeroSlider";
 import TravelerTypesSection from "@/components/TravelerTypesSection";
+import ServicesBentoSection from "@/components/ServicesBentoSection";
 import { SectionTitle } from "@/components/SectionTitle";
 import ReviewsSection from "@/components/ReviewsSection";
 import ReviewsMarqueeSection from "@/components/ReviewsMarqueeSection";
 import { textStyles } from "@/types/textStyles";
+
 
 
 import {
@@ -49,6 +51,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Buscar configurações da empresa
@@ -70,6 +73,7 @@ export default function Home() {
     { id: "depoimentos", icon: Users, label: "Clientes" },
     { id: "contato", icon: Mail, label: "Contato" },
   ];
+  // Botão de exemplo para abrir modal
 
   // Use Scroll Spy para destacar automaticamente a seção visível
   let activeSection = useScrollSpy({
@@ -260,6 +264,7 @@ export default function Home() {
 
       {/* Conteúdo Principal Rolável */}
       <main className="lg:ml-40 lg:mr-40 flex-1 overflow-y-auto">
+
         {/* Mostrar formulário ou conteúdo principal */}
         {isQuotationOpen ? (
           <div className="flex items-center justify-center px-4 md:px-8 py-12 min-h-screen">
@@ -296,21 +301,21 @@ export default function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 pt-6">
                   <FadeInContainer delay="0">
                     <div ref={travelsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <p className={`${textStyles.baseCorpo} text-center`}>
+                      <p className="text-base md:text-lg text-accent/70 leading-relaxed font-light text-center">
                         <span className="font-semibold text-amber-500">+{travelsCount}</span> <span className="font-light">Viagens Completas</span>
                       </p>
                     </div>
                   </FadeInContainer>
                   <FadeInContainer delay="1">
                     <div ref={clientsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <p className={`${textStyles.baseCorpo} text-center`}>
+                      <p className="text-base md:text-lg text-accent/70 leading-relaxed font-light text-center">
                         <span className="font-semibold text-amber-500">+{clientsCount}</span> <span className="font-light">Clientes Felizes</span>
                       </p>
                     </div>
                   </FadeInContainer>
                   <FadeInContainer delay="2">
                     <div ref={yearsRef} className="bg-muted/15 rounded-lg py-3 px-4 md:py-4 md:px-6 border-2 border-muted/40 section-transition" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <p className={`${textStyles.baseCorpo} text-center`}>
+                      <p className="text-base md:text-lg text-accent/70 leading-relaxed font-light text-center">
                         <span className="font-semibold text-amber-500">+{yearsCount}</span> <span className="font-light">Anos de Experiência</span>
                       </p>
                     </div>
@@ -322,72 +327,9 @@ export default function Home() {
             {/* Traveler Types Section */}
             <TravelerTypesSection />
 
-            {/* Services Section */}
-            <section id="servicos" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative">
-              <div className="max-w-4xl w-full section-transition">
-                <FadeInContainer>
-                  <SectionTitle
-                    title="Serviços Sob Medida para o"
-                    highlight="Sucesso"
-                    subtitle="Transformamos ideias em realidade digital"
-                  />
-                </FadeInContainer>
+            {/* Services Bento Section */}
+            <ServicesBentoSection />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                  {/* Service Card 1 */}
-                  <FadeInContainer delay="0">
-                    <div className="container-box border-2 border-muted group hover:border-accent transition-all duration-300" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
-                        <MapPin className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <h3 className={`${textStyles.tituloDestaqueMenor} mb-2`}>Destinos Curados</h3>
-                      <p className={textStyles.baseCorpo}>
-                        Selecionamos os melhores destinos do mundo para você descobrir lugares incríveis.
-                      </p>
-                    </div>
-                  </FadeInContainer>
-
-                  {/* Service Card 2 */}
-                  <FadeInContainer delay="1">
-                    <div className="container-box border-2 border-muted group hover:border-accent transition-all duration-300" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
-                        <Compass className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <h3 className={`${textStyles.tituloDestaqueMenor} mb-2`}>Roteiros Personalizados</h3>
-                      <p className={textStyles.baseCorpo}>
-                        Criamos roteiros sob medida para suas preferências e orçamento.
-                      </p>
-                    </div>
-                  </FadeInContainer>
-
-                  {/* Service Card 3 */}
-                  <FadeInContainer delay="2">
-                    <div className="container-box border-2 border-muted group hover:border-accent transition-all duration-300" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
-                        <Users className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <h3 className={`${textStyles.tituloDestaqueMenor} mb-2`}>Suporte 24/7</h3>
-                      <p className={textStyles.baseCorpo}>
-                        Nossa equipe está sempre disponível para ajudar durante sua jornada.
-                      </p>
-                    </div>
-                  </FadeInContainer>
-
-                  {/* Service Card 4 */}
-                  <FadeInContainer delay="3">
-                    <div className="container-box border-2 border-muted group hover:border-accent transition-all duration-300" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                      <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-4">
-                        <Star className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <h3 className="text-lg font-medium mb-2 text-accent">Experiências Premium</h3>
-                      <p className="text-sm text-accent/70 font-light">
-                        Oferecemos pacotes exclusivos com experiências inesquecíveis.
-                      </p>
-                    </div>
-                  </FadeInContainer>
-                </div>
-              </div>
-            </section>
 
             {/* Packages Section */}
             <section id="pacotes" className="py-0">
@@ -524,84 +466,85 @@ export default function Home() {
                 </FadeInContainer>
               </div>
             </section>
+          </>
+        )}
+        {/* Footer */}
+        {!isQuotationOpen && (
+          <footer className="bg-accent text-accent-foreground py-12 px-6 md:px-16 w-full">
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                  <h4 className="text-lg font-semibold mb-4">Sobre Nós</h4>
+                  <p className="text-sm opacity-80">
+                    {companySettings?.companyName || "Xplore Viagens"} é uma agência de viagens premium dedicada a criar experiências inesquecíveis.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold mb-4">Links Rápidos</h4>
+                  <ul className="text-sm space-y-2 opacity-80">
+                    <li><button onClick={() => scrollToSection('servicos')} className="hover:opacity-100 transition-opacity">Serviços</button></li>
+                    <li><button onClick={() => scrollToSection('portfolio')} className="hover:opacity-100 transition-opacity">Portfólio</button></li>
+                    <li><button onClick={() => scrollToSection('contato')} className="hover:opacity-100 transition-opacity">Contato</button></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold mb-4">Contato</h4>
+                  <div className="text-sm space-y-2 opacity-80">
+                    {companySettings?.email && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        <a href={`mailto:${companySettings.email}`} className="hover:opacity-100 transition-opacity">
+                          {companySettings.email}
+                        </a>
+                      </p>
+                    )}
+                    {companySettings?.phone && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        <a href={`tel:${companySettings.phone.replace(/\D/g, '')}`} className="hover:opacity-100 transition-opacity">
+                          {companySettings.phone}
+                        </a>
+                      </p>
+                    )}
+                    {companySettings?.whatsapp && (
+                      <p className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        <a href={`https://wa.me/${companySettings.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                          WhatsApp: {companySettings.whatsapp}
+                        </a>
+                      </p>
+                    )}
 
-            {/* Footer */}
-            <footer className="bg-accent text-accent-foreground py-12 px-6 md:px-16">
-              <div className="max-w-4xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                  <div>
-                    <h4 className={`${textStyles.tituloDestaqueMenor} mb-4`}>Sobre Nós</h4>
-                    <p className={`${textStyles.baseCorpo} opacity-80`}>
-                      {companySettings?.companyName || "Xplore Viagens"} é uma agência de viagens premium dedicada a criar experiências inesquecíveis.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className={`${textStyles.tituloDestaqueMenor} mb-4`}>Links Rápidos</h4>
-                    <ul className={`${textStyles.baseCorpo} space-y-2 opacity-80`}>
-                      <li><button onClick={() => scrollToSection('servicos')} className="hover:opacity-100 transition-opacity">Serviços</button></li>
-                      <li><button onClick={() => scrollToSection('portfolio')} className="hover:opacity-100 transition-opacity">Portfólio</button></li>
-                      <li><button onClick={() => scrollToSection('contato')} className="hover:opacity-100 transition-opacity">Contato</button></li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className={`${textStyles.tituloDestaqueMenor} mb-4`}>Contato</h4>
-                    <div className={`${textStyles.baseCorpo} space-y-2 opacity-80`}>
-                      {companySettings?.email && (
-                        <p className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          <a href={`mailto:${companySettings.email}`} className="hover:opacity-100 transition-opacity">
-                            {companySettings.email}
-                          </a>
-                        </p>
+                    <div className="flex gap-3 mt-4">
+                      {companySettings?.instagram && (
+                        <a href={companySettings.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                          <Instagram className="w-5 h-5" />
+                        </a>
                       )}
-                      {companySettings?.phone && (
-                        <p className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          <a href={`tel:${companySettings.phone.replace(/\D/g, '')}`} className="hover:opacity-100 transition-opacity">
-                            {companySettings.phone}
-                          </a>
-                        </p>
+                      {companySettings?.facebook && (
+                        <a href={companySettings.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                          <Facebook className="w-5 h-5" />
+                        </a>
                       )}
-                      {companySettings?.whatsapp && (
-                        <p className="flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4" />
-                          <a href={`https://wa.me/${companySettings.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                            WhatsApp: {companySettings.whatsapp}
-                          </a>
-                        </p>
+                      {companySettings?.linkedin && (
+                        <a href={companySettings.linkedin} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                          <Linkedin className="w-5 h-5" />
+                        </a>
                       )}
-                      {/* Redes Sociais */}
-                      <div className="flex gap-3 mt-4">
-                        {companySettings?.instagram && (
-                          <a href={companySettings.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                            <Instagram className="w-5 h-5" />
-                          </a>
-                        )}
-                        {companySettings?.facebook && (
-                          <a href={companySettings.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                            <Facebook className="w-5 h-5" />
-                          </a>
-                        )}
-                        {companySettings?.linkedin && (
-                          <a href={companySettings.linkedin} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                            <Linkedin className="w-5 h-5" />
-                          </a>
-                        )}
-                        {companySettings?.twitter && (
-                          <a href={companySettings.twitter} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                            <Twitter className="w-5 h-5" />
-                          </a>
-                        )}
-                      </div>
+                      {companySettings?.twitter && (
+                        <a href={companySettings.twitter} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                          <Twitter className="w-5 h-5" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-accent-foreground/20 pt-8 text-center text-sm opacity-80">
-                  <p>&copy; {new Date().getFullYear()} {companySettings?.companyName || "Xplore Viagens"}. Todos os direitos reservados.</p>
-                </div>
               </div>
-            </footer>
-          </>
+              <div className="border-t border-accent-foreground/20 pt-8 text-center text-sm opacity-80">
+                <p>&copy; {new Date().getFullYear()} {companySettings?.companyName || "Xplore Viagens"}. Todos os direitos reservados.</p>
+              </div>
+            </div>
+          </footer>
         )}
       </main>
     </div>

@@ -241,13 +241,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        
+
         const buffer = Buffer.from(input.fileData, "base64");
         const randomSuffix = crypto.randomBytes(8).toString("hex");
         const ext = input.fileName.split(".").pop() || "jpg";
         const fileKey = `hero-slides/${randomSuffix}.${ext}`;
         const { url } = await storagePut(fileKey, buffer, input.mimeType);
-        
+
         return { url };
       }),
   }),
@@ -295,14 +295,14 @@ export const appRouter = router({
       }),
   }),
 
-  reviews: router({    
+  reviews: router({
     // Verify Google token and return user info
     verifyGoogle: publicProcedure
       .input(z.object({ token: z.string() }))
       .mutation(async ({ input }) => {
         try {
           const userInfo = await verifyGoogleToken(input.token);
-          
+
           // Upsert review author
           const author = await db.upsertReviewAuthor({
             googleId: userInfo.googleId,
@@ -310,7 +310,7 @@ export const appRouter = router({
             email: userInfo.email,
             avatarUrl: userInfo.picture,
           });
-          
+
           return {
             success: true,
             author: {
@@ -327,7 +327,7 @@ export const appRouter = router({
           });
         }
       }),
-    
+
     // Create a new review
     create: publicProcedure
       .input(
@@ -344,7 +344,7 @@ export const appRouter = router({
         });
         return { success: true };
       }),
-    
+
     // List all reviews (admin only)
     list: adminProcedure.query(async ({ ctx }) => {
       const reviews = await db.getAllReviews();
@@ -355,12 +355,12 @@ export const appRouter = router({
       }
       return reviews;
     }),
-    
+
     // List approved reviews (public)
     listApproved: publicProcedure.query(async () => {
       return await db.getApprovedReviews();
     }),
-    
+
     // Update review status (admin only)
     updateStatus: adminProcedure
       .input(
@@ -373,7 +373,7 @@ export const appRouter = router({
         await db.updateReviewStatus(input.id, input.status);
         return { success: true };
       }),
-    
+
     // Delete review (admin only)
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
