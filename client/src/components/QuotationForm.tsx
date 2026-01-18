@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2 } from "lucide-react";
 import { APP_LOGO, APP_TITLE } from "@/const";
+import { SectionTitle } from "@/components/SectionTitle";
 interface FormData {
   campoNome: string;
   campoCelular: string;
@@ -168,25 +169,32 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
   };
 
   return (
-    <div className="w-full" data-quotation-form>
-      {/* Header com Logo - Ocupando toda a largura */}
-      <header className="sticky top-0 z-40 w-full py-6 flex items-center pl-6 md:pl-16" style={{background: '#1A2B4C'}}>
-        <img src={APP_LOGO} alt={APP_TITLE} className="h-20 md:h-24 w-auto" />
-      </header>
+    <div className="w-full mt-24 mb-12" data-quotation-form>
+      {/* Botão X para fechar - Alinhado à direita na coluna central */}
+      <div className="max-w-4xl mx-auto px-6 md:px-16 flex justify-end mb-8">
+        <button
+          onClick={onClose}
+          className="w-12 h-12 rounded-full border-2 border-accent/30 bg-white hover:bg-accent hover:border-accent text-accent hover:text-white transition-all duration-300 flex items-center justify-center shadow-lg"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Título e Subtítulo */}
       <div className="max-w-4xl mx-auto px-6 md:px-16 py-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-accent mb-2">Solicite seu Orçamento</h1>
-        <p className="text-base text-muted-foreground mb-8">Preencha o formulário abaixo e nossa equipe entrará em contato com as melhores opções para sua viagem.</p>
+        <SectionTitle
+          title="Solicite seu"
+          highlight="Orçamento"
+          subtitle="Preencha o formulário abaixo e nossa equipe entrará em contato com as melhores opções para sua viagem."
+        />
 
         {/* Mensagem de Status */}
         {message && (
           <div
-            className={`p-4 rounded-lg text-sm mb-6 ${
-              message.type === "success"
-                ? "bg-green-50 border border-green-200 text-green-800"
-                : "bg-red-50 border border-red-200 text-red-800"
-            }`}
+            className={`p-4 rounded-lg text-sm mb-6 ${message.type === "success"
+              ? "bg-green-50 border border-green-200 text-green-800"
+              : "bg-red-50 border border-red-200 text-red-800"
+              }`}
           >
             {message.text}
           </div>
@@ -195,7 +203,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Container 1: Dados Pessoais */}
-          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{background: '#FAFAFA', boxShadow: '0 0 0 6px #fff'}}>
+          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <h3 className="text-lg font-semibold text-accent mb-4">Dados Pessoais</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -237,7 +245,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
           </div>
 
           {/* Container 2: Detalhes da Viagem */}
-          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{background: '#FAFAFA', boxShadow: '0 0 0 6px #fff'}}>
+          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <h3 className="text-lg font-semibold text-accent mb-4">Detalhes da Viagem</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,7 +298,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
           </div>
 
           {/* Container 3: Passageiros */}
-          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{background: '#FAFAFA', boxShadow: '0 0 0 6px #fff'}}>
+          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <h3 className="text-lg font-semibold text-accent mb-4">Passageiros</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -330,7 +338,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
           </div>
 
           {/* Container 4: Preferências */}
-          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{background: '#FAFAFA', boxShadow: '0 0 0 6px #fff'}}>
+          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <h3 className="text-lg font-semibold text-accent mb-4">Preferências</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -400,7 +408,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
           </div>
 
           {/* Container 5: Informações Adicionais */}
-          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{background: '#FAFAFA', boxShadow: '0 0 0 6px #fff'}}>
+          <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <h3 className="text-lg font-semibold text-accent mb-4">Informações Adicionais</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -39,9 +39,10 @@ interface HeroSliderProps {
   }>;
   activeSection: string;
   scrollToSection: (sectionId: string) => void;
+  onOpenQuotation?: () => void;
 }
 
-export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menuRef, sidebarItems, activeSection, scrollToSection }: HeroSliderProps) {
+export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menuRef, sidebarItems, activeSection, scrollToSection, onOpenQuotation }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [, navigate] = useLocation();
 
@@ -97,49 +98,6 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
 
   return (
     <div className="relative w-full h-[575px] md:h-[690px] overflow-hidden">
-      {/* Top Bar com Degradê Horizontal - Position Absolute Sobre Slider */}
-      <header className="absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)' }}>
-        <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto" />
-
-        {/* Menu Hamburguer Mobile */}
-        <div ref={menuRef} className="lg:hidden relative">
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-12 h-12 rounded-lg border-2 border-muted bg-card text-accent flex items-center justify-center hover:opacity-90 transition-all"
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-
-          {/* Dropdown Menu - Grid 2 Colunas */}
-          {isMobileMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 bg-card border-2 border-muted rounded-2xl shadow-lg overflow-hidden animate-fade-in z-50 p-4 w-80">
-              <div className="grid grid-cols-2 gap-3">
-                {sidebarItems.map((item, index) => {
-                  const Icon = item.icon;
-                  const isLastAndOdd = index === sidebarItems.length - 1 && sidebarItems.length % 2 !== 0;
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className={`border-2 rounded-lg px-4 py-3 flex items-center justify-center gap-2 hover:opacity-90 transition-all font-medium text-sm ${activeSection === item.id
-                        ? "border-accent bg-accent text-accent-foreground"
-                        : "border-muted/40 bg-muted/15 text-accent"
-                        } ${isLastAndOdd ? "col-span-2" : ""
-                        }`}
-                    >
-                      <Icon className={`w-4 h-4 ${activeSection === item.id ? "stroke-accent-foreground text-accent-foreground" : "stroke-accent text-accent"
-                        }`} strokeWidth={1.5} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
@@ -178,7 +136,7 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
                   size="lg"
                   variant="outline"
                   className="border-2 border-muted bg-background text-accent hover:bg-muted rounded-lg font-medium"
-                  onClick={() => navigate("/orcamento")}
+                  onClick={onOpenQuotation}
                 >
                   Solicite Orçamento
                 </Button>
