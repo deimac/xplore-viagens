@@ -18,6 +18,7 @@ import ServicesBentoSection from "@/components/ServicesBentoSection";
 import { SectionTitle } from "@/components/SectionTitle";
 import ReviewsSection from "@/components/ReviewsSection";
 import ReviewsMarqueeSection from "@/components/ReviewsMarqueeSection";
+import ReviewsMarqueeDouble from "@/components/ReviewsMarqueeDouble";
 import { textStyles } from "@/types/textStyles";
 
 
@@ -206,8 +207,8 @@ export default function Home() {
             {/* Sombra branca quase transparente */}
             <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-            {/* Popup elegante */}
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-muted/20 border border-muted/60 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: 'rgba(0, 0, 0, 0.25)' }}>
+            {/* Tooltip elegante - mesmo estilo dos menus */}
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
               Ir ao Topo
             </div>
           </button>
@@ -245,7 +246,7 @@ export default function Home() {
 
             {/* Tooltip elegante */}
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
-              Cotações
+              Orçamento
             </div>
           </button>
         </div>
@@ -479,9 +480,9 @@ export default function Home() {
             </section>
 
 
-            {/* Nova seção de testemunhos com marquee e FadeInContainer */}
+            {/* Nova seção de testemunhos com marquee duplo */}
             <FadeInContainer>
-              <ReviewsMarqueeSection />
+              <ReviewsMarqueeDouble />
             </FadeInContainer>
 
 

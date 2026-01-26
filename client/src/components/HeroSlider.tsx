@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, MessageCircle, Menu, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Menu, X, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -44,6 +44,8 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menuRef, sidebarItems, activeSection, scrollToSection, onOpenQuotation }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isQuotationHovered, setIsQuotationHovered] = useState(false);
+
   const [, navigate] = useLocation();
 
   // Buscar configurações da empresa
@@ -132,14 +134,23 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
                   <MessageCircle className="ml-2 w-4 h-4" />
                 </Button>
 
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-muted bg-background text-accent hover:bg-muted rounded-lg font-medium"
+                <button
                   onClick={onOpenQuotation}
+                  onMouseEnter={() => setIsQuotationHovered(true)}
+                  onMouseLeave={() => setIsQuotationHovered(false)}
+                  className="group inline-flex items-center gap-2 px-0 py-0 bg-transparent text-white hover:text-white/90 font-medium"
+                  aria-label="Solicite Orçamento"
                 >
-                  Solicite Orçamento
-                </Button>
+                  <span className="text-base">Solicite Orçamento</span>
+                  <span className="relative flex items-center justify-center w-6 h-6 rounded-full border border-white group-hover:border-white/90 overflow-hidden">
+                    <ArrowUpRight
+                      className={`absolute w-3.5 h-3.5 text-white transition-all duration-300 ease-out ${isQuotationHovered ? "translate-x-3 -translate-y-3 opacity-0" : "translate-x-0 translate-y-0 opacity-100"}`}
+                    />
+                    <ArrowUpRight
+                      className={`absolute w-3.5 h-3.5 text-white transition-all duration-300 ease-out ${isQuotationHovered ? "translate-x-0 translate-y-0 opacity-100" : "-translate-x-3 translate-y-3 opacity-0"}`}
+                    />
+                  </span>
+                </button>
               </div>
             </div>
           </div>

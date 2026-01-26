@@ -5,11 +5,12 @@ import { BentoCard, BentoGrid } from "@/components/magicui/bento-grid";
 import {
     BellIcon,
     CalendarIcon,
+    CardStackIcon,
     FileTextIcon,
     GlobeIcon,
     InputIcon,
 } from "@radix-ui/react-icons";
-import { Plane, Compass, Users, Headset, DollarSign, HeartHandshakeIcon, ClipboardCheckIcon, Users2Icon, UserCheck2Icon, UsersRoundIcon, UserSquare2Icon, UserPlus2Icon } from "lucide-react";
+import { Plane, Compass, Users, Headset, DollarSign, HeartHandshakeIcon, ClipboardCheckIcon, Users2Icon, UserCheck2Icon, UsersRoundIcon, UserSquare2Icon, UserPlus2Icon, CreditCardIcon } from "lucide-react";
 import FadeInContainer from "@/components/FadeInContainer";
 import { SectionTitle } from "@/components/SectionTitle";
 import { textStyles } from "@/types/textStyles";
@@ -70,7 +71,7 @@ const features = [
         name: "Planejamento e Organização de Viagens",
         description: "Planejamento completo da viagem, com pacotes, hospedagem e passeios organizados de forma estratégica para uma experiência tranquila do início ao fim.",
         //href: "/",
-        cta: "Learn more",
+        //cta: "Learn more",
         background: <img className="absolute -top-20 -right-20 opacity-60 inset-0 bg-gradient-to-br from-yellow-50 to-transparent dark:from-yellow-900/20" alt="Background decoration" />,
         className: "lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-2",
     },
@@ -93,9 +94,9 @@ const features = [
         className: "lg:col-start-3 lg:col-end-3 lg:row-start-1 lg:row-end-2",
     },
     {
-        Icon: BellIcon,
-        name: "Notifications",
-        description: "Get notified when someone shares a file or mentions you in a comment.",
+        Icon: CreditCardIcon,
+        name: "Flexibilidade de Pagamento",
+        description: "Com opções flexíveis de pagamento para facilitar a realização da sua viagem dos sonhos.",
         //href: "/",
         //cta: "Learn more",
         background: <img className="absolute -top-20 -right-20 opacity-60" alt="Background decoration" />,
@@ -105,7 +106,7 @@ const features = [
 
 export default function ServicesBentoSection() {
     return (
-        <section className="py-16 md:py-24" style={{ background: '#e6f0fa' }}>
+        <section id="servicos" className="py-16 md:py-24" style={{ background: '#e6f0fa' }}>
             <div className="container">
                 {/* Header */}
                 <FadeInContainer>

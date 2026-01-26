@@ -11,6 +11,7 @@ import crypto from "crypto";
 import { verifyGoogleToken } from "./_core/googleAuth";
 import { SignJWT } from "jose";
 import bcrypt from 'bcryptjs';
+import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPessoas, getOrcamento } from "./_core/iddasApi";
 
 
 export const appRouter = router({
@@ -380,6 +381,138 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await db.deleteReview(input.id);
         return { success: true };
+      }),
+  }),
+
+  // Iddas CRM API Routes
+  iddas: router({
+    // Test authentication and get token
+    auth: publicProcedure.query(async () => {
+      try {
+        const token = await authenticateIddas();
+        return {
+          success: true,
+          token,
+          message: "Authentication successful",
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message || "Failed to authenticate with Iddas API",
+        });
+      }
+    }),
+
+    // Get airports list with pagination
+    aeroportos: publicProcedure
+      .input(
+        z.object({
+          page: z.number().min(1).default(1),
+          perPage: z.number().min(1).max(100).default(10),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        try {
+          const token = await authenticateIddas();
+          const result = await getAeroportos(
+            token,
+            input?.page || 1,
+            input?.perPage || 10
+          );
+          return result;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Failed to fetch airports from Iddas API",
+          });
+        }
+      }),
+
+    // Get all airports (no pagination)
+    allAeroportos: publicProcedure.query(async () => {
+      try {
+        const aeroportos = await getAllAeroportos();
+        return {
+          data: aeroportos,
+          total: aeroportos.length,
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message || "Failed to fetch all airports from Iddas API",
+        });
+      }
+    }),
+
+    // Get sales (vendas) from Iddas API
+    vendas: publicProcedure
+      .input(
+        z.object({
+          codigo: z.string().optional(),
+          dataInicial: z.string().optional(),
+          dataFinal: z.string().optional(),
+          cliente: z.number().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        try {
+          const token = await authenticateIddas();
+          const result = await getVendas(
+            token,
+            input?.codigo,
+            input?.dataInicial,
+            input?.dataFinal,
+            input?.cliente
+          );
+          return result;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Failed to fetch sales from Iddas API",
+          });
+        }
+      }),
+
+    // Get pessoas from Iddas API
+    pessoas: publicProcedure
+      .input(
+        z.object({
+          cpfCnpj: z.string().optional(),
+          id: z.string().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        try {
+          const token = await authenticateIddas();
+          const result = await getPessoas(token, input?.cpfCnpj, input?.id);
+          return result;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Failed to fetch pessoas from Iddas API",
+          });
+        }
+      }),
+
+    // Get orcamento from Iddas API
+    orcamento: publicProcedure
+      .input(
+        z.object({
+          id: z.string().optional(),
+          pessoaId: z.string().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        try {
+          const token = await authenticateIddas();
+          const result = await getOrcamento(token, input?.id, input?.pessoaId);
+          return result;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Failed to fetch orcamento from Iddas API",
+          });
+        }
       }),
   }),
 });

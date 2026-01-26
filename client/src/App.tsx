@@ -16,6 +16,7 @@ import AdminRoute from "./components/AdminRoute";
 import TravelDetails from "./pages/TravelDetails";
 import CompanySettings from "./pages/CompanySettings";
 import ReviewPage from "./pages/ReviewPage";
+import DebugApi from "./pages/DebugApi";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/destino/:id"} component={TravelDetails} />
       <Route path={"/orcamento"} component={Quotation} />
       <Route path={"/quotation"} component={QuotationForm} />
+      <Route path={"/debug-api"} component={DebugApi} />
       <Route path={"/admin/login"} component={AdminLogin} />
       <Route path={"/admin"} component={() => <AdminRoute component={AdminDashboard} />} />
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
