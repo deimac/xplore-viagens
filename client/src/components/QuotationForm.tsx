@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { X, Loader2, CheckCircle2 } from "lucide-react";
+import { X, Loader2, CheckCircle2, Plane } from "lucide-react";
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { SectionTitle } from "@/components/SectionTitle";
@@ -421,11 +421,22 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
           <X className="w-5 h-5" />
         </button>
 
-        <SectionTitle
-          title="Solicite seu"
-          highlight="Orçamento"
-          subtitle="Preencha o formulário abaixo e nossa equipe entrará em contato com as melhores opções para sua viagem."
-        />
+        <div className="flex items-start gap-4 md:gap-6 mb-2">
+          <div className="relative">
+            <div className="absolute inset-0 blur-2xl bg-accent/20 -z-10" />
+            <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/80 text-white shadow-lg ring-4 ring-accent/15 flex items-center justify-center">
+              <Plane className="w-7 h-7 md:w-8 md:h-8" />
+            </div>
+            <div className="absolute -right-3 -bottom-2 w-6 h-6 rounded-full bg-white shadow-md border border-accent/15 flex items-center justify-center text-xs font-semibold text-accent">GO</div>
+          </div>
+          <div className="flex-1">
+            <SectionTitle
+              title="Solicite seu"
+              highlight="Orçamento"
+              subtitle="Preencha o formulário abaixo e nossa equipe entrará em contato com as melhores opções para sua viagem."
+            />
+          </div>
+        </div>
 
         {message && (
           <div

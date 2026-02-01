@@ -9,6 +9,7 @@ import { useScrollSpy } from "@/hooks/useScrollSpy";
 import { useCountUp } from "@/hooks/useCountUp";
 import QuotationForm from "@/components/QuotationForm";
 import PackagesCarouselTail from "@/components/PackagesCarouselTail";
+import QuotationButton from "@/components/QuotationButton";
 import { trpc } from "@/lib/trpc";
 
 import FadeInContainer from "@/components/FadeInContainer";
@@ -20,6 +21,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 import ReviewsMarqueeSection from "@/components/ReviewsMarqueeSection";
 import ReviewsMarqueeDouble from "@/components/ReviewsMarqueeDouble";
 import { textStyles } from "@/types/textStyles";
+import { PremiumFlightsSection } from "@/components/PremiumFlightsSection";
 
 
 
@@ -30,6 +32,7 @@ import {
   Users,
   Star,
   ArrowRight,
+  ArrowUpRight,
   ArrowUp,
   ChevronDown,
   Briefcase,
@@ -57,6 +60,9 @@ export default function Home() {
 
   // Buscar configurações da empresa
   const { data: companySettings } = trpc.companySettings.get.useQuery();
+  const { data: ofertasVoo } = trpc.ofertasVoo.listActive.useQuery(undefined, {
+    staleTime: 1000 * 60 * 10,
+  });
 
   // Counter animations for stats
   const { count: travelsCount, elementRef: travelsRef } = useCountUp({ end: 1000, duration: 2500 });
@@ -382,6 +388,10 @@ export default function Home() {
             {/* Services Bento Section */}
             <ServicesBentoSection />
 
+            {ofertasVoo && ofertasVoo.length > 0 && (
+              <PremiumFlightsSection ofertas={ofertasVoo} whatsappNumber={companySettings?.whatsapp} />
+            )}
+
 
             {/* Packages Section */}
             <section id="pacotes" className="py-0">
@@ -487,32 +497,44 @@ export default function Home() {
 
 
             {/* Contact Section */}
-            <section id="contato" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative">
+            <section id="contato" className="flex items-center justify-center px-6 md:px-16 py-12 relative">
               <div className="max-w-4xl w-full">
                 <FadeInContainer>
-                  <div className="rounded-lg p-8 md:p-12 border-2 border-muted/40 space-y-8 section-transition text-center" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
+                  <div className="rounded-lg p-6 md:p-8 border-2 border-muted/40 space-y-5 section-transition text-center" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
                     <SectionTitle
                       title="Pronto para Sua Próxima"
                       highlight="Aventura?"
-                      subtitle="Entre em contato e vamos criar algo incrível juntos"
+                      subtitle="Entre em contato e vamos criar memórias inesquecíveis juntos"
                     />
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                    <div className="flex flex-wrap justify-center gap-2 pt-1">
+                      <span className="px-3 py-1 rounded-full border border-accent/25 text-xs text-accent bg-accent/5 flex items-center gap-2">
+                        <Plane className="w-4 h-4" /> Destinos premium
+                      </span>
+                      <span className="px-3 py-1 rounded-full border border-accent/25 text-xs text-accent bg-accent/5 flex items-center gap-2">
+                        <Star className="w-4 h-4" /> Concierge 24/7
+                      </span>
+                      <span className="px-3 py-1 rounded-full border border-accent/25 text-xs text-accent bg-accent/5 flex items-center gap-2">
+                        <ArrowUpRight className="w-4 h-4" /> Upgrades e mimos
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center pt-2">
                       <Button
                         size="lg"
                         className="bg-accent text-accent-foreground hover:opacity-90 border-2 border-accent rounded-lg font-medium micro-shadow"
-                        onClick={() => setIsQuotationOpen(true)}
+                        onClick={() => {
+                          if (companySettings?.whatsapp) {
+                            const phoneNumber = companySettings.whatsapp.replace(/\D/g, "");
+                            window.open(`https://wa.me/55${phoneNumber}`, "_blank");
+                          }
+                        }}
                       >
-                        Solicitar Orçamento
-                        <ArrowRight className="ml-2 w-4 h-4" />
+                        Fale Conosco
+                        <MessageCircle className="ml-2 w-4 h-4" />
                       </Button>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="border-2 border-muted bg-background text-accent hover:bg-muted rounded-lg font-medium"
-                      >
-                        Enviar Email
-                      </Button>
+
+                      <QuotationButton onClick={() => setIsQuotationOpen(true)} />
                     </div>
                   </div>
                 </FadeInContainer>

@@ -142,6 +142,46 @@ export type HeroSlide = typeof heroSlides.$inferSelect;
 export type InsertHeroSlide = typeof heroSlides.$inferInsert;
 
 /**
+ * Ofertas de Voo (premium)
+ */
+export const ofertasVoo = mysqlTable("ofertas_voo", {
+  id: int("id").autoincrement().primaryKey(),
+  tipoOferta: mysqlEnum("tipo_oferta", ["DATA_FIXA", "DATA_FLEXIVEL"]).notNull(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  origemPrincipal: varchar("origem_principal", { length: 255 }),
+  destinosResumo: varchar("destinos_resumo", { length: 255 }),
+  companhiaAerea: varchar("companhia_aerea", { length: 255 }).notNull(),
+  classe: mysqlEnum("classe", ["PE", "BS", "FC"]).notNull(),
+  preco: varchar("preco", { length: 50 }).notNull(),
+  parcelas: int("parcelas").notNull(),
+  rotasFixas: text("rotas_fixas"),
+  rotaIda: text("rota_ida"),
+  rotaVolta: text("rota_volta"),
+  ativo: int("ativo").notNull().default(1),
+  criadoEm: timestamp("criado_em"),
+  imagemUrl: varchar("imagem_url", { length: 255 }),
+});
+
+export const ofertasDatasFixas = mysqlTable("ofertas_datas_fixas", {
+  id: int("id").autoincrement().primaryKey(),
+  ofertaId: int("oferta_id").notNull(),
+  datas: text("datas").notNull(),
+});
+
+export const ofertasDatasFlexiveis = mysqlTable("ofertas_datas_flexiveis", {
+  id: int("id").autoincrement().primaryKey(),
+  ofertaId: int("oferta_id").notNull(),
+  tipo: mysqlEnum("tipo", ["IDA", "VOLTA"]).notNull(),
+  mes: varchar("mes", { length: 10 }).notNull(),
+  dias: text("dias").notNull(),
+});
+
+export type OfertaVoo = typeof ofertasVoo.$inferSelect;
+export type OfertaDataFixa = typeof ofertasDatasFixas.$inferSelect;
+export type OfertaDataFlexivel = typeof ofertasDatasFlexiveis.$inferSelect;
+
+/**
  * Review Authors table - stores Google OAuth user data for reviews
  */
 export const reviewAuthors = mysqlTable("reviewAuthors", {

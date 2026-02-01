@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import CategoryFilter from "@/components/CategoryFilter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { CarouselNavigation } from "@/components/CarouselNavigation";
 
 interface Travel {
   id: number;
@@ -23,6 +23,26 @@ export default function PackagesCarousel() {
   const [touchEnd, setTouchEnd] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
+  // Função para formatar data no formato "20 fev 2026"
+  const formatDateDisplay = (dateStr: string | null): string | null => {
+    if (!dateStr) return null;
+
+    const monthMap: { [key: string]: string } = {
+      '01': 'jan', '02': 'fev', '03': 'mar', '04': 'abr', '05': 'mai', '06': 'jun',
+      '07': 'jul', '08': 'ago', '09': 'set', '10': 'out', '11': 'nov', '12': 'dez'
+    };
+
+    try {
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = monthMap[String(date.getMonth() + 1).padStart(2, '0')];
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    } catch (error) {
+      return dateStr;
+    }
+  };
+
   // Reset index when category changes
   const handleCategoryChange = (categoryId: number | null) => {
     setSelectedCategory(categoryId);
@@ -39,7 +59,7 @@ export default function PackagesCarousel() {
 
   // Filter categories to show only those with associated travels
   const categoriesWithTravels = allCategories.filter((category: any) => {
-    return allTravels.some((travel: any) => 
+    return allTravels.some((travel: any) =>
       travel.categories && travel.categories.some((cat: any) => cat.id === category.id)
     );
   });
@@ -47,8 +67,8 @@ export default function PackagesCarousel() {
   // Filter travels by selected category
   const filteredTravels = selectedCategory
     ? allTravels.filter((travel: any) => {
-        return travel.categories && travel.categories.some((cat: any) => cat.id === selectedCategory);
-      })
+      return travel.categories && travel.categories.some((cat: any) => cat.id === selectedCategory);
+    })
     : allTravels;
 
   const displayedTravels = filteredTravels;
@@ -74,7 +94,7 @@ export default function PackagesCarousel() {
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
@@ -95,17 +115,17 @@ export default function PackagesCarousel() {
   // Mobile: show only current card (1 card)
   const getVisibleCards = () => {
     if (totalItems === 0) return [];
-    
+
     const cards = [];
     // Always show current card
     cards.push(displayedTravels[currentIndex]);
-    
+
     // On desktop (md+), show next card too
     if (totalItems > 1) {
       const nextIndex = (currentIndex + 1) % totalItems;
       cards.push(displayedTravels[nextIndex]);
     }
-    
+
     return cards;
   };
 
@@ -161,7 +181,7 @@ export default function PackagesCarousel() {
         />
 
         {/* Carousel Container with Touch Support */}
-        <div 
+        <div
           ref={carouselRef}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
           onTouchStart={handleTouchStart}
@@ -169,12 +189,12 @@ export default function PackagesCarousel() {
           onTouchEnd={handleTouchEnd}
         >
           {visibleCards.map((travel, index) => (
-            <div 
+            <div
               key={`${travel.id}-${currentIndex}-${index}`}
               className={index === 1 ? "hidden md:block" : ""}
             >
-              <div className="group cursor-pointer" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                <div className="bg-card rounded-lg overflow-hidden border-2 border-muted/40 hover:border-accent/30 transition-all duration-300 flex flex-col h-full">
+              <div className="group cursor-pointer">
+                <div className="bg-card rounded-lg overflow-hidden transition-all duration-300 flex flex-col h-full">
                   {/* Image */}
                   <div className="relative h-64 overflow-hidden">
                     <img
@@ -224,7 +244,7 @@ export default function PackagesCarousel() {
                           Data Ida
                         </p>
                         <p className="text-sm font-medium text-accent">
-                          {travel.departureDate ? new Date(travel.departureDate).toLocaleDateString('pt-BR') : "A definir"}
+                          {travel.departureDate ? formatDateDisplay(travel.departureDate) : "A definir"}
                         </p>
                       </div>
                       <div>
@@ -232,7 +252,7 @@ export default function PackagesCarousel() {
                           Data Volta
                         </p>
                         <p className="text-sm font-medium text-accent">
-                          {travel.returnDate ? new Date(travel.returnDate).toLocaleDateString('pt-BR') : "A definir"}
+                          {travel.returnDate ? formatDateDisplay(travel.returnDate) : "A definir"}
                         </p>
                       </div>
                     </div>
@@ -257,40 +277,14 @@ export default function PackagesCarousel() {
         {/* Navigation Controls */}
         {totalItems > 1 && (
           <div className="flex items-center justify-between">
-            {/* Navigation Arrows - Left */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={prevSlide}
-                className="w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
-                aria-label="Pacote anterior"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              
-              <button
-                onClick={nextSlide}
-                className="w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
-                aria-label="Próximo pacote"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Page Indicators - Right */}
-            <div className="flex gap-2">
-              {Array.from({ length: totalDots }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-all ${
-                    currentIndex === index
-                      ? "bg-accent w-8"
-                      : "bg-muted/40 hover:bg-muted"
-                  }`}
-                  aria-label={`Ir para pacote ${index + 1}`}
-                />
-              ))}
-            </div>
+            <CarouselNavigation
+              currentIndex={currentIndex}
+              totalItems={totalItems}
+              onPrev={prevSlide}
+              onNext={nextSlide}
+              variant="dots"
+              buttonStyle="large"
+            />
           </div>
         )}
       </div>

@@ -12,6 +12,7 @@ import { verifyGoogleToken } from "./_core/googleAuth";
 import { SignJWT } from "jose";
 import bcrypt from 'bcryptjs';
 import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPessoas, getOrcamento } from "./_core/iddasApi";
+import { parsearOfertaVoo } from "./ofertasVoo";
 
 
 export const appRouter = router({
@@ -251,6 +252,30 @@ export const appRouter = router({
 
         return { url };
       }),
+  }),
+
+  ofertasVoo: router({
+    listActive: publicProcedure.query(async () => {
+      const ofertas = await db.getActiveOfertasVoo();
+      if (!ofertas.length) return [];
+
+      const ofertaIds = ofertas.map((oferta) => oferta.id);
+      const datasFixas = await db.getOfertasDatasFixasByOfertaIds(ofertaIds);
+      const datasFlexiveis = await db.getOfertasDatasFlexiveisByOfertaIds(ofertaIds);
+
+      const parsed = ofertas.map((oferta) => {
+        try {
+          const fixas = datasFixas.filter((item) => item.ofertaId === oferta.id);
+          const flexiveis = datasFlexiveis.filter((item) => item.ofertaId === oferta.id);
+          return parsearOfertaVoo(oferta, fixas, flexiveis);
+        } catch (error) {
+          console.warn("[ofertasVoo] Oferta inválida ignorada:", oferta?.id, error);
+          return null;
+        }
+      });
+
+      return parsed.filter((item): item is ReturnType<typeof parsearOfertaVoo> => Boolean(item));
+    }),
   }),
 
   quotations: router({

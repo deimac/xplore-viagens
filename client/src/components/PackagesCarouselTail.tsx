@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Calendar, Users } from "lucide-react";
+import { MapPin, Calendar, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import CategoryFilter from "@/components/CategoryFilter";
 import FadeInContainer from "@/components/FadeInContainer";
 import { SectionTitle } from "@/components/SectionTitle";
+import { CarouselNavigation } from "@/components/CarouselNavigation";
 
 export default function PackagesCarouselTail() {
   const [, navigate] = useLocation();
@@ -14,25 +15,35 @@ export default function PackagesCarouselTail() {
   const [touchEnd, setTouchEnd] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Função para formatar data DD/MM/AAAA → DD/Mês/AAAA
+  // Função para formatar data no formato "20 fev 2026"
   const formatDateDisplay = (dateStr: string | null): string | null => {
     if (!dateStr) return null;
 
     const monthMap: { [key: string]: string } = {
-      '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
-      '07': 'Jul', '08': 'Ago', '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez'
+      '01': 'jan', '02': 'fev', '03': 'mar', '04': 'abr', '05': 'mai', '06': 'jun',
+      '07': 'jul', '08': 'ago', '09': 'set', '10': 'out', '11': 'nov', '12': 'dez'
     };
 
-    // Formato esperado: DD/MM/AAAA
-    const match = dateStr.match(/^(\d{1,2})\/(\d{2})\/(\d{4})$/);
-    if (match) {
-      const day = match[1];
-      const month = monthMap[match[2]];
-      const year = match[3];
-      return `${day}/${month}/${year}`;
-    }
+    try {
+      // Tentar parsear formato DD/MM/AAAA primeiro
+      const match = dateStr.match(/^(\d{1,2})\/(\d{2})\/(\d{4})$/);
+      if (match) {
+        const day = String(parseInt(match[1])).padStart(2, '0');
+        const month = monthMap[match[2]];
+        const year = match[3];
+        return `${day} ${month} ${year}`;
+      }
 
-    return dateStr; // Retorna original se não conseguir parsear
+      // Se não for DD/MM/AAAA, tentar como ISO date
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const monthKey = String(date.getMonth() + 1).padStart(2, '0');
+      const month = monthMap[monthKey];
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    } catch (error) {
+      return dateStr;
+    }
   };
 
   // Função para calcular número de dias entre datas (formato DD/MM/AAAA)
@@ -330,7 +341,7 @@ export default function PackagesCarouselTail() {
                       }}
                     >
                       <div
-                        className="relative rounded-2xl overflow-hidden bg-white h-[350px] md:h-[400px] border border-gray-500 group"
+                        className="relative rounded-2xl overflow-hidden bg-white h-[350px] md:h-[400px] group"
                         style={{
                           boxShadow: '0 20px 50px -10px rgba(0, 0, 0, 0.5), 0 10px 20px -5px rgba(0, 0, 0, 0.3)'
                         }}
@@ -383,7 +394,7 @@ export default function PackagesCarouselTail() {
                               <Calendar className="w-4 h-4 md:w-5 md:h-5 text-white" />
                               <p className="text-white font-medium text-sm md:text-base">
                                 {travel.departureDate && travel.returnDate
-                                  ? `${formatDateDisplay(travel.departureDate)} - ${formatDateDisplay(travel.returnDate)}`
+                                  ? `${formatDateDisplay(travel.departureDate)} a ${formatDateDisplay(travel.returnDate)}`
                                   : formatDateDisplay(travel.departureDate) || formatDateDisplay(travel.returnDate)}
                               </p>
                             </div>
@@ -442,40 +453,15 @@ export default function PackagesCarouselTail() {
             </div>
 
             {/* Navegação - Posicionada abaixo dos cards */}
-            <div className="flex items-center justify-center gap-6 mt-4">
-              {/* Seta Esquerda - Oculta no mobile */}
-              <button
-                onClick={handlePrev}
-                className="hidden md:flex w-12 h-12 rounded-full border-2 border-accent/30 bg-white hover:bg-accent hover:border-accent text-accent hover:text-white transition-all duration-300 items-center justify-center shadow-lg z-50"
-                aria-label="Pacote anterior"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-
-              {/* Indicadores (bolinhas) */}
-              <div className="flex gap-2">
-                {travels.map((_: any, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => goToSlide(index)}
-                    className={`transition-all duration-300 rounded-full ${index === currentIndex
-                      ? "w-10 h-3 bg-amber-500"
-                      : "w-3 h-3 bg-gray-400 hover:bg-gray-500"
-                      }`}
-                    aria-label={`Ir para pacote ${index + 1}`}
-                  />
-                ))}
-              </div>
-
-              {/* Seta Direita - Oculta no mobile */}
-              <button
-                onClick={handleNext}
-                className="hidden md:flex w-12 h-12 rounded-full border-2 border-accent/30 bg-white hover:bg-accent hover:border-accent text-accent hover:text-white transition-all duration-300 items-center justify-center shadow-lg z-50"
-                aria-label="Próximo pacote"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </div>
+            <CarouselNavigation
+              currentIndex={currentIndex}
+              totalItems={travels.length}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              onDotClick={goToSlide}
+              variant="dots"
+              buttonStyle="large"
+            />
           </div>
         </FadeInContainer>
       </div>

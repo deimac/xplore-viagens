@@ -1,6 +1,6 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview } from "../drizzle/schema";
+import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -310,6 +310,35 @@ export async function deleteHeroSlide(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(heroSlides).where(eq(heroSlides.id, id));
+}
+
+// Ofertas de Voo (Premium)
+export async function getActiveOfertasVoo() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(ofertasVoo)
+    .where(eq(ofertasVoo.ativo, 1))
+    .orderBy(desc(ofertasVoo.id));
+}
+
+export async function getOfertasDatasFixasByOfertaIds(ofertaIds: number[]) {
+  const db = await getDb();
+  if (!db || ofertaIds.length === 0) return [];
+  return await db
+    .select()
+    .from(ofertasDatasFixas)
+    .where(inArray(ofertasDatasFixas.ofertaId, ofertaIds));
+}
+
+export async function getOfertasDatasFlexiveisByOfertaIds(ofertaIds: number[]) {
+  const db = await getDb();
+  if (!db || ofertaIds.length === 0) return [];
+  return await db
+    .select()
+    .from(ofertasDatasFlexiveis)
+    .where(inArray(ofertasDatasFlexiveis.ofertaId, ofertaIds));
 }
 
 // Review Authors queries

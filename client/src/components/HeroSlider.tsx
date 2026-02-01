@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, MessageCircle, Menu, X, ArrowUpRight } from "lucide-react";
+import { MessageCircle, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { APP_LOGO, APP_TITLE } from "@/const";
+import QuotationButton from "@/components/QuotationButton";
+import { CarouselNavigation } from "@/components/CarouselNavigation";
 
 interface Slide {
   id: number;
@@ -44,7 +46,6 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menuRef, sidebarItems, activeSection, scrollToSection, onOpenQuotation }: HeroSliderProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isQuotationHovered, setIsQuotationHovered] = useState(false);
 
   const [, navigate] = useLocation();
 
@@ -104,7 +105,7 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
       {slides.map((slide, index) => (
         <div
           key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? "opacity-100" : "opacity-0"
+          className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
             }`}
         >
           <div
@@ -116,41 +117,27 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
 
             {/* Conteúdo do Slide */}
             <div className="relative h-full flex flex-col items-center justify-center text-center px-6 md:px-16">
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-2xl">
-                {slide.title}
-              </h1>
-              <p className="text-lg md:text-2xl text-white/95 mb-10 max-w-3xl drop-shadow-lg">
-                {slide.subtitle}
-              </p>
+              <div className="flex flex-col items-center gap-6">
+                <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-2xl">
+                  {slide.title}
+                </h1>
+                <p className="text-lg md:text-2xl text-white/95 max-w-3xl drop-shadow-lg min-h-[72px]">
+                  {slide.subtitle}
+                </p>
 
-              {/* Botões CTA */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="lg"
-                  className="bg-accent text-accent-foreground hover:opacity-90 border-2 border-accent rounded-lg font-medium micro-shadow"
-                  onClick={() => window.open(whatsappLink, "_blank")}
-                >
-                  Fale Conosco
-                  <MessageCircle className="ml-2 w-4 h-4" />
-                </Button>
+                {/* Botões CTA */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                  <Button
+                    size="lg"
+                    className="bg-accent text-accent-foreground hover:opacity-90 border-2 border-accent rounded-lg font-medium micro-shadow"
+                    onClick={() => window.open(whatsappLink, "_blank")}
+                  >
+                    Fale Conosco
+                    <MessageCircle className="ml-2 w-4 h-4" />
+                  </Button>
 
-                <button
-                  onClick={onOpenQuotation}
-                  onMouseEnter={() => setIsQuotationHovered(true)}
-                  onMouseLeave={() => setIsQuotationHovered(false)}
-                  className="group inline-flex items-center gap-2 px-0 py-0 bg-transparent text-white hover:text-white/90 font-medium"
-                  aria-label="Solicite Orçamento"
-                >
-                  <span className="text-base">Solicite Orçamento</span>
-                  <span className="relative flex items-center justify-center w-6 h-6 rounded-full border border-white group-hover:border-white/90 overflow-hidden">
-                    <ArrowUpRight
-                      className={`absolute w-3.5 h-3.5 text-white transition-all duration-300 ease-out ${isQuotationHovered ? "translate-x-3 -translate-y-3 opacity-0" : "translate-x-0 translate-y-0 opacity-100"}`}
-                    />
-                    <ArrowUpRight
-                      className={`absolute w-3.5 h-3.5 text-white transition-all duration-300 ease-out ${isQuotationHovered ? "translate-x-0 translate-y-0 opacity-100" : "-translate-x-3 translate-y-3 opacity-0"}`}
-                    />
-                  </span>
-                </button>
+                  <QuotationButton onClick={onOpenQuotation} variant="white" />
+                </div>
               </div>
             </div>
           </div>
@@ -158,18 +145,16 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
       ))}
 
       {/* Indicadores (Dots) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => goToSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${index === currentSlide
-              ? "bg-amber-500 w-8"
-              : "bg-gray-400 hover:bg-gray-500"
-              }`}
-            aria-label={`Ir para slide ${index + 1}`}
-          />
-        ))}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+        <CarouselNavigation
+          currentIndex={currentSlide}
+          totalItems={slides.length}
+          onPrev={goToPrevious}
+          onNext={goToNext}
+          onDotClick={goToSlide}
+          variant="dots"
+          buttonStyle="large"
+        />
       </div>
     </div>
   );
