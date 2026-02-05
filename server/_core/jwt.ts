@@ -12,12 +12,12 @@ export type JwtPayload = {
  * Lança erro se inválido ou expirado
  */
 export function verifyJwt(token: string): JwtPayload {
-  if (!ENV.JWT_SECRET) {
-    throw new Error("JWT_SECRET não configurado");
+  if (!ENV.jwtSecret) {
+    throw new Error("JWT_SECRET is required");
   }
 
   try {
-    const decoded = jwt.verify(token, ENV.JWT_SECRET);
+    const decoded = jwt.verify(token, ENV.jwtSecret);
 
     if (typeof decoded === "string") {
       throw new Error("JWT payload inválido");

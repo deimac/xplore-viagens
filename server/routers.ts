@@ -13,6 +13,7 @@ import { SignJWT } from "jose";
 import bcrypt from 'bcryptjs';
 import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPessoas, getOrcamento } from "./_core/iddasApi";
 import { parsearOfertaVoo } from "./ofertasVoo";
+import * as properties from "./properties";
 
 
 export const appRouter = router({
@@ -540,6 +541,488 @@ export const appRouter = router({
         }
       }),
   }),
+
+  properties: router({
+    // Públicas
+    listActive: publicProcedure.query(async () => {
+      return await properties.getActivePropertiesGroupedByCity();
+    }),
+
+    listFeatured: publicProcedure.query(async () => {
+      return await db.getFeaturedProperties();
+    }),
+
+    getBySlug: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const property = await properties.getPropertyWithDetails(input.slug);
+        if (!property) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+        }
+        return property;
+      }),
+
+    // Administrativas
+    listAll: adminProcedure.query(async () => {
+      return await db.getAllPropertiesAdmin();
+    }),
+
+    getById: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const property = await db.getPropertyById(input.id);
+        if (!property) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+        }
+
+        const [images, amenities] = await Promise.all([
+          db.getPropertyImages(property.id),
+          db.getPropertyAmenities(property.id),
+        ]);
+
+        return {
+          ...property,
+          images,
+          amenities,
+        };
+      }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          description_short: z.string().optional(),
+          description_full: z.string().optional(),
+          property_type_id: z.number().optional(),
+          address_street: z.string().optional(),
+          address_number: z.string().optional(),
+          address_complement: z.string().optional(),
+          neighborhood: z.string().optional(),
+          city: z.string(),
+          state_region: z.string().optional(),
+          country: z.string(),
+          postal_code: z.string().optional(),
+          max_guests: z.number(),
+          bedrooms: z.number(),
+          beds: z.number(),
+          bathrooms: z.number(),
+          area_m2: z.number().optional(),
+          is_featured: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await properties.createProperty(input);
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          description_short: z.string().optional(),
+          description_full: z.string().optional(),
+          property_type_id: z.number().optional(),
+          address_street: z.string().optional(),
+          address_number: z.string().optional(),
+          address_complement: z.string().optional(),
+          neighborhood: z.string().optional(),
+          city: z.string().optional(),
+          state_region: z.string().optional(),
+          country: z.string().optional(),
+          postal_code: z.string().optional(),
+          max_guests: z.number().optional(),
+          bedrooms: z.number().optional(),
+          beds: z.number().optional(),
+          bathrooms: z.number().optional(),
+          area_m2: z.number().optional(),
+          is_featured: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await properties.updateProperty(id, data);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteProperty(input.id);
+      }),
+
+    toggleActive: adminProcedure
+      .input(z.object({ id: z.number(), active: z.boolean() }))
+      .mutation(async ({ input }) => {
+        return await properties.updateProperty(input.id, { active: input.active });
+      }),
+
+    uploadImages: adminProcedure
+      .input(
+        z.object({
+          propertyId: z.number(),
+          images: z.array(
+            z.object({
+              fileName: z.string(),
+              fileData: z.string(),
+              mimeType: z.string(),
+              is_primary: z.boolean(),
+              sort_order: z.number(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const uploadedImages = [];
+
+        for (const image of input.images) {
+          const buffer = Buffer.from(image.fileData, "base64");
+          const randomSuffix = crypto.randomBytes(8).toString("hex");
+          const ext = image.fileName.split(".").pop() || "jpg";
+          const fileKey = `properties/${input.propertyId}/${randomSuffix}.${ext}`;
+          const { url } = await storagePut(fileKey, buffer, image.mimeType);
+
+          uploadedImages.push({
+            property_id: input.propertyId,
+            image_url: url,
+            is_primary: image.is_primary,
+            sort_order: image.sort_order,
+          });
+        }
+
+        return await properties.savePropertyImages(input.propertyId, uploadedImages);
+      }),
+
+    updateImages: adminProcedure
+      .input(
+        z.object({
+          propertyId: z.number(),
+          toDelete: z.array(z.number()).optional(),
+          toAdd: z.array(
+            z.object({
+              fileName: z.string(),
+              fileData: z.string(),
+              mimeType: z.string(),
+              is_primary: z.boolean(),
+              sort_order: z.number(),
+            })
+          ).optional(),
+          toUpdate: z.array(
+            z.object({
+              id: z.number(),
+              is_primary: z.boolean().optional(),
+              sort_order: z.number().optional(),
+            })
+          ).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { propertyId, toDelete, toAdd, toUpdate } = input;
+        const uploadedImages = [];
+
+        // Upload new images if any
+        if (toAdd && toAdd.length > 0) {
+          for (const image of toAdd) {
+            const buffer = Buffer.from(image.fileData, "base64");
+            const randomSuffix = crypto.randomBytes(8).toString("hex");
+            const ext = image.fileName.split(".").pop() || "jpg";
+            const fileKey = `properties/${propertyId}/${randomSuffix}.${ext}`;
+            const { url } = await storagePut(fileKey, buffer, image.mimeType);
+
+            uploadedImages.push({
+              image_url: url,
+              is_primary: image.is_primary,
+              sort_order: image.sort_order,
+            });
+          }
+        }
+
+        return await db.updatePropertyImages(propertyId, {
+          toDelete,
+          toAdd: uploadedImages,
+          toUpdate,
+        });
+      }),
+  }),
+
+  propertyTypes: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllPropertyTypes();
+    }),
+  }),
+
+  amenities: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllAmenities();
+    }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          icon: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await properties.createAmenity(input);
+      }),
+
+    associate: adminProcedure
+      .input(
+        z.object({
+          propertyId: z.number(),
+          amenityIds: z.array(z.number()),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await properties.associatePropertyAmenities(input.propertyId, input.amenityIds);
+      }),
+  }),
+
+  // Geocoding - Only called explicitly from admin
+  geocoding: router({
+    geocodeProperty: adminProcedure
+      .input(
+        z.object({
+          address_street: z.string().optional(),
+          address_number: z.string().optional(),
+          neighborhood: z.string().optional(),
+          city: z.string(),
+          state_region: z.string().optional(),
+          country: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { geocodeAddress, buildAddressString } = await import('./geocoding');
+
+        const addressString = buildAddressString(input);
+        const result = await geocodeAddress(addressString);
+
+        return {
+          latitude: result.latitude,
+          longitude: result.longitude,
+          formattedAddress: result.formattedAddress,
+          addressString,
+        };
+      }),
+  }),
+
+  // Room Types
+  roomTypes: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllRoomTypes();
+    }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createRoomType(input);
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateRoomType(id, data);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteRoomType(input.id);
+      }),
+  }),
+
+  // Bed Types
+  bedTypes: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllBedTypes();
+    }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          sleepsCount: z.number(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createBedType(input);
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          sleepsCount: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateBedType(id, data);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteBedType(input.id);
+      }),
+  }),
+
+  // Property Rooms
+  propertyRooms: router({
+    listByProperty: publicProcedure
+      .input(z.object({ propertyId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getPropertyRooms(input.propertyId);
+      }),
+
+    listWithBeds: publicProcedure
+      .input(z.object({ propertyId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getPropertyRoomsWithBeds(input.propertyId);
+      }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          propertyId: z.number(),
+          roomTypeId: z.number(),
+          name: z.string().optional(),
+          displayOrder: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createPropertyRoom(input);
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          roomTypeId: z.number().optional(),
+          name: z.string().optional(),
+          displayOrder: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updatePropertyRoom(id, data);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deletePropertyRoom(input.id);
+      }),
+
+    reorder: adminProcedure
+      .input(
+        z.object({
+          propertyId: z.number(),
+          roomIds: z.array(z.number()),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.reorderPropertyRooms(input.propertyId, input.roomIds);
+      }),
+
+    uploadPhoto: adminProcedure
+      .input(
+        z.object({
+          roomId: z.number(),
+          propertyId: z.number(),
+          imageData: z.string(), // base64 encoded image
+        })
+      )
+      .mutation(async ({ input }) => {
+        const storage = await import('./storage');
+
+        // Convert base64 to buffer
+        const base64Data = input.imageData.replace(/^data:image\/\w+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+
+        // Get current room to delete old photo if exists
+        const rooms = await db.getPropertyRooms(input.propertyId);
+        const room = rooms.find((r: any) => r.id === input.roomId);
+
+        if (room?.sleepingPhoto) {
+          await storage.deleteRoomPhoto(room.sleepingPhoto);
+        }
+
+        // Store new photo
+        const result = await storage.storeRoomPhoto(input.propertyId, input.roomId, imageBuffer);
+
+        // Update database
+        await db.updatePropertyRoom(input.roomId, { sleepingPhoto: result.url });
+
+        return { url: result.url };
+      }),
+
+    deletePhoto: adminProcedure
+      .input(z.object({ roomId: z.number(), propertyId: z.number() }))
+      .mutation(async ({ input }) => {
+        const storage = await import('./storage');
+
+        // Get current room photo
+        const rooms = await db.getPropertyRooms(input.propertyId);
+        const room = rooms.find((r: any) => r.id === input.roomId);
+
+        if (room?.sleepingPhoto) {
+          await storage.deleteRoomPhoto(room.sleepingPhoto);
+          await db.updatePropertyRoom(input.roomId, { sleepingPhoto: null });
+        }
+
+        return { success: true };
+      }),
+  }),
+
+  // Room Beds
+  roomBeds: router({
+    listByRoom: publicProcedure
+      .input(z.object({ roomId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getRoomBeds(input.roomId);
+      }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          roomId: z.number(),
+          bedTypeId: z.number(),
+          quantity: z.number().min(1),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createRoomBed(input);
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          bedTypeId: z.number().optional(),
+          quantity: z.number().min(1).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateRoomBed(id, data);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteRoomBed(input.id);
+      }),
+  }),
 });
 
-export type AppRouter = typeof appRouter;

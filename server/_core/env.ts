@@ -7,7 +7,7 @@ export const ENV = {
 
   // DATABASE
   databaseUrl: process.env.DATABASE_URL,
-  
+
   // JWT
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
@@ -22,7 +22,7 @@ export const ENV = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT}`,
 
-    // APP / OAUTH
+  // APP / OAUTH
   appId: process.env.APP_ID || 'xplore-viagens',
   cookieSecret: process.env.COOKIE_SECRET || 'dev-cookie-secret',
 
@@ -59,6 +59,9 @@ export const ENV = {
   viteTitle: process.env.VITE_APP_TITLE,
   viteAnalyticsEndpoint: process.env.VITE_ANALYTICS_ENDPOINT,
   viteAnalyticsWebsiteId: process.env.VITE_ANALYTICS_WEBSITE_ID,
+
+  // GOOGLE MAPS
+  googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
 };
 
 export function validateEnv(): void {

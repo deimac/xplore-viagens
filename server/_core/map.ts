@@ -23,9 +23,14 @@ function getMapsConfig(): MapsConfig {
   const apiKey = ENV.forgeApiKey;
 
   if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Google Maps proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+    console.warn(
+      "[Maps] Google Maps proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
     );
+    // Return dummy values to prevent immediate crash - will fail when actually used
+    return {
+      baseUrl: '',
+      apiKey: '',
+    };
   }
 
   return {
@@ -314,6 +319,100 @@ export type RoadsResult = {
  * Note: Construct URL manually with getMapsConfig() for auth
  */
 
+// ============================================================================
+// Geocoding Helper Function
+// ============================================================================
 
+export interface GeocodingResult {
+  latitude: number;
+  longitude: number;
+  formattedAddress: string;
+}
 
+/**
+ * Geocode an address to get latitude and longitude
+ * Uses Google Geocoding API via the proxy
+ * 
+ * @param address - Full address string or components
+ * @returns Object with latitude, longitude, and formatted address
+ * @throws Error if geocoding fails or no results found
+ */
+export async function geocodeAddress(address: string): Promise<GeocodingResult> {
+  if (!address || address.trim().length === 0) {
+    throw new Error("Address cannot be empty");
+  }
 
+  try {
+    const response = await makeRequest<any>("/maps/api/geocode/json", {
+      address: address.trim(),
+    });
+
+    if (response.status !== "OK") {
+      throw new Error(`Geocoding failed: ${response.status}`);
+    }
+
+    if (!response.results || response.results.length === 0) {
+      throw new Error("No results found for the provided address");
+    }
+
+    const result = response.results[0];
+    const location = result.geometry?.location;
+
+    if (!location || typeof location.lat !== "number" || typeof location.lng !== "number") {
+      throw new Error("Invalid location data in geocoding response");
+    }
+
+    return {
+      latitude: location.lat,
+      longitude: location.lng,
+      formattedAddress: result.formatted_address || address,
+    };
+  } catch (error: any) {
+    console.error("[Geocoding Error]", error.message);
+    throw new Error(`Failed to geocode address: ${error.message}`);
+  }
+}
+
+/**
+ * Build address string from property components
+ * 
+ * @param components - Address components
+ * @returns Formatted address string
+ */
+export function buildAddressString(components: {
+  address_street?: string;
+  address_number?: string;
+  neighborhood?: string;
+  city: string;
+  state_region?: string;
+  country: string;
+  postal_code?: string;
+}): string {
+  const parts: string[] = [];
+
+  if (components.address_street) {
+    let street = components.address_street;
+    if (components.address_number) {
+      street += `, ${components.address_number}`;
+    }
+    parts.push(street);
+  }
+
+  if (components.neighborhood) {
+    parts.push(components.neighborhood);
+  }
+
+  parts.push(components.city);
+
+  if (components.state_region) {
+    parts.push(components.state_region);
+  }
+
+  parts.push(components.country);
+
+  if (components.postal_code) {
+    parts.push(components.postal_code);
+  }
+
+  return parts.join(", ");
+}

@@ -7,6 +7,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
+import path from "path";
+import { ENV } from "./env";
 
 const cookieSecret = process.env.COOKIE_SECRET;
 
@@ -21,6 +23,11 @@ async function startServer() {
   // Body parser
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Servir arquivos estáticos de uploads
+  const uploadsPath = path.join(process.cwd(), ENV.uploadsDir);
+  app.use(`/${ENV.uploadsDir}`, express.static(uploadsPath));
+  console.log(`📁 Serving static files from /${ENV.uploadsDir} -> ${uploadsPath}`);
 
   // OAuth (removido)
   // registerOAuthRoutes(app);

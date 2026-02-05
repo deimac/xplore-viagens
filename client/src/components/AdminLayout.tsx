@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Settings, LogOut, Menu, X, Bed, DoorOpen } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { APP_LOGO, APP_TITLE } from "@/const";
@@ -18,6 +18,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: Home },
+    { name: "Tipos de Quartos", href: "/admin/tipos-quartos", icon: DoorOpen },
+    { name: "Tipos de Camas", href: "/admin/tipos-camas", icon: Bed },
     { name: "Configurações", href: "/admin/configuracoes", icon: Settings },
   ];
 
@@ -56,11 +58,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive(item.href)
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   {item.name}
@@ -99,11 +100,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive(item.href)
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   {item.name}

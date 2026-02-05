@@ -9,6 +9,7 @@ import HeroSlideModal from "@/components/HeroSlideModal";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { PropertiesSection } from "@/components/PropertiesSection";
 
 interface Category {
   id?: number;
@@ -46,7 +47,7 @@ interface HeroSlide {
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"categories" | "travels" | "slides" | "reviews" | "settings">(
+  const [activeTab, setActiveTab] = useState<"categories" | "travels" | "slides" | "reviews" | "properties" | "settings">(
     "categories"
   );
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -320,43 +321,48 @@ export default function AdminDashboard() {
         <div className="flex gap-4 mb-8 border-b border-muted">
           <button
             onClick={() => setActiveTab("categories")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "categories"
-                ? "text-accent border-b-2 border-accent"
-                : "text-accent/60 hover:text-accent"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "categories"
+              ? "text-accent border-b-2 border-accent"
+              : "text-accent/60 hover:text-accent"
+              }`}
           >
             Categorias
           </button>
           <button
             onClick={() => setActiveTab("travels")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "travels"
-                ? "text-accent border-b-2 border-accent"
-                : "text-accent/60 hover:text-accent"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "travels"
+              ? "text-accent border-b-2 border-accent"
+              : "text-accent/60 hover:text-accent"
+              }`}
           >
             Viagens
           </button>
           <button
             onClick={() => setActiveTab("slides")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "slides"
-                ? "text-accent border-b-2 border-accent"
-                : "text-accent/60 hover:text-accent"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "slides"
+              ? "text-accent border-b-2 border-accent"
+              : "text-accent/60 hover:text-accent"
+              }`}
           >
             Slides Hero
           </button>
           <button
             onClick={() => setActiveTab("reviews")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "reviews"
-                ? "text-accent border-b-2 border-accent"
-                : "text-accent/60 hover:text-accent"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "reviews"
+              ? "text-accent border-b-2 border-accent"
+              : "text-accent/60 hover:text-accent"
+              }`}
           >
             Avaliações
+          </button>
+          <button
+            onClick={() => setActiveTab("properties")}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "properties"
+              ? "text-accent border-b-2 border-accent"
+              : "text-accent/60 hover:text-accent"
+              }`}
+          >
+            Hospedagens
           </button>
           <button
             onClick={() => navigate("/admin/configuracoes")}
@@ -513,11 +519,10 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              slide.isActive === 1
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${slide.isActive === 1
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                              }`}
                           >
                             {slide.isActive === 1 ? "Ativo" : "Inativo"}
                           </span>
@@ -700,11 +705,10 @@ export default function AdminDashboard() {
                             {Array.from({ length: 5 }).map((_, i) => (
                               <Star
                                 key={i}
-                                className={`w-4 h-4 ${
-                                  i < review.rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
+                                className={`w-4 h-4 ${i < review.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -716,19 +720,18 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              review.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
-                                : review.status === 'rejected'
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${review.status === 'approved'
+                              ? 'bg-green-100 text-green-800'
+                              : review.status === 'rejected'
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-yellow-100 text-yellow-800'
-                            }`}
+                              }`}
                           >
                             {review.status === 'approved'
                               ? 'Aprovada'
                               : review.status === 'rejected'
-                              ? 'Rejeitada'
-                              : 'Pendente'}
+                                ? 'Rejeitada'
+                                : 'Pendente'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -801,28 +804,33 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Properties Tab */}
+        {activeTab === "properties" && (
+          <PropertiesSection />
+        )}
+
         {/* Modals */}
         <CategoryModal
-        isOpen={categoryModalOpen}
-        onClose={() => setCategoryModalOpen(false)}
-        onSave={handleSaveCategory}
-        initialData={selectedCategory}
-        isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
-      />
-      <TravelModal
-        isOpen={travelModalOpen}
-        onClose={() => setTravelModalOpen(false)}
-        onSave={handleSaveTravel}
-        initialData={selectedTravel}
-        isLoading={createTravelMutation.isPending || updateTravelMutation.isPending}
-      />
-      <HeroSlideModal
-        open={slideModalOpen}
-        onClose={() => setSlideModalOpen(false)}
-        onSave={handleSaveSlide}
-        slide={selectedSlide}
-      />
-    </div>
+          isOpen={categoryModalOpen}
+          onClose={() => setCategoryModalOpen(false)}
+          onSave={handleSaveCategory}
+          initialData={selectedCategory}
+          isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+        />
+        <TravelModal
+          isOpen={travelModalOpen}
+          onClose={() => setTravelModalOpen(false)}
+          onSave={handleSaveTravel}
+          initialData={selectedTravel}
+          isLoading={createTravelMutation.isPending || updateTravelMutation.isPending}
+        />
+        <HeroSlideModal
+          open={slideModalOpen}
+          onClose={() => setSlideModalOpen(false)}
+          onSave={handleSaveSlide}
+          slide={selectedSlide}
+        />
+      </div>
     </AdminLayout>
   );
 }

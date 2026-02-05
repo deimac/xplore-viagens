@@ -1,5 +1,5 @@
 import * as React from "react";
-import { format, isBefore, startOfDay } from "date-fns";
+import { format, isBefore, startOfDay, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, X } from "lucide-react";
 import { DateRange } from "react-day-picker";
@@ -16,10 +16,13 @@ import {
 interface BookingDatePickerProps {
     value?: DateRange;
     onChange?: (date: DateRange | undefined) => void;
+    mode?: "flight" | "accommodation";
 }
 
-export function BookingDatePicker({ value, onChange }: BookingDatePickerProps) {
+export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingDatePickerProps) {
     const [isOpen, setIsOpen] = React.useState(false);
+
+    const isAccommodation = mode === "accommodation";
 
     const clearReturnDate = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -77,7 +80,9 @@ export function BookingDatePicker({ value, onChange }: BookingDatePickerProps) {
                     >
                         <div className="flex items-center w-full h-full">
                             <div className="flex flex-col flex-1 px-5">
-                                <span className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">Partida</span>
+                                <span className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">
+                                    {isAccommodation ? "Check-in" : "Partida"}
+                                </span>
                                 <div className="flex items-center gap-2 mt-0.5">
                                     <CalendarIcon className="h-4 w-4 text-primary" />
                                     <span className="font-semibold text-sm">
@@ -89,18 +94,20 @@ export function BookingDatePicker({ value, onChange }: BookingDatePickerProps) {
                             <div className="h-8 w-[1px] bg-border/60" />
 
                             <div className="flex flex-col flex-1 px-5 relative group">
-                                <span className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">Retorno</span>
+                                <span className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">
+                                    {isAccommodation ? "Check-out" : "Retorno"}
+                                </span>
                                 <div className="flex items-center gap-2 mt-0.5">
                                     <CalendarIcon className={cn("h-4 w-4", value?.to ? "text-primary" : "text-primary/30")} />
                                     <span className={cn(
                                         "font-semibold text-sm",
                                         !value?.to && "text-muted-foreground font-normal italic"
                                     )}>
-                                        {value?.to ? format(value.to, "dd 'de' MMM", { locale: ptBR }) : "Apenas ida"}
+                                        {value?.to ? format(value.to, "dd 'de' MMM", { locale: ptBR }) : (isAccommodation ? "Selecione" : "Apenas ida")}
                                     </span>
                                 </div>
 
-                                {value?.to && (
+                                {value?.to && !isAccommodation && (
                                     <button
                                         type="button"
                                         aria-label="Limpar data de retorno"
@@ -133,7 +140,13 @@ export function BookingDatePicker({ value, onChange }: BookingDatePickerProps) {
 
                     <div className="p-4 border-t border-border flex justify-between items-center bg-muted/5">
                         <div className="text-[11px] text-muted-foreground max-w-[200px]">
-                            {value?.from && !value?.to ? "Selecione a volta ou clique em Confirmar para Apenas Ida." : "Selecione as datas."}
+                            {isAccommodation
+                                ? (value?.from && value?.to
+                                    ? `Estadia de ${differenceInDays(value.to, value.from)} noite${differenceInDays(value.to, value.from) !== 1 ? 's' : ''}.`
+                                    : value?.from
+                                        ? "Selecione a data de check-out."
+                                        : "Selecione as datas de check-in e check-out.")
+                                : (value?.from && !value?.to ? "Selecione a volta ou clique em Confirmar para Apenas Ida." : "Selecione as datas.")}
                         </div>
                         <div className="flex gap-2">
                             <Button
@@ -147,6 +160,7 @@ export function BookingDatePicker({ value, onChange }: BookingDatePickerProps) {
                                 size="sm"
                                 className="bg-primary px-6"
                                 onClick={handleConfirm}
+                                disabled={isAccommodation && (!value?.from || !value?.to)}
                             >
                                 Confirmar
                             </Button>

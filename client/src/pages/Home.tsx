@@ -22,6 +22,8 @@ import ReviewsMarqueeSection from "@/components/ReviewsMarqueeSection";
 import ReviewsMarqueeDouble from "@/components/ReviewsMarqueeDouble";
 import { textStyles } from "@/types/textStyles";
 import { PremiumFlightsSection } from "@/components/PremiumFlightsSection";
+import { HospedagensSection } from "@/components/HospedagensSection";
+import { PropertyView } from "@/components/PropertyView";
 
 
 
@@ -55,6 +57,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
+  const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +79,7 @@ export default function Home() {
     { id: "home", icon: HomeIcon, label: "Home" },
     { id: "servicos", icon: Compass, label: "Serviços" },
     { id: "pacotes", icon: Plane, label: "Pacotes" },
+    { id: "hospedagens", icon: HomeIcon, label: "Hospedagens" },
     { id: "portfolio", icon: MapPin, label: "Portfólio" },
     { id: "depoimentos", icon: Users, label: "Clientes" },
     { id: "contato", icon: Mail, label: "Contato" },
@@ -328,6 +332,13 @@ export default function Home() {
           <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4">
             <QuotationForm onClose={() => setIsQuotationOpen(false)} />
           </div>
+        ) : selectedPropertySlug ? (
+          <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4">
+            <PropertyView
+              slug={selectedPropertySlug}
+              onClose={() => setSelectedPropertySlug(null)}
+            />
+          </div>
         ) : (
           <>
             {/* Hero Slider Full-Width - Inicia no Topo */}
@@ -392,6 +403,10 @@ export default function Home() {
               <PremiumFlightsSection ofertas={ofertasVoo} whatsappNumber={companySettings?.whatsapp} />
             )}
 
+            {/* Hospedagens Section */}
+            <section id="hospedagens" className="py-0">
+              <HospedagensSection onPropertySelect={(slug) => setSelectedPropertySlug(slug)} />
+            </section>
 
             {/* Packages Section */}
             <section id="pacotes" className="py-0">

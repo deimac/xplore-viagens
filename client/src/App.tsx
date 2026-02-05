@@ -17,6 +17,8 @@ import TravelDetails from "./pages/TravelDetails";
 import CompanySettings from "./pages/CompanySettings";
 import ReviewPage from "./pages/ReviewPage";
 import DebugApi from "./pages/DebugApi";
+import RoomTypesManager from "./components/RoomTypesManager";
+import BedTypesManager from "./components/BedTypesManager";
 
 function Router() {
   return (
@@ -28,6 +30,8 @@ function Router() {
       <Route path={"/debug-api"} component={DebugApi} />
       <Route path={"/admin/login"} component={AdminLogin} />
       <Route path={"/admin"} component={() => <AdminRoute component={AdminDashboard} />} />
+      <Route path={"/admin/tipos-quartos"} component={() => <AdminRoute component={RoomTypesManager} />} />
+      <Route path={"/admin/tipos-camas"} component={() => <AdminRoute component={BedTypesManager} />} />
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/404"} component={NotFound} />

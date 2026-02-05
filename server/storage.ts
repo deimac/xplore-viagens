@@ -139,6 +139,136 @@ export function getFileSize(key: string): number {
   return stats.size;
 }
 
+/**
+ * Create property images directory
+ * 
+ * @param propertyId - Property ID
+ */
+export function ensurePropertyDir(propertyId: number): string {
+  const propertyDir = path.join(UPLOADS_DIR, 'properties', propertyId.toString());
+  if (!fs.existsSync(propertyDir)) {
+    fs.mkdirSync(propertyDir, { recursive: true });
+    console.log(`✅ Created property directory: ${propertyDir}`);
+  }
+  return propertyDir;
+}
+
+/**
+ * Store property image as webp
+ * 
+ * @param propertyId - Property ID
+ * @param filename - Filename (e.g., 'cover', '01', '02')
+ * @param imageData - Image buffer
+ * @returns { url, key }
+ */
+export async function storePropertyImage(
+  propertyId: number,
+  filename: string,
+  imageData: Buffer
+): Promise<{ url: string; key: string }> {
+  const sharp = await import('sharp');
+
+  ensurePropertyDir(propertyId);
+
+  // Convert to webp
+  const webpData = await sharp.default(imageData)
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  const key = `properties/${propertyId}/${filename}.webp`;
+  return await storagePut(key, webpData, 'image/webp');
+}
+
+/**
+ * Process and store multiple property images
+ * 
+ * @param propertyId - Property ID
+ * @param images - Array of { name: string, data: Buffer, isPrimary: boolean }
+ * @returns Array of { url, filename, isPrimary, sortOrder }
+ */
+export async function storePropertyImages(
+  propertyId: number,
+  images: Array<{ name: string; data: Buffer; isPrimary: boolean }>
+): Promise<Array<{ url: string; filename: string; isPrimary: boolean; sortOrder: number }>> {
+  const results = [];
+
+  for (let i = 0; i < images.length; i++) {
+    const image = images[i];
+    let filename: string;
+
+    if (image.isPrimary) {
+      filename = 'cover';
+    } else {
+      filename = String(i + 1).padStart(2, '0');
+    }
+
+    const result = await storePropertyImage(propertyId, filename, image.data);
+
+    results.push({
+      url: result.url,
+      filename: filename + '.webp',
+      isPrimary: image.isPrimary,
+      sortOrder: image.isPrimary ? 0 : i + 1,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Create room images directory
+ * 
+ * @param propertyId - Property ID
+ */
+export function ensureRoomsDir(propertyId: number): string {
+  const roomsDir = path.join(UPLOADS_DIR, 'properties', propertyId.toString(), 'rooms');
+  if (!fs.existsSync(roomsDir)) {
+    fs.mkdirSync(roomsDir, { recursive: true });
+    console.log(`✅ Created rooms directory: ${roomsDir}`);
+  }
+  return roomsDir;
+}
+
+/**
+ * Store room sleeping photo
+ * 
+ * @param propertyId - Property ID
+ * @param roomId - Property Room ID
+ * @param imageData - Image buffer
+ * @returns { url, key }
+ */
+export async function storeRoomPhoto(
+  propertyId: number,
+  roomId: number,
+  imageData: Buffer
+): Promise<{ url: string; key: string }> {
+  const sharp = await import('sharp');
+
+  ensureRoomsDir(propertyId);
+
+  // Convert to webp
+  const webpData = await sharp.default(imageData)
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  const timestamp = Date.now();
+  const key = `properties/${propertyId}/rooms/room-${roomId}-${timestamp}.webp`;
+  return await storagePut(key, webpData, 'image/webp');
+}
+
+/**
+ * Delete room sleeping photo
+ * 
+ * @param photoPath - Photo path (e.g., '/uploads/properties/1/rooms/room-1-123456.webp')
+ */
+export async function deleteRoomPhoto(photoPath: string): Promise<void> {
+  if (!photoPath) return;
+
+  // Extract key from path (remove /uploads/ prefix)
+  const key = photoPath.replace(/^\/uploads\//, '');
+  await storageDelete(key);
+}
+
 export default {
   ensureUploadsDir,
   storagePut,
@@ -147,4 +277,10 @@ export default {
   storageDelete,
   fileExists,
   getFileSize,
+  ensurePropertyDir,
+  storePropertyImage,
+  storePropertyImages,
+  ensureRoomsDir,
+  storeRoomPhoto,
+  deleteRoomPhoto,
 };

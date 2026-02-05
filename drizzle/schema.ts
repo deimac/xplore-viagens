@@ -248,3 +248,83 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
     references: [reviewAuthors.id],
   }),
 }));
+
+/**
+ * Room Types table - Tipos de quartos (Quarto, Suíte, Sala, etc)
+ */
+export const roomTypes = mysqlTable("room_types", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+});
+
+export type RoomType = typeof roomTypes.$inferSelect;
+export type InsertRoomType = typeof roomTypes.$inferInsert;
+
+/**
+ * Bed Types table - Tipos de camas (Solteiro, Casal, Queen, King, etc)
+ */
+export const bedTypes = mysqlTable("bed_types", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  sleepsCount: int("sleeps").notNull().default(1),
+});
+
+export type BedType = typeof bedTypes.$inferSelect;
+export type InsertBedType = typeof bedTypes.$inferInsert;
+
+/**
+ * Property Rooms table - Quartos de cada propriedade
+ */
+export const propertyRooms = mysqlTable("property_rooms", {
+  id: int("id").autoincrement().primaryKey(),
+  propertyId: int("property_id").notNull(),
+  roomTypeId: int("room_type_id").notNull(),
+  name: varchar("name", { length: 255 }),
+  displayOrder: int("display_order").notNull().default(0),
+});
+
+export type PropertyRoom = typeof propertyRooms.$inferSelect;
+export type InsertPropertyRoom = typeof propertyRooms.$inferInsert;
+
+/**
+ * Room Beds table - Camas em cada quarto
+ */
+export const roomBeds = mysqlTable("room_beds", {
+  id: int("id").autoincrement().primaryKey(),
+  roomId: int("room_id").notNull(),
+  bedTypeId: int("bed_type_id").notNull(),
+  quantity: int("quantity").notNull().default(1),
+});
+
+export type RoomBed = typeof roomBeds.$inferSelect;
+export type InsertRoomBed = typeof roomBeds.$inferInsert;
+
+/**
+ * Relations for rooms and beds
+ */
+export const roomTypesRelations = relations(roomTypes, ({ many }) => ({
+  propertyRooms: many(propertyRooms),
+}));
+
+export const bedTypesRelations = relations(bedTypes, ({ many }) => ({
+  roomBeds: many(roomBeds),
+}));
+
+export const propertyRoomsRelations = relations(propertyRooms, ({ one, many }) => ({
+  roomType: one(roomTypes, {
+    fields: [propertyRooms.roomTypeId],
+    references: [roomTypes.id],
+  }),
+  beds: many(roomBeds),
+}));
+
+export const roomBedsRelations = relations(roomBeds, ({ one }) => ({
+  room: one(propertyRooms, {
+    fields: [roomBeds.roomId],
+    references: [propertyRooms.id],
+  }),
+  bedType: one(bedTypes, {
+    fields: [roomBeds.bedTypeId],
+    references: [bedTypes.id],
+  }),
+}));

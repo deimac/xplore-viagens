@@ -337,7 +337,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
   if (isSuccess) {
     return (
       <div className="w-full mt-24 mb-12" data-quotation-form>
-        <div className="max-w-4xl mx-auto px-6 md:px-16">
+        <div className="max-w-6xl mx-auto px-6 md:px-16">
           <div className="border border-muted/40 rounded-xl p-8 md:p-12 text-center" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
@@ -412,7 +412,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
 
   return (
     <div ref={scrollContainerRef} className="w-full mt-24 mb-12" data-quotation-form>
-      <div className="max-w-4xl mx-auto px-6 md:px-16 py-8 relative">
+      <div className="max-w-6xl mx-auto px-6 md:px-16 py-8 relative">
         <button
           onClick={onClose}
           className="absolute -top-8 right-0 w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
