@@ -19,6 +19,13 @@ import ReviewPage from "./pages/ReviewPage";
 import DebugApi from "./pages/DebugApi";
 import RoomTypesManager from "./components/RoomTypesManager";
 import BedTypesManager from "./components/BedTypesManager";
+import Dashboard from "./pages/admin/Dashboard";
+import VoosPremiumPage from "./pages/admin/VoosPremiumPage";
+import HospedagensPage from "./pages/admin/HospedagensPage";
+import ViagensPage from "./pages/admin/ViagensPage";
+import SlidesHeroPage from "./pages/admin/SlidesHeroPage";
+import AvaliacoesPage from "./pages/admin/AvaliacoesPage";
+import { Redirect } from "wouter";
 
 function Router() {
   return (
@@ -29,10 +36,19 @@ function Router() {
       <Route path={"/quotation"} component={QuotationForm} />
       <Route path={"/debug-api"} component={DebugApi} />
       <Route path={"/admin/login"} component={AdminLogin} />
-      <Route path={"/admin"} component={() => <AdminRoute component={AdminDashboard} />} />
+
+      {/* Admin Routes */}
+      <Route path={"/admin"} component={() => <Redirect to="/admin/dashboard" />} />
+      <Route path={"/admin/dashboard"} component={() => <AdminRoute component={Dashboard} />} />
+      <Route path={"/admin/voos-premium"} component={() => <AdminRoute component={VoosPremiumPage} />} />
+      <Route path={"/admin/hospedagens"} component={() => <AdminRoute component={HospedagensPage} />} />
+      <Route path={"/admin/viagens"} component={() => <AdminRoute component={ViagensPage} />} />
+      <Route path={"/admin/slides-hero"} component={() => <AdminRoute component={SlidesHeroPage} />} />
+      <Route path={"/admin/avaliacoes"} component={() => <AdminRoute component={AvaliacoesPage} />} />
       <Route path={"/admin/tipos-quartos"} component={() => <AdminRoute component={RoomTypesManager} />} />
       <Route path={"/admin/tipos-camas"} component={() => <AdminRoute component={BedTypesManager} />} />
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
+
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
