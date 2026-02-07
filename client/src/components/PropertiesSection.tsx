@@ -14,16 +14,13 @@ export function PropertiesSection() {
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [propertyToDelete, setPropertyToDelete] = useState<{ id: number; name: string } | null>(null);
+    const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
 
     const { data: properties = [], isLoading, error, refetch } = trpc.properties.listAll.useQuery(
-        undefined,
-        {
-            staleTime: 1000 * 60 * 5, // 5 minutos
-            gcTime: 1000 * 60 * 10, // 10 minutos (nova propriedade para React Query v5)
-            refetchOnWindowFocus: false,
-            retry: 1, // Reduz tentativas de retry
-        }
+        undefined
     );
+    // Debug: mostrar dados recebidos
+    console.log('properties:', properties);
 
     const deleteMutation = trpc.properties.delete.useMutation({
         onSuccess: () => {
@@ -81,6 +78,24 @@ export function PropertiesSection() {
     const handleCreateNew = () => {
         setSelectedProperty(null);
         setIsModalOpen(true);
+    };
+
+    const toggleDescription = (propertyId: number) => {
+        setExpandedDescriptions(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(propertyId)) {
+                newSet.delete(propertyId);
+            } else {
+                newSet.add(propertyId);
+            }
+            return newSet;
+        });
+    };
+
+    const truncateText = (text: string | null | undefined, maxLength: number = 150) => {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
     };
 
     if (error) {
@@ -152,6 +167,7 @@ export function PropertiesSection() {
     }
 
     return (
+
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -227,18 +243,18 @@ export function PropertiesSection() {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                                <div className="flex items-center gap-1">
-                                                    <Users className="w-3 h-3" />
-                                                    <span>{property.max_guests}</span>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                    <div className="flex items-center gap-1">
+                                                        <Users className="w-3 h-3" />
+                                                        <span>{property.max_guests}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Home className="w-3 h-3" />
+                                                        <span>{property.bedrooms}</span>
+                                                    </div>
+                                                    {/* Área não disponível no tipo Property */}
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Home className="w-3 h-3" />
-                                                    <span>{property.bedrooms}</span>
-                                                </div>
-                                                {property.area_m2 && (
-                                                    <span>{property.area_m2}m²</span>
-                                                )}
                                             </div>
                                         </td>
                                         <td className="p-4">
@@ -303,7 +319,6 @@ export function PropertiesSection() {
                     </div>
                 )}
             </div>
-
             {/* Modal */}
             <PropertyModal
                 isOpen={isModalOpen}
@@ -311,7 +326,6 @@ export function PropertiesSection() {
                 property={selectedProperty}
                 onSave={handleModalSave}
             />
-
             {/* Delete Confirmation Dialog */}
             <DeleteConfirmDialog
                 open={deleteDialogOpen}

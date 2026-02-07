@@ -14,6 +14,7 @@ import bcrypt from 'bcryptjs';
 import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPessoas, getOrcamento } from "./_core/iddasApi";
 import { parsearOfertaVoo } from "./ofertasVoo";
 import * as properties from "./properties";
+import * as ofertasVooPremium from "./ofertasVooPremium";
 
 
 export const appRouter = router({
@@ -277,6 +278,101 @@ export const appRouter = router({
 
       return parsed.filter((item): item is ReturnType<typeof parsearOfertaVoo> => Boolean(item));
     }),
+  }),
+
+  ofertasVooPremium: router({
+    list: publicProcedure.query(async () => {
+      return await ofertasVooPremium.listarOfertasPremium();
+    }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const oferta = await ofertasVooPremium.buscarOfertaPorId(input.id);
+        if (!oferta) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Oferta não encontrada" });
+        }
+        return oferta;
+      }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          tipo_oferta: z.enum(["DATA_FIXA", "DATA_FLEXIVEL"]),
+          titulo: z.string(),
+          descricao: z.string().optional(),
+          origem_principal: z.string(),
+          destinos_resumo: z.string().optional(),
+          companhia_aerea: z.string(),
+          classe_voo: z.enum(["PE", "BS", "FC"]),
+          preco: z.number(),
+          parcelas: z.string().optional(),
+          rotas_fixas: z.string().optional(),
+          rota_ida: z.string().optional(),
+          rota_volta: z.string().optional(),
+          imagem_url: z.string().optional(),
+          ativo: z.boolean().default(true),
+          datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
+          datas_flexiveis: z.array(
+            z.object({
+              tipo: z.enum(["IDA", "VOLTA"]),
+              mes_referencia: z.string(),
+              dias_disponiveis: z.string(),
+            })
+          ).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { datas_fixas, datas_flexiveis, ...data } = input;
+        return await ofertasVooPremium.criarOfertaPremium(data, datas_fixas, datas_flexiveis);
+      }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          tipo_oferta: z.enum(["DATA_FIXA", "DATA_FLEXIVEL"]),
+          titulo: z.string(),
+          descricao: z.string().optional(),
+          origem_principal: z.string(),
+          destinos_resumo: z.string().optional(),
+          companhia_aerea: z.string(),
+          classe_voo: z.enum(["PE", "BS", "FC"]),
+          preco: z.number(),
+          parcelas: z.string().optional(),
+          rotas_fixas: z.string().optional(),
+          rota_ida: z.string().optional(),
+          rota_volta: z.string().optional(),
+          imagem_url: z.string().optional(),
+          ativo: z.boolean(),
+          datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
+          datas_flexiveis: z.array(
+            z.object({
+              tipo: z.enum(["IDA", "VOLTA"]),
+              mes_referencia: z.string(),
+              dias_disponiveis: z.string(),
+            })
+          ).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, datas_fixas, datas_flexiveis, ...data } = input;
+        return await ofertasVooPremium.atualizarOfertaPremium(id, data, datas_fixas, datas_flexiveis);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await ofertasVooPremium.excluirOfertaPremium(input.id);
+        return { success: true };
+      }),
+
+    toggleActive: adminProcedure
+      .input(z.object({ id: z.number(), ativo: z.boolean() }))
+      .mutation(async ({ input }) => {
+        await ofertasVooPremium.alterarStatusOferta(input.id, input.ativo);
+        return { success: true };
+      }),
   }),
 
   quotations: router({
@@ -543,6 +639,11 @@ export const appRouter = router({
   }),
 
   properties: router({
+    roomsSummary: publicProcedure
+      .input(z.object({ propertyId: z.number() }))
+      .query(async ({ input }) => {
+        return await properties.getPropertyRoomsSummary(input.propertyId);
+      }),
     // Públicas
     listActive: publicProcedure.query(async () => {
       return await properties.getActivePropertiesGroupedByCity();
@@ -1025,4 +1126,6 @@ export const appRouter = router({
       }),
   }),
 });
+
+export type AppRouter = typeof appRouter;
 

@@ -1,3 +1,8 @@
+/* Sombra especial para o booking sticky */
+.shadow-sticky-booking {
+  box-shadow: 0 0 0 6px #fff, 0 8px 32px 0 rgba(0, 0, 0, 0.10);
+}
+
 @import "tailwindcss";
 @import "tw-animate-css";
 

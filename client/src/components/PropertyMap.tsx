@@ -56,38 +56,29 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
             return;
         }
 
-        console.log('========================================');
-        console.log('[PropertyMap] Endereço para geocoding:', addressToGeocode);
-        console.log('========================================');
 
         // Aguardar e inicializar Google Maps com nova API
         const initMap = async () => {
             try {
                 if (!mapRef.current) {
-                    console.error('[PropertyMap] ❌ Container não encontrado');
                     setError('Container não encontrado');
                     setIsLoading(false);
                     return;
                 }
 
-                console.log('[PropertyMap] Carregando bibliotecas do Google Maps...');
 
                 // Carregar as bibliotecas necessárias
                 const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
                 const { Geocoder } = await google.maps.importLibrary("geocoding") as google.maps.GeocodingLibrary;
                 const { Marker } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
 
-                console.log('[PropertyMap] ✅ Bibliotecas carregadas, iniciando geocoding...');
 
                 const geocoder = new Geocoder();
 
                 geocoder.geocode({ address: addressToGeocode }, (results, status) => {
-                    console.log('[PropertyMap] ====== CALLBACK DO GEOCODER ======');
-                    console.log('[PropertyMap] Geocoder status:', status);
 
                     if (status === 'OK' && results && results[0]) {
                         const location = results[0].geometry.location;
-                        console.log('[PropertyMap] Localização encontrada:', location.lat(), location.lng());
 
                         // Criar mapa
                         const map = new Map(mapRef.current!, {
@@ -103,17 +94,14 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
                             title: property.city || 'Localização'
                         });
 
-                        console.log('[PropertyMap] ✅ Mapa criado com sucesso!');
                         setIsLoading(false);
                     } else {
-                        console.error('[PropertyMap] ❌ Geocoding falhou:', status);
                         setError(`Erro ao geocodificar: ${status}`);
                         setIsLoading(false);
                     }
                 });
 
             } catch (error) {
-                console.error('[PropertyMap] ❌ Erro ao carregar Google Maps:', error);
                 setError('Erro ao carregar o mapa');
                 setIsLoading(false);
             }
@@ -124,7 +112,6 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
             if (typeof google !== 'undefined' && google.maps) {
                 initMap();
             } else {
-                console.error('[PropertyMap] ❌ Google Maps não disponível');
                 setError('Google Maps não disponível');
                 setIsLoading(false);
             }

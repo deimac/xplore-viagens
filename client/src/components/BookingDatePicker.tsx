@@ -48,8 +48,14 @@ export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingD
             return;
         }
 
-        // First click often comes as from/to the same day; keep only "from"
-        if (!value?.from && newDate.from && newDate.to && newDate.from.getTime() === newDate.to.getTime()) {
+        // Em modo hospedagem, impedir seleção de mesma data para check-in e check-out
+        if (
+            isAccommodation &&
+            newDate.from &&
+            newDate.to &&
+            newDate.from.getTime() === newDate.to.getTime()
+        ) {
+            // Mantém apenas o check-in, força o usuário a escolher um check-out válido
             onChange?.({ from: clicked, to: undefined });
             return;
         }

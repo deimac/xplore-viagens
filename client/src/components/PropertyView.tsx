@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { X, MapPin, Users, Bed, Bath, Home, ExternalLink, CheckCircle, Sofa, Ruler, DoorOpen } from "lucide-react";
+import { X } from "lucide-react";
+import { Home, Users, Ruler, Bed, MapPin, CheckCircle } from "lucide-react";
+import { iconsMap, getIconByName } from "@/lib/iconsMap";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { trpc } from "@/lib/trpc";
 import { SectionTitle } from "@/components/SectionTitle";
 import { PropertyMap } from "@/components/PropertyMap";
+import { CossSeparator } from "@/components/ui/coss-separator";
 import { SleepingArrangements } from "@/components/SleepingArrangements";
 import type { PropertyWithDetails, PropertyImage, PropertyAmenity } from "@/types/properties";
 import { BookingDatePicker } from "@/components/BookingDatePicker";
@@ -17,12 +20,32 @@ interface Props {
 }
 
 export function PropertyView({ slug, onClose }: Props) {
+    // Truncar texto e controlar expansão
+    const [showFullDescription, setShowFullDescription] = useState(false);
+    // Refs para containers
+    const reservaRef = useRef<HTMLDivElement>(null);
+    const descricaoRef = useRef<HTMLDivElement>(null);
+    const [descricaoHeight, setDescricaoHeight] = useState<number | undefined>(undefined);
+
+    // Sincroniza altura quando truncado
+    useEffect(() => {
+        if (!showFullDescription && reservaRef.current && descricaoRef.current) {
+            setDescricaoHeight(reservaRef.current.offsetHeight);
+        } else {
+            setDescricaoHeight(undefined);
+        }
+    }, [showFullDescription]);
+    const truncateText = (text: string, maxLength: number) => {
+        if (showFullDescription || !text) return text;
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    };
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
     const { data: property, isLoading } = trpc.properties.getBySlug.useQuery({ slug });
     const { data: companySettings } = trpc.companySettings.get.useQuery();
-    const { data: propertyRooms = [] } = trpc.propertyRooms.listByProperty.useQuery(
+    const { data: roomsSummaryData } = trpc.properties.roomsSummary.useQuery(
         { propertyId: property?.id || 0 },
         { enabled: !!property?.id }
     );
@@ -89,36 +112,28 @@ export function PropertyView({ slug, onClose }: Props) {
 
     return (
         <div className="w-full mt-24 mb-12">
-            <div className="max-w-6xl mx-auto px-6 md:px-16 py-8 relative">
-                {/* Botão de fechar */}
-                <button
-                    onClick={onClose}
-                    className="absolute -top-8 right-0 w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
-                    aria-label="Fechar detalhes da propriedade"
-                >
-                    <X className="w-5 h-5" />
-                </button>
+            <div className="max-w-7xl mx-auto px-4 md:px-10 py-8">
+                <div className="relative">
+                    {/* Botão de fechar */}
+                    <button
+                        onClick={onClose}
+                        className="absolute -top-8 right-0 w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
+                        aria-label="Fechar detalhes da propriedade"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
 
-                {/* Cabeçalho */}
-                <div className="flex items-start gap-4 md:gap-6 mb-8">
-                    <div className="relative">
-                        <div className="absolute inset-0 blur-2xl bg-accent/20 -z-10" />
-                        <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/80 text-white shadow-lg ring-4 ring-accent/15 flex items-center justify-center">
-                            <Home className="w-7 h-7 md:w-8 md:h-8" />
-                        </div>
-                    </div>
-                    <div className="flex-1">
+                    {/* Cabeçalho */}
+                    <div className="mb-8">
                         <SectionTitle
                             title={property.name.split(' ').slice(0, -1).join(' ')}
                             highlight={property.name.split(' ').slice(-1)[0]}
                             subtitle={`${property.city}${property.state_region ? `, ${property.state_region}` : ''} - ${property.country}`}
                         />
                     </div>
-                </div>
 
-                <div className="space-y-6">
                     {/* Container 1: Galeria de Imagens */}
-                    <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
+                    <div className="border border-muted/40 rounded-xl p-6 md:p-8 mb-6" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
                         {property.images && property.images.length > 0 ? (
                             <div className="space-y-4">
                                 <div className="aspect-video relative rounded-lg overflow-hidden bg-slate-100">
@@ -155,155 +170,201 @@ export function PropertyView({ slug, onClose }: Props) {
                         )}
                     </div>
 
-                    {/* Descrição curta e informações resumidas */}
+                    {/* Descrição curta */}
                     {property.description_short && (
-                        <div className="space-y-3">
+                        <div className="mb-2">
                             <h2 className="text-2xl font-bold text-slate-900">
-                                {property.description_short}
+                                {truncateText(property.description_short, 150)}
+                                {property.description_short.length > 150 && (
+                                    <button
+                                        className="ml-2 text-blue-500 hover:underline focus:outline-none text-sm"
+                                        onClick={() => setShowFullDescription((prev) => !prev)}
+                                    >
+                                        {showFullDescription ? 'Ver menos' : 'Ver mais'}
+                                    </button>
+                                )}
                             </h2>
-                            <div className="flex flex-wrap items-center gap-2 text-slate-600">
-                                {/* Hóspedes */}
-                                <div className="flex items-center gap-1">
-                                    <Users className="w-4 h-4" />
-                                    <span>{property.max_guests} hóspede{property.max_guests !== 1 ? 's' : ''}</span>
-                                </div>
-
-                                {/* Área em m² */}
-                                {property.area_m2 && (
-                                    <>
-                                        <span>·</span>
-                                        <div className="flex items-center gap-1">
-                                            <Ruler className="w-4 h-4" />
-                                            <span>{property.area_m2} m²</span>
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Total de camas */}
-                                {property.beds > 0 && (
-                                    <>
-                                        <span>·</span>
-                                        <div className="flex items-center gap-1">
-                                            <Bed className="w-4 h-4" />
-                                            <span>{property.beds} cama{property.beds !== 1 ? 's' : ''}</span>
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Espaços agrupados por tipo */}
-                                {propertyRooms.length > 0 && (() => {
-                                    const roomCounts = propertyRooms.reduce((acc: Record<string, number>, room: any) => {
-                                        const typeName = room.roomTypeName;
-                                        acc[typeName] = (acc[typeName] || 0) + 1;
-                                        return acc;
-                                    }, {});
-
-                                    const getRoomIcon = (type: string) => {
-                                        const lowerType = type.toLowerCase();
-                                        if (lowerType.includes('sala')) return <Sofa className="w-4 h-4" />;
-                                        if (lowerType.includes('quarto') || lowerType.includes('suíte')) return <DoorOpen className="w-4 h-4" />;
-                                        if (lowerType.includes('banheiro')) return <Bath className="w-4 h-4" />;
-                                        return <Home className="w-4 h-4" />;
-                                    };
-
-                                    return Object.entries(roomCounts).map(([type, count], index) => (
-                                        <div key={type} className="flex items-center gap-1">
-                                            <span>·</span>
-                                            {getRoomIcon(type)}
-                                            <span>{count} {type}{count > 1 ? 's' : ''}</span>
-                                        </div>
-                                    ));
-                                })()}
-                            </div>
                         </div>
                     )}
-
-                    {/* Container 2.5: Onde você vai dormir */}
-                    <SleepingArrangements
-                        propertyId={property.id}
-                        primaryImage={property.images?.[0]?.image_url}
-                    />
-
-                    {/* Container 3: Comodidades */}
-                    {property.amenities && property.amenities.length > 0 && (
-                        <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
-                            <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {property.amenities.map((amenity: PropertyAmenity) => (
-                                    <div key={amenity.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-muted/20">
-                                        {amenity.icon && (
-                                            <span className="text-accent text-lg">{amenity.icon}</span>
-                                        )}
-                                        <span className="text-sm text-slate-700">{amenity.name}</span>
-                                    </div>
-                                ))}
+                    {/* Bloco de espaços abaixo da descrição */}
+                    {roomsSummaryData && Array.isArray(roomsSummaryData.rooms_summary) && roomsSummaryData.rooms_summary.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-4 text-slate-600 text-sm mb-8">
+                            <div className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                <span>{property.max_guests} hóspede{property.max_guests !== 1 ? 's' : ''}</span>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Container 5: Localização */}
-                    <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
-                        <h3 className="text-lg font-semibold text-accent mb-4">Localização</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-slate-700">
-                                <MapPin className="w-4 h-4 text-accent" />
-                                <span className="text-sm">
-                                    {property.city}{property.state_region ? `, ${property.state_region}` : ''} - {property.country}
-                                </span>
-                            </div>
-
-                            {/* Mapa interativo */}
-                            <PropertyMap
-                                property={{
-                                    address_street: property.address_street || undefined,
-                                    address_number: property.address_number || undefined,
-                                    city: property.city || undefined,
-                                    state_region: property.state_region || undefined,
-                                    country: property.country || undefined,
-                                }}
-                                height="400px"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Container 5: Reserva */}
-                    <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
-                        <h3 className="text-lg font-semibold text-accent mb-4">Faça sua Reserva</h3>
-                        <div className="space-y-4">
-                            <BookingDatePicker
-                                value={dateRange}
-                                onChange={setDateRange}
-                                mode="accommodation"
-                            />
-
-                            {/* Espaço reservado para texto de interesse */}
-                            <div className="min-h-[44px] flex items-center">
-                                {dateRange?.from && dateRange?.to && (
-                                    <div className="w-full px-3 py-2 rounded-md bg-amber-50 flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                                        <div className="text-xs text-slate-700">
-                                            <span className="font-semibold">Interesse:</span>{" "}
-                                            {differenceInDays(dateRange.to, dateRange.from)} Noites - Check-in: {format(dateRange.from, "dd MMM", { locale: ptBR }).toUpperCase()} Check-out: {format(dateRange.to, "dd MMM", { locale: ptBR }).toUpperCase()}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <Button
-                                onClick={handleWhatsAppClick}
-                                className="bg-accent hover:bg-accent/90 text-white"
-                                disabled={!companySettings?.whatsapp}
-                            >
-                                Solicitar Reserva via WhatsApp
-                            </Button>
-
-                            {!companySettings?.whatsapp && (
-                                <p className="text-xs text-center text-slate-500">
-                                    WhatsApp não configurado
-                                </p>
+                            {property.area_m2 && property.area_m2 !== "" && (
+                                <CossSeparator orientation="vertical" />
                             )}
+                            {property.area_m2 && property.area_m2 !== "" && (
+                                <div className="flex items-center gap-1">
+                                    <Ruler className="w-4 h-4" />
+                                    <span>{property.area_m2} m²</span>
+                                </div>
+                            )}
+                            {property.area_m2 && property.area_m2 !== "" && <CossSeparator orientation="vertical" />}
+                            {roomsSummaryData.rooms_summary.map((room: any, idx: number) => {
+                                let IconComponent = getIconByName(room.icon);
+                                if (!room.icon) {
+                                    if (room.name === "Quarto") IconComponent = iconsMap["bed"];
+                                    else if (room.name === "Banheiro") IconComponent = iconsMap["bath"];
+                                    else if (room.name === "Sala") IconComponent = iconsMap["sofa"];
+                                    else if (room.name === "Cozinha") IconComponent = iconsMap["door-open"];
+                                }
+                                return (
+                                    <>
+                                        {idx > 0 && <CossSeparator orientation="vertical" />}
+                                        <div key={room.name} className="flex items-center gap-1">
+                                            <IconComponent className="w-4 h-4" />
+                                            <span>{room.total} {room.name}{room.total !== 1 ? 's' : ''}</span>
+                                        </div>
+                                    </>
+                                );
+                            })}
+                            <CossSeparator orientation="vertical" />
+                            <div className="flex items-center gap-1">
+                                <Bed className="w-4 h-4" />
+                                <span>{roomsSummaryData.total_beds} cama{roomsSummaryData.total_beds !== 1 ? 's' : ''}</span>
+                            </div>
                         </div>
+                    )}
+
+                    {/* Grid de duas colunas */}
+                    <div className="flex flex-col md:flex-row gap-10 items-start">
+
+                        {/* Coluna esquerda */}
+                        <div className="flex-1 max-w-2xl space-y-6">
+                            {property.description_full && (
+                                <div className="mb-4 w-full h-full">
+                                    <div
+                                        ref={descricaoRef}
+                                        className="border border-gray-200 rounded-xl w-full bg-gray-50 flex flex-col"
+                                        style={{ boxShadow: '0 0 0 6px #fff', height: descricaoHeight ? `${descricaoHeight}px` : undefined }}
+                                    >
+                                        <div className="flex-1 flex flex-col justify-start w-full p-6 md:p-8">
+                                            <h3 className="text-lg font-semibold text-accent mb-2">Sobre esta hospedagem</h3>
+                                            <p className="text-base text-slate-700 leading-relaxed">
+                                                {showFullDescription
+                                                    ? property.description_full
+                                                    : (property.description_full.length > 300
+                                                        ? property.description_full.substring(0, 300) + '...'
+                                                        : property.description_full)
+                                                }
+                                            </p>
+                                        </div>
+                                        {property.description_full.length > 300 && (
+                                            <div className="w-full">
+                                                <button
+                                                    onClick={() => setShowFullDescription(prev => !prev)}
+                                                    className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium rounded-b-xl transition-all"
+                                                    style={{ paddingLeft: 0, paddingRight: 0 }}
+                                                >
+                                                    {showFullDescription ? 'Ver menos' : 'Ver mais'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <SleepingArrangements
+                                propertyId={property.id}
+                                primaryImage={property.images?.[0]?.image_url}
+                            />
+
+                            {property.amenities && property.amenities.length > 0 && (
+                                <div className="border border-muted/40 rounded-xl p-6 md:p-8 bg-[#FAFAFA]">
+                                    <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {property.amenities.map((amenity: PropertyAmenity) => {
+                                            let IconComponent = getIconByName(amenity.icon ?? "home");
+
+                                            return (
+                                                <div key={amenity.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-muted/20">
+                                                    {amenity.icon
+                                                        ? <IconComponent className="w-5 h-5 text-accent" />
+                                                        : <Home className="w-5 h-5 text-accent" />
+                                                    }
+                                                    <span className="text-sm text-slate-700">{amenity.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="border border-muted/40 rounded-xl p-6 md:p-8 bg-[#FAFAFA]">
+                                <h3 className="text-lg font-semibold text-accent mb-4">Localização</h3>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-slate-700">
+                                        <MapPin className="w-4 h-4 text-accent" />
+                                        <span className="text-sm">
+                                            {property.city}{property.state_region ? `, ${property.state_region}` : ''} - {property.country}
+                                        </span>
+                                    </div>
+
+                                    <PropertyMap
+                                        property={{
+                                            address_street: property.address_street || undefined,
+                                            address_number: property.address_number || undefined,
+                                            city: property.city || undefined,
+                                            state_region: property.state_region || undefined,
+                                            country: property.country || undefined,
+                                        }}
+                                        height="400px"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Coluna direita - STICKY */}
+                        <div className="w-full md:w-[540px] flex-shrink-0">
+                            <div ref={reservaRef} className="border border-gray-200 rounded-xl p-6 md:p-8 w-full bg-gray-50" style={{ boxShadow: '0 0 0 6px #fff' }}>
+                                <h3 className="text-lg font-semibold text-accent mb-2">Faça sua Reserva</h3>
+
+                                <div className="space-y-4">
+                                    <BookingDatePicker
+                                        value={dateRange}
+                                        onChange={setDateRange}
+                                        mode="accommodation"
+                                    />
+
+                                    <div className="min-h-[44px] flex items-center">
+                                        {dateRange?.from && dateRange?.to && (
+                                            <div className="w-full px-3 py-2 rounded-md bg-amber-50 flex items-center gap-2">
+                                                <CheckCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+
+                                                <div className="text-xs text-slate-700">
+                                                    <span className="font-semibold">Interesse:</span>{' '}
+                                                    {differenceInDays(dateRange.to, dateRange.from)} Noites -
+                                                    Check-in: {format(dateRange.from, "dd MMM", { locale: ptBR }).toUpperCase()}
+                                                    {' '}Check-out: {format(dateRange.to, "dd MMM", { locale: ptBR }).toUpperCase()}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        onClick={handleWhatsAppClick}
+                                        className="bg-accent hover:bg-accent/90 text-white"
+                                        disabled={!companySettings?.whatsapp}
+                                    >
+                                        Solicitar Reserva via WhatsApp
+                                    </Button>
+
+                                    {!companySettings?.whatsapp && (
+                                        <p className="text-xs text-center text-slate-500">
+                                            WhatsApp não configurado
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
                 </div>
             </div>
         </div>

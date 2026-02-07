@@ -1,3 +1,36 @@
+// Função para obter resumo dos cômodos e total de camas
+export async function getRoomsSummaryAndBeds(propertyId: number) {
+  // Resumo dos cômodos
+  // Resumo dos cômodos com total de camas por tipo
+  const roomsSummaryRaw = await executeQuery(
+    `SELECT
+        rt.name AS name,
+        rt.icon AS icon,
+        COUNT(DISTINCT pr.id) AS total_spaces,
+        COALESCE(SUM(prb.quantity), 0) AS total_beds
+     FROM property_rooms pr
+     JOIN room_types rt ON rt.id = pr.room_type_id
+     LEFT JOIN room_beds prb ON prb.room_id = pr.id
+     WHERE pr.property_id = ?
+     GROUP BY rt.id, rt.name, rt.icon
+     ORDER BY rt.name`,
+    [propertyId]
+  );
+  const roomsSummary = roomsSummaryRaw.map((r: any) => ({
+    name: r.name,
+    icon: r.icon,
+    total: r.total_spaces,
+    beds: r.total_beds
+  }));
+
+  // Total de camas geral
+  const totalBeds = roomsSummary.reduce((acc: number, r: any) => acc + (Number(r.beds) || 0), 0);
+
+  return {
+    rooms_summary: roomsSummary,
+    total_beds: totalBeds,
+  };
+}
 import { eq, desc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
@@ -648,14 +681,17 @@ export async function getPropertyById(id: number) {
 
 export async function getActiveProperties() {
   const result = await executeQuery<any[]>(`
-    SELECT p.*, pi.image_url as primary_image
+    SELECT
+      p.*,
+      COALESCE(
+        (SELECT pi.image_url
+         FROM property_images pi
+         WHERE pi.property_id = p.id
+         ORDER BY pi.sort_order ASC
+         LIMIT 1),
+        NULL
+      ) as primary_image
     FROM properties p
-    LEFT JOIN property_images pi ON p.id = pi.property_id 
-      AND pi.sort_order = (
-        SELECT MIN(sort_order) 
-        FROM property_images pi2 
-        WHERE pi2.property_id = p.id
-      )
     WHERE p.active = true
     ORDER BY p.city, p.name
   `);
@@ -721,9 +757,22 @@ export async function getFeaturedProperties() {
 
     return featured;
   } catch (error) {
-    // Se der erro (campo is_featured não existe), buscar propriedades aleatórias
+    // Fallback para propriedades aleatórias se o campo is_featured não existir
     console.log('[getFeaturedProperties] Fallback to random properties:', (error as Error).message);
-
+    return await executeQuery<any[]>(
+      `
+        SELECT p.*, pi.image_url as primary_image
+        FROM properties p
+        LEFT JOIN property_images pi ON p.id = pi.property_id
+          AND pi.sort_order = (
+            SELECT MIN(sort_order)
+            FROM property_images pi2
+            WHERE pi2.property_id = p.id
+          )
+        WHERE p.active = true
+        ORDER BY RAND()
+        LIMIT 6
+      `);
     const randomProperties = await executeQuery<any[]>(`
       SELECT p.*, pi.image_url as primary_image
       FROM properties p

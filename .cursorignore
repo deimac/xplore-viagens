@@ -1,0 +1,48 @@
+node_modules/
+bower_components/
+jspm_packages/
+web_modules/
+
+# Pastas de Build e Saída
+dist/
+build/
+out/
+.next/
+.nuxt/
+bin/
+obj/
+
+# Logs e arquivos temporários
+*.log
+logs/
+temp/
+tmp/
+.cache/
+.npm/
+
+# Arquivos de sistema e IDE
+.git/
+.svn/
+.hg/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Arquivos de ambiente (Segurança e economia)
+.env
+.env.*
+!.env.example
+
+# Imagens e Assets Pesados (IA não precisa ler binários)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+*.mp4
+*.exe

@@ -255,6 +255,7 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 export const roomTypes = mysqlTable("room_types", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
+  icon: varchar("icon", { length: 32 }),
 });
 
 export type RoomType = typeof roomTypes.$inferSelect;

@@ -1,3 +1,9 @@
+// Função para obter resumo dos cômodos e total de camas
+import { getRoomsSummaryAndBeds } from "./db";
+
+export async function getPropertyRoomsSummary(propertyId: number) {
+    return await getRoomsSummaryAndBeds(propertyId);
+}
 import * as db from "./db";
 
 interface PropertyData {

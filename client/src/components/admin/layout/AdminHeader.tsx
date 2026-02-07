@@ -18,9 +18,7 @@ interface AdminHeaderProps {
 }
 
 export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
-    // @ts-expect-error - tRPC types are generated when server is running
     const userQuery = trpc.auth.me.useQuery();
-    // @ts-expect-error - tRPC types are generated when server is running
     const logoutMutation = trpc.auth.logout.useMutation();
 
     const handleLogout = async () => {
@@ -33,7 +31,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         }
     };
 
-    const getInitials = (name?: string, email?: string) => {
+    const getInitials = (name?: string | null, email?: string | null) => {
         if (name) {
             const parts = name.split(" ");
             if (parts.length >= 2) {
