@@ -26,6 +26,11 @@ interface SectionTitleProps {
   subtitle?: string | React.ReactNode;
 
   /**
+   * Classe customizada para o subtítulo
+   */
+  subtitleClassName?: string;
+
+  /**
    * Subtítulo alternativo apenas para versão mobile
    */
   subtitleMobile?: string | React.ReactNode;
@@ -71,6 +76,7 @@ export function SectionTitle({
   subtitleMobile,
   align = "center",
   className,
+  subtitleClassName,
 }: SectionTitleProps) {
   const alignClass = {
     left: "text-left",
@@ -94,22 +100,25 @@ export function SectionTitle({
       </h2>
 
       {/* Subtítulo - Desktop */}
+
       {subtitle && (
-        <p className={`${textStyles.baseCorpo} hidden md:block`}>
+        <p className={cn(textStyles.baseCorpo, "hidden md:block", subtitleClassName)}>
           {subtitle}
         </p>
       )}
 
       {/* Subtítulo - Mobile */}
+
       {subtitleMobile && (
-        <p className={`${textStyles.baseCorpo} md:hidden`}>
+        <p className={cn(textStyles.baseCorpo, "md:hidden", subtitleClassName)}>
           {subtitleMobile}
         </p>
       )}
 
       {/* Fallback: Se não houver subtitleMobile, mostrar subtitle em mobile */}
+
       {!subtitleMobile && subtitle && (
-        <p className={`${textStyles.baseCorpo} md:hidden`}>
+        <p className={cn(textStyles.baseCorpo, "md:hidden", subtitleClassName)}>
           {subtitle}
         </p>
       )}

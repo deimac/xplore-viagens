@@ -22,19 +22,6 @@ interface Props {
 export function PropertyView({ slug, onClose }: Props) {
     // Truncar texto e controlar expansão
     const [showFullDescription, setShowFullDescription] = useState(false);
-    // Refs para containers
-    const reservaRef = useRef<HTMLDivElement>(null);
-    const descricaoRef = useRef<HTMLDivElement>(null);
-    const [descricaoHeight, setDescricaoHeight] = useState<number | undefined>(undefined);
-
-    // Sincroniza altura quando truncado
-    useEffect(() => {
-        if (!showFullDescription && reservaRef.current && descricaoRef.current) {
-            setDescricaoHeight(reservaRef.current.offsetHeight);
-        } else {
-            setDescricaoHeight(undefined);
-        }
-    }, [showFullDescription]);
     const truncateText = (text: string, maxLength: number) => {
         if (showFullDescription || !text) return text;
         if (text.length <= maxLength) return text;
@@ -124,12 +111,20 @@ export function PropertyView({ slug, onClose }: Props) {
                     </button>
 
                     {/* Cabeçalho */}
-                    <div className="mb-8">
-                        <SectionTitle
-                            title={property.name.split(' ').slice(0, -1).join(' ')}
-                            highlight={property.name.split(' ').slice(-1)[0]}
-                            subtitle={`${property.city}${property.state_region ? `, ${property.state_region}` : ''} - ${property.country}`}
-                        />
+                    <div className="flex items-start gap-4 md:gap-6 mb-8">
+                        <div className="relative">
+                            <div className="absolute inset-0 blur-2xl bg-accent/20 -z-10" />
+                            <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/80 text-white shadow-lg ring-4 ring-accent/15 flex items-center justify-center">
+                                <Home className="w-7 h-7 md:w-8 md:h-8" />
+                            </div>
+                        </div>
+                        <div className="flex-1">
+                            <SectionTitle
+                                title={property.name.split(' ').slice(0, -1).join(' ')}
+                                highlight={property.name.split(' ').slice(-1)[0]}
+                                subtitle={`${property.city}${property.state_region ? `, ${property.state_region}` : ''} - ${property.country}`}
+                            />
+                        </div>
                     </div>
 
                     {/* Container 1: Galeria de Imagens */}
@@ -229,63 +224,63 @@ export function PropertyView({ slug, onClose }: Props) {
                         </div>
                     )}
 
-                    {/* Grid de duas colunas */}
-                    <div className="flex flex-col md:flex-row gap-10 items-start">
-
-                        {/* Coluna esquerda */}
-                        <div className="flex-1 max-w-2xl space-y-6">
+                    {/* Grid de duas colunas: restante do conteúdo e reserva */}
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                        {/* Coluna 1: Conteúdo principal */}
+                        <div className="flex-1 max-w-2xl space-y-6 flex flex-col">
+                            {/* Descrição completa e expansível */}
                             {property.description_full && (
-                                <div className="mb-4 w-full h-full">
-                                    <div
-                                        ref={descricaoRef}
-                                        className="border border-gray-200 rounded-xl w-full bg-gray-50 flex flex-col"
-                                        style={{ boxShadow: '0 0 0 6px #fff', height: descricaoHeight ? `${descricaoHeight}px` : undefined }}
-                                    >
-                                        <div className="flex-1 flex flex-col justify-start w-full p-6 md:p-8">
-                                            <h3 className="text-lg font-semibold text-accent mb-2">Sobre esta hospedagem</h3>
-                                            <p className="text-base text-slate-700 leading-relaxed">
-                                                {showFullDescription
-                                                    ? property.description_full
-                                                    : (property.description_full.length > 300
-                                                        ? property.description_full.substring(0, 300) + '...'
-                                                        : property.description_full)
-                                                }
-                                            </p>
-                                        </div>
-                                        {property.description_full.length > 300 && (
-                                            <div className="w-full">
-                                                <button
-                                                    onClick={() => setShowFullDescription(prev => !prev)}
-                                                    className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium rounded-b-xl transition-all"
-                                                    style={{ paddingLeft: 0, paddingRight: 0 }}
-                                                >
-                                                    {showFullDescription ? 'Ver menos' : 'Ver mais'}
-                                                </button>
-                                            </div>
-                                        )}
+                                <div className="mt-4 mb-4 flex flex-col justify-start w-full max-w-2xl">
+                                    <div className="border border-gray-200 border-b-0 rounded-t-xl p-6 md:p-8 w-full bg-gray-50" style={{ boxShadow: '0 0 0 6px #fff' }}>
+                                        <h3 className="text-lg font-semibold text-accent mb-2">Sobre esta hospedagem</h3>
+                                        <p className="text-base text-slate-700 leading-relaxed">
+                                            {showFullDescription
+                                                ? property.description_full
+                                                : (property.description_full.length > 300
+                                                    ? property.description_full.substring(0, 300) + '...'
+                                                    : property.description_full)
+                                            }
+                                        </p>
                                     </div>
+                                    {property.description_full.length > 300 && (
+                                        <button
+                                            onClick={() => setShowFullDescription(prev => !prev)}
+                                            className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium rounded-b-xl text-center transition-all"
+                                            style={{
+                                                borderTopLeftRadius: 0,
+                                                borderTopRightRadius: 0,
+                                                borderBottomLeftRadius: '0.75rem',
+                                                borderBottomRightRadius: '0.75rem',
+                                                padding: 0,
+                                                minHeight: '3rem',
+                                            }}
+                                        >
+                                            {showFullDescription ? 'Ver menos' : 'Ver mais'}
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
+                            {/* Container 2.5: Onde você vai dormir */}
                             <SleepingArrangements
                                 propertyId={property.id}
                                 primaryImage={property.images?.[0]?.image_url}
                             />
 
+                            {/* Container 3: Comodidades */}
                             {property.amenities && property.amenities.length > 0 && (
-                                <div className="border border-muted/40 rounded-xl p-6 md:p-8 bg-[#FAFAFA]">
+                                <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
                                     <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
-
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                         {property.amenities.map((amenity: PropertyAmenity) => {
                                             let IconComponent = getIconByName(amenity.icon ?? "home");
-
                                             return (
                                                 <div key={amenity.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-muted/20">
-                                                    {amenity.icon
-                                                        ? <IconComponent className="w-5 h-5 text-accent" />
-                                                        : <Home className="w-5 h-5 text-accent" />
-                                                    }
+                                                    {amenity.icon ? (
+                                                        <IconComponent className="w-5 h-5 text-accent" />
+                                                    ) : (
+                                                        <Home className="w-5 h-5 text-accent" />
+                                                    )}
                                                     <span className="text-sm text-slate-700">{amenity.name}</span>
                                                 </div>
                                             );
@@ -294,9 +289,9 @@ export function PropertyView({ slug, onClose }: Props) {
                                 </div>
                             )}
 
-                            <div className="border border-muted/40 rounded-xl p-6 md:p-8 bg-[#FAFAFA]">
+                            {/* Container 5: Localização */}
+                            <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
                                 <h3 className="text-lg font-semibold text-accent mb-4">Localização</h3>
-
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 text-slate-700">
                                         <MapPin className="w-4 h-4 text-accent" />
@@ -305,6 +300,7 @@ export function PropertyView({ slug, onClose }: Props) {
                                         </span>
                                     </div>
 
+                                    {/* Mapa interativo */}
                                     <PropertyMap
                                         property={{
                                             address_street: property.address_street || undefined,
@@ -318,12 +314,10 @@ export function PropertyView({ slug, onClose }: Props) {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Coluna direita - STICKY */}
-                        <div className="w-full md:w-[540px] flex-shrink-0">
-                            <div ref={reservaRef} className="border border-gray-200 rounded-xl p-6 md:p-8 w-full bg-gray-50" style={{ boxShadow: '0 0 0 6px #fff' }}>
-                                <h3 className="text-lg font-semibold text-accent mb-2">Faça sua Reserva</h3>
-
+                        {/* Coluna 2: Reserva */}
+                        <div className="w-full md:max-w-lg flex-shrink-0 md:self-start md:mt-4 md:p-0 flex flex-col">
+                            <div className="border border-gray-200 rounded-xl p-6 md:p-8 w-full bg-gray-50 flex flex-col justify-between min-h-[248px]" style={{ boxShadow: '0 0 0 6px #fff' }}>
+                                <h3 className="text-lg font-semibold text-accent mb-4">Faça sua Reserva</h3>
                                 <div className="space-y-4">
                                     <BookingDatePicker
                                         value={dateRange}
@@ -331,16 +325,14 @@ export function PropertyView({ slug, onClose }: Props) {
                                         mode="accommodation"
                                     />
 
+                                    {/* Espaço reservado para texto de interesse */}
                                     <div className="min-h-[44px] flex items-center">
                                         {dateRange?.from && dateRange?.to && (
                                             <div className="w-full px-3 py-2 rounded-md bg-amber-50 flex items-center gap-2">
                                                 <CheckCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-
                                                 <div className="text-xs text-slate-700">
                                                     <span className="font-semibold">Interesse:</span>{' '}
-                                                    {differenceInDays(dateRange.to, dateRange.from)} Noites -
-                                                    Check-in: {format(dateRange.from, "dd MMM", { locale: ptBR }).toUpperCase()}
-                                                    {' '}Check-out: {format(dateRange.to, "dd MMM", { locale: ptBR }).toUpperCase()}
+                                                    {differenceInDays(dateRange.to, dateRange.from)} Noites - Check-in: {format(dateRange.from, "dd MMM", { locale: ptBR }).toUpperCase()} Check-out: {format(dateRange.to, "dd MMM", { locale: ptBR }).toUpperCase()}
                                                 </div>
                                             </div>
                                         )}
@@ -348,7 +340,7 @@ export function PropertyView({ slug, onClose }: Props) {
 
                                     <Button
                                         onClick={handleWhatsAppClick}
-                                        className="bg-accent hover:bg-accent/90 text-white"
+                                        className="bg-accent hover:bg-accent/90 text-white w-full"
                                         disabled={!companySettings?.whatsapp}
                                     >
                                         Solicitar Reserva via WhatsApp
@@ -362,9 +354,7 @@ export function PropertyView({ slug, onClose }: Props) {
                                 </div>
                             </div>
                         </div>
-
                     </div>
-
                 </div>
             </div>
         </div>

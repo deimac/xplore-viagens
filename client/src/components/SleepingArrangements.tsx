@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { textStyles } from "@/types/textStyles";
 
 interface SleepingArrangementsProps {
     propertyId: number;
@@ -109,7 +110,7 @@ export function SleepingArrangements({ propertyId, primaryImage }: SleepingArran
     return (
         <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
             <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-accent">Onde você vai dormir</h3>
+                <h3 className={textStyles.tituloSessao + " text-base md:text-lg font-semibold"}>Onde você vai dormir</h3>
 
                 {showNavigation && (
                     <div className="flex gap-2">

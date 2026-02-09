@@ -74,13 +74,13 @@ export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingD
     };
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full">
             <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
                     <Button
                         variant="outline"
                         className={cn(
-                            "w-full md:w-[480px] h-16 justify-start text-left font-normal border-primary/20 bg-card hover:bg-accent/5 rounded-2xl shadow-sm p-0 overflow-hidden",
+                            "w-full h-16 justify-start text-left font-normal border-primary/20 bg-card hover:bg-accent/5 rounded-2xl shadow-sm p-0 overflow-hidden",
                             !value?.from && "text-muted-foreground"
                         )}
                     >
