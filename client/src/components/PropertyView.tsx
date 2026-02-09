@@ -112,12 +112,7 @@ export function PropertyView({ slug, onClose }: Props) {
 
                     {/* Cabeçalho */}
                     <div className="flex items-start gap-4 md:gap-6 mb-8">
-                        <div className="relative">
-                            <div className="absolute inset-0 blur-2xl bg-accent/20 -z-10" />
-                            <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-accent to-accent/80 text-white shadow-lg ring-4 ring-accent/15 flex items-center justify-center">
-                                <Home className="w-7 h-7 md:w-8 md:h-8" />
-                            </div>
-                        </div>
+                        {/* Ícone removido do topo */}
                         <div className="flex-1">
                             <SectionTitle
                                 title={property.name.split(' ').slice(0, -1).join(' ')}

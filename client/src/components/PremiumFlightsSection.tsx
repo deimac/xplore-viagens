@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { MessageCircle, CheckCircle, ArrowUp, ArrowDown, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { OfertaVoo, OfertaVooFlexSelection } from "@/types/ofertasVoo";
@@ -17,6 +17,8 @@ interface Props {
 
 export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
     const [selectedFlexDates, setSelectedFlexDates] = useState<OfertaVooFlexSelection>({
         ida: null,
         volta: null,
@@ -39,6 +41,29 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
 
     const handleNext = () => setCurrentIndex((i) => (i + 1) % ofertas.length);
     const handlePrev = () => setCurrentIndex((i) => (i - 1 + ofertas.length) % ofertas.length);
+
+    // Swipe handlers para mobile
+    const minSwipeDistance = 50;
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.changedTouches[0].clientX;
+    };
+    const onTouchMove = (e: React.TouchEvent) => {
+        touchEndX.current = e.changedTouches[0].clientX;
+    };
+    const onTouchEnd = () => {
+        if (touchStartX.current !== null && touchEndX.current !== null) {
+            const distance = touchStartX.current - touchEndX.current;
+            if (Math.abs(distance) > minSwipeDistance) {
+                if (distance > 0) {
+                    handleNext(); // swipe left
+                } else {
+                    handlePrev(); // swipe right
+                }
+            }
+        }
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
 
     const whatsappLink = numeroSanitizado
         ? buildWhatsAppLink(
@@ -75,7 +100,12 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
                             </div>
                         </div>
 
-                        <div className="flex flex-col justify-center h-full">
+                        <div
+                            className="flex flex-col justify-center h-full"
+                            onTouchStart={onTouchStart}
+                            onTouchMove={onTouchMove}
+                            onTouchEnd={onTouchEnd}
+                        >
                             <div className="lg:hidden relative aspect-video rounded-2xl overflow-hidden mb-4 shadow-lg hover:shadow-xl transition-shadow duration-300">
                                 <img
                                     src="/premium.jpg"

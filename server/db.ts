@@ -723,7 +723,8 @@ export async function getFeaturedProperties() {
       let additional: any[];
       if (featuredIds.length > 0) {
         const placeholders = featuredIds.map(() => '?').join(',');
-        additional = await executeQuery<any[]>(`
+        const notInClause = featuredIds.length > 0 ? `AND p.id NOT IN (${placeholders})` : '';
+        const query = `
           SELECT p.*, pi.image_url as primary_image
           FROM properties p
           LEFT JOIN property_images pi ON p.id = pi.property_id 
@@ -732,12 +733,20 @@ export async function getFeaturedProperties() {
               FROM property_images pi2 
               WHERE pi2.property_id = p.id
             )
-          WHERE p.active = true AND p.id NOT IN (${placeholders})
+          WHERE p.active = true
+          ${notInClause}
           ORDER BY RAND()
           LIMIT ?
-        `, [...featuredIds, remaining]);
+        `;
+        const params = [...featuredIds, remaining];
+        // Debug logs
+        const numPlaceholders = (query.match(/\?/g) || []).length;
+        console.log('[getFeaturedProperties] SQL:', query);
+        console.log('[getFeaturedProperties] Params:', params);
+        console.log('[getFeaturedProperties] Number of placeholders:', numPlaceholders, 'Params length:', params.length);
+        additional = await executeQuery<any[]>(query, params);
       } else {
-        additional = await executeQuery<any[]>(`
+        const query = `
           SELECT p.*, pi.image_url as primary_image
           FROM properties p
           LEFT JOIN property_images pi ON p.id = pi.property_id 
@@ -749,7 +758,13 @@ export async function getFeaturedProperties() {
           WHERE p.active = true
           ORDER BY RAND()
           LIMIT ?
-        `, [remaining]);
+        `;
+        const params = [remaining];
+        const numPlaceholders = (query.match(/\?/g) || []).length;
+        console.log('[getFeaturedProperties] SQL:', query);
+        console.log('[getFeaturedProperties] Params:', params);
+        console.log('[getFeaturedProperties] Number of placeholders:', numPlaceholders, 'Params length:', params.length);
+        additional = await executeQuery<any[]>(query, params);
       }
 
       return [...featured, ...additional];
