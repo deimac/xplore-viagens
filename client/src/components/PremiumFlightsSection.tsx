@@ -82,7 +82,7 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
                     <SectionTitle
                         title="Experiências"
                         highlight="Premium"
-                        subtitle="Voe com conforto e exclusividade em cabinas de primeira classe"
+                        subtitle="Voe com conforto e exclusividade em cabinas de classe superior"
                     />
                 </FadeInContainer>
 

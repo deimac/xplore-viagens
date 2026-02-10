@@ -47,7 +47,7 @@ export function HospedagensSection({ onPropertySelect }: Props) {
                     <SectionTitle
                         title="Lugares Únicos para"
                         highlight="Se Hospedar"
-                        subtitle="Descubra acomodações especiais em destinos incríveis"
+                        subtitle="Descubra acomodações especiais de acordos exclusivos em destinos incríveis"
                     />
                 </FadeInContainer>
 
