@@ -113,91 +113,79 @@ export function SleepingArrangements({ propertyId, primaryImage }: SleepingArran
 
     return (
         <div className="border border-muted/40 rounded-xl p-6 md:p-8 bg-[#FAFAFA] shadow-[0_0_0_6px_#fff] mb-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center mb-6">
                 <h3 className={textStyles.tituloSessao + " text-base md:text-lg font-semibold"}>Onde você vai dormir</h3>
-
-                {showNavigation && (
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => scroll('left')}
-                            disabled={!canScrollLeft}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => scroll('right')}
-                            disabled={!canScrollRight}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
             </div>
 
             {isMobile ? (
-                <div
-                    className="relative mb-6 overflow-x-auto scrollbar-hide"
-                    style={{ WebkitOverflowScrolling: 'touch' }}
-                    onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
-                    onTouchEnd={e => {
-                        if (touchStartX === null) return;
-                        const deltaX = e.changedTouches[0].clientX - touchStartX;
-                        if (Math.abs(deltaX) > 40) {
-                            if (deltaX < 0 && currentIndex < roomsWithBeds.length - 1) {
-                                setCurrentIndex(currentIndex + 1);
-                            } else if (deltaX > 0 && currentIndex > 0) {
-                                setCurrentIndex(currentIndex - 1);
+                <>
+                    <div
+                        className="relative mb-6 overflow-x-auto scrollbar-hide"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                        onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
+                        onTouchEnd={e => {
+                            if (touchStartX === null) return;
+                            const deltaX = e.changedTouches[0].clientX - touchStartX;
+                            if (Math.abs(deltaX) > 40) {
+                                if (deltaX < 0 && currentIndex < roomsWithBeds.length - 1) {
+                                    setCurrentIndex(currentIndex + 1);
+                                } else if (deltaX > 0 && currentIndex > 0) {
+                                    setCurrentIndex(currentIndex - 1);
+                                }
                             }
-                        }
-                        setTouchStartX(null);
-                    }}
-                >
-                    <div className="flex gap-4 pl-2" style={{ minWidth: 'min-content' }}>
-                        {roomsWithBeds.map((room, idx) => (
-                            <div key={room.id} style={{ width: '320px' }} className="bg-white border border-muted/20 rounded-lg overflow-hidden flex-shrink-0 flex flex-col items-stretch">
-                                <div className="p-2 flex justify-center">
-                                    <div className="relative overflow-hidden bg-gray-100 rounded-lg" style={{ height: '200px', width: '236px' }}>
-                                        <img
-                                            src={getRoomImage(room)}
-                                            alt={getRoomDisplayName(room, idx)}
-                                            className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                                            style={{ borderRadius: 'inherit' }}
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="p-3 w-full" style={{ paddingLeft: '42px' }}>
-                                    <h4 className="font-semibold text-sm mb-1.5">
-                                        {getRoomDisplayName(room, idx)}
-                                    </h4>
-                                    <div className="space-y-0.5 w-full">
-                                        {formatBedsList(room.beds).map((bedText, bidx) => (
-                                            <div key={bidx} className="text-xs text-slate-600">
-                                                {bedText}
+                            setTouchStartX(null);
+                        }}
+                    >
+                        <div className="flex gap-4 pl-2" style={{ minWidth: 'min-content' }}>
+                            {roomsWithBeds.map(function (room: RoomWithBeds, idx: number) {
+                                return (
+                                    <div key={room.id} style={{ width: '320px' }} className="bg-white border border-muted/20 rounded-lg overflow-hidden flex-shrink-0 flex flex-col items-stretch">
+                                        <div className="p-2 flex justify-center">
+                                            <div className="relative overflow-hidden bg-gray-100 rounded-lg" style={{ height: '200px', width: '236px' }}>
+                                                <img
+                                                    src={getRoomImage(room)}
+                                                    alt={getRoomDisplayName(room, idx)}
+                                                    className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                                                    style={{ borderRadius: 'inherit' }}
+                                                    loading="lazy"
+                                                />
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="p-3 w-full" style={{ paddingLeft: '42px' }}>
+                                            <h4 className="font-semibold text-sm mb-1.5">
+                                                {getRoomDisplayName(room, idx)}
+                                            </h4>
+                                            <div className="space-y-0.5 w-full">
+                                                {formatBedsList(room.beds).map((bedText: string, bidx: number) => (
+                                                    <div key={bidx} className="text-xs text-slate-600">
+                                                        {bedText}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            })}
+                        </div>
                     </div>
                     {showDots && (
-                        <div className="flex justify-center mt-3 gap-2">
-                            {roomsWithBeds.map((_, idx) => (
-                                <span
-                                    key={idx}
-                                    className={`w-3 h-3 rounded-full ${currentIndex === idx ? 'bg-yellow-400' : 'bg-yellow-200'} transition-all`}
-                                />
-                            ))}
+                        <div className="flex justify-center mt-3 gap-2 w-full">
+                            {roomsWithBeds.map(function (_: RoomWithBeds, idx: number) {
+                                return (
+                                    <span
+                                        key={idx}
+                                        className={
+                                            `transition-all duration-300 rounded-full ` +
+                                            (currentIndex === idx
+                                                ? 'w-8 h-3 bg-amber-400'
+                                                : 'w-3 h-3 bg-gray-300')
+                                        }
+                                    />
+                                );
+                            })}
                         </div>
                     )}
-                </div>
+                </>
             ) : (
                 <div
                     ref={scrollContainerRef}
