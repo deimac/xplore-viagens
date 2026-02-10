@@ -31,6 +31,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/hospedagem/:slug"} component={Home} />
       <Route path={"/destino/:id"} component={TravelDetails} />
       <Route path={"/orcamento"} component={Quotation} />
       <Route path={"/quotation"} component={QuotationForm} />

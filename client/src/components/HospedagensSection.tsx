@@ -1,17 +1,18 @@
-import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import FadeInContainer from "@/components/FadeInContainer";
 import { SectionTitle } from "@/components/SectionTitle";
+import { useState } from "react";
 import { AllHospedagensModal } from "@/components/AllHospedagensModal";
+import { PropertyView } from "@/components/PropertyView";
 import { Users, MapPin } from "lucide-react";
 
 interface Props {
     onPropertySelect: (slug: string) => void;
+    onShowAllHospedagens: () => void;
 }
 
-export function HospedagensSection({ onPropertySelect }: Props) {
-    const [isAllModalOpen, setIsAllModalOpen] = useState(false);
+export function HospedagensSection({ onPropertySelect, onShowAllHospedagens }: Props) {
     const { data: featuredProperties, isLoading } = trpc.properties.listFeatured.useQuery();
 
     if (isLoading) {
@@ -95,7 +96,7 @@ export function HospedagensSection({ onPropertySelect }: Props) {
                         {/* Link para ver todas */}
                         <div className="text-center">
                             <Button
-                                onClick={() => setIsAllModalOpen(true)}
+                                onClick={onShowAllHospedagens}
                                 variant="outline"
                                 className="text-accent hover:bg-accent hover:text-white border-accent"
                             >
@@ -106,11 +107,6 @@ export function HospedagensSection({ onPropertySelect }: Props) {
                 </FadeInContainer>
             </div>
 
-            <AllHospedagensModal
-                isOpen={isAllModalOpen}
-                onClose={() => setIsAllModalOpen(false)}
-                onPropertySelect={onPropertySelect}
-            />
         </section>
     );
 }

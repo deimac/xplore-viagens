@@ -4,17 +4,35 @@ interface UseCountUpOptions {
   end: number;
   duration?: number;
   startOnView?: boolean;
+  key?: any; // força reset externo
 }
 
-export function useCountUp({ end, duration = 2000, startOnView = true }: UseCountUpOptions) {
+
+export function useCountUp({ end, duration = 2000, startOnView = true, key }: UseCountUpOptions) {
   const [count, setCount] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
+
+  // Reset ao mudar a key
+  useEffect(() => {
+    setCount(0);
+    setHasStarted(false);
+  }, [key]);
 
   useEffect(() => {
     if (!startOnView) {
       setHasStarted(true);
       return;
+    }
+
+    // Se o elemento já está visível ao montar, dispara imediatamente
+    if (elementRef.current) {
+      const rect = elementRef.current.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (inView && !hasStarted) {
+        setHasStarted(true);
+        return;
+      }
     }
 
     const observer = new IntersectionObserver(
@@ -31,7 +49,7 @@ export function useCountUp({ end, duration = 2000, startOnView = true }: UseCoun
     }
 
     return () => observer.disconnect();
-  }, [startOnView, hasStarted]);
+  }, [startOnView, hasStarted, key]);
 
   useEffect(() => {
     if (!hasStarted) return;
@@ -42,7 +60,7 @@ export function useCountUp({ end, duration = 2000, startOnView = true }: UseCoun
     const timer = setInterval(() => {
       const now = Date.now();
       const progress = Math.min((now - startTime) / duration, 1);
-      
+
       // Easing function for smooth animation (easeOutQuad)
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       const currentCount = Math.floor(easeProgress * end);

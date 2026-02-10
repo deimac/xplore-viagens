@@ -108,7 +108,7 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
                         >
                             <div className="lg:hidden relative aspect-video rounded-2xl overflow-hidden mb-4 shadow-lg hover:shadow-xl transition-shadow duration-300">
                                 <img
-                                    src="/premium.jpg"
+                                    src="/UZdVOhcXpxTchUUl.jpg"
                                     alt="Cabine executiva"
                                     className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                                     loading="lazy"

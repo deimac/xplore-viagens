@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { X } from "lucide-react";
+import { X, Share2 } from "lucide-react";
 import { Home, Users, Ruler, Bed, MapPin, CheckCircle } from "lucide-react";
 import { iconsMap, getIconByName } from "@/lib/iconsMap";
 import { format, differenceInDays } from "date-fns";
@@ -18,10 +18,29 @@ import { Button } from "@/components/ui/button";
 interface Props {
     slug: string;
     onClose: () => void;
+    origin?: 'home' | 'list';
 }
 
 export function PropertyView({ slug, onClose }: Props) {
+    // Share handler
+    const handleShare = () => {
+        const shareUrl = window.location.origin + `/hospedagem/${slug}`;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Veja esta hospedagem',
+                url: shareUrl,
+            });
+        } else {
+            navigator.clipboard.writeText(shareUrl);
+            alert('Link copiado para a área de transferência!');
+        }
+    };
     const isMobile = useIsMobile();
+    // Função para fechar e rolar para a seção correta
+    const handleClose = () => {
+        onClose();
+        // Não altera hash nem faz scroll, apenas troca a view instantaneamente
+    };
     // Truncar texto e controlar expansão
     const [showFullDescription, setShowFullDescription] = useState(false);
     const truncateText = (text: string, maxLength: number) => {
@@ -105,13 +124,24 @@ export function PropertyView({ slug, onClose }: Props) {
                 <div className="max-w-7xl mx-auto px-4 py-8">
                     <div className="relative">
                         {/* Botão de fechar */}
-                        <button
-                            onClick={onClose}
-                            className="absolute -top-14 right-0 w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
-                            aria-label="Fechar detalhes da propriedade"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="absolute -top-14 right-0 flex gap-2">
+                            <button
+                                onClick={handleShare}
+                                className="w-12 h-12 rounded-full bg-white border-2 border-accent/20 flex items-center justify-center transition-all hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground active:bg-accent active:text-accent-foreground"
+                                aria-label="Compartilhar hospedagem"
+                                type="button"
+                            >
+                                <Share2 className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={handleClose}
+                                className="w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
+                                aria-label="Fechar detalhes da propriedade"
+                                type="button"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
                         {/* Cabeçalho */}
                         <div className="mb-2 mt-1">
@@ -356,14 +386,25 @@ export function PropertyView({ slug, onClose }: Props) {
         <div className="w-full mt-24 mb-12">
             <div className="max-w-7xl mx-auto px-4 md:px-10 py-8">
                 <div className="relative">
-                    {/* Botão de fechar */}
-                    <button
-                        onClick={onClose}
-                        className="absolute -top-14 md:-top-8 right-0 w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
-                        aria-label="Fechar detalhes da propriedade"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    {/* Botões de fechar e compartilhar */}
+                    <div className="absolute -top-14 md:-top-8 right-0 flex gap-2">
+                        <button
+                            onClick={handleShare}
+                            className="w-12 h-12 rounded-full bg-white border-2 border-accent/20 flex items-center justify-center transition-all hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground active:bg-accent active:text-accent-foreground"
+                            aria-label="Compartilhar hospedagem"
+                            type="button"
+                        >
+                            <Share2 className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={handleClose}
+                            className="w-12 h-12 rounded-full bg-accent/10 hover:bg-accent hover:text-white transition-all border-2 border-accent/20 flex items-center justify-center"
+                            aria-label="Fechar detalhes da propriedade"
+                            type="button"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
 
                     {/* Cabeçalho */}
                     <div className="flex items-start gap-4 md:gap-6 mb-2 mt-1 md:mt-0">

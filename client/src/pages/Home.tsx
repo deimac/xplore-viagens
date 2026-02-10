@@ -23,6 +23,7 @@ import ReviewsMarqueeDouble from "@/components/ReviewsMarqueeDouble";
 import { textStyles } from "@/types/textStyles";
 import { PremiumFlightsSection } from "@/components/PremiumFlightsSection";
 import { HospedagensSection } from "@/components/HospedagensSection";
+import { AllHospedagensView } from "@/components/AllHospedagensView";
 import { PropertyView } from "@/components/PropertyView";
 
 
@@ -54,10 +55,58 @@ import {
 } from "lucide-react";
 
 export default function Home() {
-  const [, navigate] = useLocation();
+  // ...existing code...
+  // (Removido: declarações duplicadas de isMobileMenuOpen e isQuotationOpen)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
+  const [showAllHospedagens, setShowAllHospedagens] = useState(false);
+  const [navigationOrigin, setNavigationOrigin] = useState<'home' | 'list' | null>(null);
+
+  // Garantir que ao abrir a lista de hospedagens, a seção fique visível instantaneamente
+  // Ref para detectar transição de PropertyView para lista
+  const prevSelectedPropertySlug = useRef<string | null>(null);
+  useEffect(() => {
+    // Scroll para lista de hospedagens ao abrir
+    if (showAllHospedagens) {
+      setTimeout(() => {
+        const el = document.getElementById('all-hospedagens-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      }, 0);
+    }
+    // Scroll para hospedagens-section ao fechar PropertyView vindo da home
+    if (
+      prevSelectedPropertySlug.current &&
+      !selectedPropertySlug &&
+      !showAllHospedagens &&
+      navigationOrigin === 'home'
+    ) {
+      setTimeout(() => {
+        const el = document.getElementById('hospedagens-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      }, 0);
+    }
+    prevSelectedPropertySlug.current = selectedPropertySlug;
+    // eslint-disable-next-line
+  }, [showAllHospedagens, selectedPropertySlug, navigationOrigin]);
+  // On mount, check if URL has a property slug and open the property view if so
+  useEffect(() => {
+    const match = window.location.pathname.match(/^\/hospedagem\/(.+)$/);
+    if (match && match[1]) {
+      setSelectedPropertySlug(match[1]);
+      setNavigationOrigin('home');
+    }
+  }, []);
+  const [location, navigate] = useLocation();
+  // Helper to open hospedagens list and scroll to top
+  const openAllHospedagens = () => {
+    setShowAllHospedagens(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -68,9 +117,11 @@ export default function Home() {
   });
 
   // Counter animations for stats
-  const { count: travelsCount, elementRef: travelsRef } = useCountUp({ end: 1000, duration: 2500 });
-  const { count: clientsCount, elementRef: clientsRef } = useCountUp({ end: 2000, duration: 2500 });
-  const { count: yearsCount, elementRef: yearsRef } = useCountUp({ end: 4, duration: 2000 });
+  // Força o reset dos contadores ao voltar para a Home
+  const isHome = location === "/";
+  const { count: travelsCount, elementRef: travelsRef } = useCountUp({ end: 1000, duration: 2500, key: isHome });
+  const { count: clientsCount, elementRef: clientsRef } = useCountUp({ end: 2000, duration: 2500, key: isHome });
+  const { count: yearsCount, elementRef: yearsRef } = useCountUp({ end: 4, duration: 2000, key: isHome });
 
   // Use the scroll to section hook
   useScrollToSection();
@@ -333,10 +384,34 @@ export default function Home() {
             <QuotationForm onClose={() => setIsQuotationOpen(false)} />
           </div>
         ) : selectedPropertySlug ? (
-          <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4">
+          <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4" id={navigationOrigin === "list" ? "all-hospedagens-section" : "hospedagens-section"}>
             <PropertyView
               slug={selectedPropertySlug}
-              onClose={() => setSelectedPropertySlug(null)}
+              onClose={() => {
+                setSelectedPropertySlug(null);
+                if (navigationOrigin === "list") {
+                  setShowAllHospedagens(true);
+                } else {
+                  setShowAllHospedagens(false);
+                }
+                setNavigationOrigin(null);
+                // Restore URL to base when closing property view
+                window.history.replaceState(null, '', '/');
+              }}
+              origin={navigationOrigin || "home"}
+            />
+          </div>
+        ) : showAllHospedagens ? (
+          <div id="all-hospedagens-section">
+            <AllHospedagensView
+              onClose={() => setShowAllHospedagens(false)}
+              onPropertySelect={(slug) => {
+                setSelectedPropertySlug(slug);
+                setNavigationOrigin("list");
+                setShowAllHospedagens(false);
+                // Update URL with property slug for sharing
+                window.history.replaceState(null, '', `/hospedagem/${slug}`);
+              }}
             />
           </div>
         ) : (
@@ -404,8 +479,16 @@ export default function Home() {
             )}
 
             {/* Hospedagens Section */}
-            <section id="hospedagens" className="py-0">
-              <HospedagensSection onPropertySelect={(slug) => setSelectedPropertySlug(slug)} />
+            <section id="hospedagens-section" className="py-0">
+              <HospedagensSection
+                onPropertySelect={(slug) => {
+                  setSelectedPropertySlug(slug);
+                  setNavigationOrigin("home");
+                  // Update URL with property slug for sharing
+                  window.history.replaceState(null, '', `/hospedagem/${slug}`);
+                }}
+                onShowAllHospedagens={openAllHospedagens}
+              />
             </section>
 
             {/* Packages Section */}

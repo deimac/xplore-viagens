@@ -103,8 +103,8 @@ export function SleepingArrangements({ propertyId, primaryImage }: SleepingArran
         }
     }, [roomsWithBeds]);
 
-    const showNavigation = roomsWithBeds.length > 2;
-    const showDots = roomsWithBeds.length > 1 && isMobile;
+    const showNavigation = roomsWithBeds.length > 2 && !isMobile;
+    const showDots = roomsWithBeds.length > 1;
 
     // Não exibir a seção se não houver quartos com camas (depois de todos os hooks)
     if (isLoading || roomsWithBeds.length === 0) {
@@ -113,8 +113,30 @@ export function SleepingArrangements({ propertyId, primaryImage }: SleepingArran
 
     return (
         <div className="border border-muted/40 rounded-xl p-6 md:p-8 bg-[#FAFAFA] shadow-[0_0_0_6px_#fff] mb-8">
-            <div className="flex items-center mb-6">
+            <div className="flex items-center justify-between mb-2 md:mb-2">
                 <h3 className={textStyles.tituloSessao + " text-base md:text-lg font-semibold"}>Onde você vai dormir</h3>
+                {!isMobile && showNavigation && (
+                    <div className="flex gap-2 ml-4">
+                        <button
+                            className="bg-white border border-muted/40 rounded-full w-10 h-10 flex items-center justify-center shadow-md transition-all
+                                       hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground active:bg-accent active:text-accent-foreground"
+                            onClick={() => scroll('left')}
+                            disabled={!canScrollLeft}
+                            style={{ opacity: canScrollLeft ? 1 : 0.4 }}
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                            className="bg-white border border-muted/40 rounded-full w-10 h-10 flex items-center justify-center shadow-md transition-all
+                                       hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground active:bg-accent active:text-accent-foreground"
+                            onClick={() => scroll('right')}
+                            disabled={!canScrollRight}
+                            style={{ opacity: canScrollRight ? 1 : 0.4 }}
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
             </div>
 
             {isMobile ? (
@@ -169,17 +191,18 @@ export function SleepingArrangements({ propertyId, primaryImage }: SleepingArran
                         </div>
                     </div>
                     {showDots && (
-                        <div className="flex justify-center mt-3 gap-2 w-full">
+                        <div className="flex justify-center mt-6 gap-2 w-full">
                             {roomsWithBeds.map(function (_: RoomWithBeds, idx: number) {
                                 return (
                                     <span
                                         key={idx}
                                         className={
-                                            `transition-all duration-300 rounded-full ` +
+                                            `transition-all duration-300 rounded-full cursor-pointer ` +
                                             (currentIndex === idx
                                                 ? 'w-8 h-3 bg-amber-400'
                                                 : 'w-3 h-3 bg-gray-300')
                                         }
+                                        onClick={() => setCurrentIndex(idx)}
                                     />
                                 );
                             })}
@@ -187,41 +210,62 @@ export function SleepingArrangements({ propertyId, primaryImage }: SleepingArran
                     )}
                 </>
             ) : (
-                <div
-                    ref={scrollContainerRef}
-                    className="overflow-x-auto scrollbar-hide snap-x snap-mandatory smooth-scroll"
-                >
-                    <div className="flex gap-4 min-w-min">
-                        {roomsWithBeds.map((room: RoomWithBeds, index: number) => (
-                            <div
-                                key={room.id}
-                                className="room-card flex-shrink-0 bg-white border border-muted/20 rounded-lg overflow-hidden w-[calc(50%-8px)] min-w-[220px] max-w-[280px] snap-start"
-                            >
-                                {/* Room Image */}
-                                <div className="aspect-[4/3] overflow-hidden bg-gray-100">
-                                    <img
-                                        src={getRoomImage(room)}
-                                        alt={getRoomDisplayName(room, index)}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                    />
-                                </div>
-                                {/* Room Info */}
-                                <div className="p-3">
-                                    <h4 className="font-semibold text-sm mb-1.5">
-                                        {getRoomDisplayName(room, index)}
-                                    </h4>
-                                    <div className="space-y-0.5">
-                                        {formatBedsList(room.beds).map((bedText, idx) => (
-                                            <div key={idx} className="text-xs text-slate-600">
-                                                {bedText}
-                                            </div>
-                                        ))}
+                <div>
+                    <div className="mb-4" />
+                    <div
+                        ref={scrollContainerRef}
+                        className="overflow-x-auto scrollbar-hide snap-x snap-mandatory smooth-scroll"
+                    >
+                        <div className="flex gap-4 min-w-min">
+                            {roomsWithBeds.map((room: RoomWithBeds, index: number) => (
+                                <div
+                                    key={room.id}
+                                    className="room-card flex-shrink-0 bg-white border border-muted/20 rounded-lg overflow-hidden w-[calc(50%-8px)] min-w-[220px] max-w-[280px] snap-start"
+                                >
+                                    {/* Room Image */}
+                                    <div className="aspect-[4/3] overflow-hidden bg-gray-100">
+                                        <img
+                                            src={getRoomImage(room)}
+                                            alt={getRoomDisplayName(room, index)}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
+                                    </div>
+                                    {/* Room Info */}
+                                    <div className="p-3">
+                                        <h4 className="font-semibold text-sm mb-1.5">
+                                            {getRoomDisplayName(room, index)}
+                                        </h4>
+                                        <div className="space-y-0.5">
+                                            {formatBedsList(room.beds).map((bedText, idx) => (
+                                                <div key={idx} className="text-xs text-slate-600">
+                                                    {bedText}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
+                    {showDots && (
+                        <div className="flex justify-center mt-6 gap-2 w-full">
+                            {roomsWithBeds.map(function (_: RoomWithBeds, idx: number) {
+                                return (
+                                    <span
+                                        key={idx}
+                                        className={
+                                            `transition-all duration-300 rounded-full cursor-pointer ` +
+                                            (currentIndex === idx
+                                                ? 'w-8 h-3 bg-amber-400'
+                                                : 'w-3 h-3 bg-gray-300')
+                                        }
+                                        onClick={() => setCurrentIndex(idx)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
