@@ -154,13 +154,12 @@ export const ofertasVoo = mysqlTable("ofertas_voo", {
   companhiaAerea: varchar("companhia_aerea", { length: 255 }).notNull(),
   classe: mysqlEnum("classe", ["PE", "BS", "FC"]).notNull(),
   preco: varchar("preco", { length: 50 }).notNull(),
-  parcelas: int("parcelas").notNull(),
+  parcelas: varchar("parcelas", { length: 50 }),
   rotasFixas: text("rotas_fixas"),
   rotaIda: text("rota_ida"),
   rotaVolta: text("rota_volta"),
   ativo: int("ativo").notNull().default(1),
   criadoEm: timestamp("criado_em"),
-  imagemUrl: varchar("imagem_url", { length: 255 }),
 });
 
 export const ofertasDatasFixas = mysqlTable("ofertas_datas_fixas", {

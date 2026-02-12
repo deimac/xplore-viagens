@@ -125,7 +125,7 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
                                     transition={{ duration: 0.25 }}
                                     className="bg-white rounded-2xl p-5 lg:p-6 shadow-xl border-2 border-accent/10 h-full hover:shadow-2xl transition-shadow duration-300 flex flex-col"
                                 >
-                                    <div className="mb-3">
+                                    <div className="mb-5">
                                         <h3 className="text-base lg:text-lg font-semibold text-slate-900 mb-2 leading-tight">
                                             {oferta.titulo}
                                         </h3>
@@ -168,7 +168,7 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
                                             </span>
                                         </div>
                                         <p className="text-xs text-slate-600 mt-1 mb-3">
-                                            ou {oferta.parcelas}x de {formatarPreco(oferta.preco / oferta.parcelas)} sem juros
+                                            {oferta.parcelas ? `ou ${oferta.parcelas}` : ''}
                                         </p>
 
                                         {/* Container com altura reservada para o banner */}

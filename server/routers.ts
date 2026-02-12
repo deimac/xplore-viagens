@@ -310,7 +310,6 @@ export const appRouter = router({
           rotas_fixas: z.string().optional(),
           rota_ida: z.string().optional(),
           rota_volta: z.string().optional(),
-          imagem_url: z.string().optional(),
           ativo: z.boolean().default(true),
           datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
           datas_flexiveis: z.array(
@@ -343,7 +342,6 @@ export const appRouter = router({
           rotas_fixas: z.string().optional(),
           rota_ida: z.string().optional(),
           rota_volta: z.string().optional(),
-          imagem_url: z.string().optional(),
           ativo: z.boolean(),
           datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
           datas_flexiveis: z.array(

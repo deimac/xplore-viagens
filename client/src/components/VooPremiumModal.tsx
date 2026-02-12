@@ -37,7 +37,6 @@ interface OfertaVooPremium {
     rotas_fixas?: string;
     rota_ida?: string;
     rota_volta?: string;
-    imagem_url?: string;
     ativo: boolean;
     datas_fixas?: DataFixa[];
     datas_flexiveis?: DataFlexivel[];
@@ -63,6 +62,46 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
         datas_flexiveis: [],
     });
 
+    // Estado para o valor formatado visualmente
+    const [precoFormatado, setPrecoFormatado] = useState<string>('');
+
+    // Função para formatar o valor em reais
+    const formatarValorBrasileiro = (valor: number): string => {
+        if (valor === 0) return '';
+        return new Intl.NumberFormat("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(valor);
+    };
+
+    // Função para converter string formatada em número
+    const parseValorBrasileiro = (valorStr: string): number => {
+        if (!valorStr.trim()) return 0;
+        // Remove pontos (separadores de milhares) e substitui vírgula por ponto
+        const numeroLimpo = valorStr
+            .replace(/\./g, '')
+            .replace(',', '.')
+            .replace(/[^\d.]/g, '');
+        return parseFloat(numeroLimpo) || 0;
+    };
+
+    // Função para aplicar máscara de valor
+    const aplicarMascaraValor = (valor: string): string => {
+        // Remove tudo que não é número
+        const apenasNumeros = valor.replace(/\D/g, '');
+
+        if (!apenasNumeros) return '';
+
+        // Converte para número (centavos) e depois para reais  
+        const valorEmCentavos = parseInt(apenasNumeros);
+        const valorEmReais = valorEmCentavos / 100;
+
+        return new Intl.NumberFormat("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(valorEmReais);
+    };
+
     useEffect(() => {
         if (oferta) {
             setFormData({
@@ -70,6 +109,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                 datas_fixas: oferta.datas_fixas || [],
                 datas_flexiveis: oferta.datas_flexiveis || [],
             });
+            setPrecoFormatado(formatarValorBrasileiro(oferta.preco));
         } else {
             setFormData({
                 tipo_oferta: 'DATA_FIXA',
@@ -82,6 +122,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                 datas_fixas: [],
                 datas_flexiveis: [],
             });
+            setPrecoFormatado('');
         }
     }, [oferta, isOpen]);
 
@@ -295,12 +336,12 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-5">
+                    <div className="grid grid-cols-3 gap-6 items-end">
                         {/* Classe */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <Label className="text-sm font-semibold">Classe *</Label>
                             <Select value={formData.classe_voo} onValueChange={(v) => setFormData({ ...formData, classe_voo: v as ClasseVoo })}>
-                                <SelectTrigger className="h-11">
+                                <SelectTrigger className="h-10 w-full">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -312,43 +353,34 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         </div>
 
                         {/* Preço */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <Label htmlFor="preco" className="text-sm font-semibold">Preço (R$) *</Label>
                             <Input
                                 id="preco"
-                                type="number"
-                                value={formData.preco}
-                                onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) || 0 })}
-                                placeholder="8000"
-                                className="h-11"
-                                min="0"
-                                step="0.01"
+                                type="text"
+                                value={precoFormatado}
+                                onChange={(e) => {
+                                    const valorMascarado = aplicarMascaraValor(e.target.value);
+                                    setPrecoFormatado(valorMascarado);
+                                    const valorNumerico = parseValorBrasileiro(valorMascarado);
+                                    setFormData({ ...formData, preco: valorNumerico });
+                                }}
+                                placeholder="10.000,00"
+                                className="h-10 w-full"
                             />
                         </div>
 
                         {/* Parcelas */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <Label htmlFor="parcelas" className="text-sm font-semibold">Parcelas</Label>
                             <Input
                                 id="parcelas"
                                 value={formData.parcelas || ''}
                                 onChange={(e) => setFormData({ ...formData, parcelas: e.target.value })}
                                 placeholder="Ex: 10x sem juros"
-                                className="h-11"
+                                className="h-10 w-full"
                             />
                         </div>
-                    </div>
-
-                    {/* Imagem URL */}
-                    <div className="space-y-3">
-                        <Label htmlFor="imagem" className="text-sm font-semibold">URL da Imagem</Label>
-                        <Input
-                            id="imagem"
-                            value={formData.imagem_url || ''}
-                            onChange={(e) => setFormData({ ...formData, imagem_url: e.target.value })}
-                            placeholder="https://..."
-                            className="h-11"
-                        />
                     </div>
 
                     {/* Rotas - Condicional */}
@@ -362,11 +394,11 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                     id="rotas_fixas"
                                     value={formData.rotas_fixas || ''}
                                     onChange={(e) => setFormData({ ...formData, rotas_fixas: e.target.value })}
-                                    placeholder="Ex: GRU-LON-GRU"
+                                    placeholder="Ex: São Paulo,Montreal,Madrid,São Paulo"
                                     className="h-11"
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    Digite as rotas completas separadas por hífen
+                                    Digite as rotas completas separadas por virgula
                                 </p>
                             </div>
                         ) : (
@@ -539,7 +571,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                 </div>
 
                                 <p className="text-sm text-muted-foreground">
-                                    Mês no formato YYYY-MM e dias separados por vírgula
+                                    Mês no formato JAN, FEV (abreviado) e dias separados por vírgula
                                 </p>
                             </div>
                         )}
@@ -567,7 +599,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         </Button>
                     </div>
                 </form>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

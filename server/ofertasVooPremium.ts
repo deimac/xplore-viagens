@@ -16,7 +16,6 @@ export interface OfertaVooPremiumInput {
     rotas_fixas?: string;
     rota_ida?: string;
     rota_volta?: string;
-    imagem_url?: string;
     ativo: boolean;
 }
 
@@ -65,7 +64,6 @@ export async function listarOfertasPremium(): Promise<OfertaComDatas[]> {
             rotas_fixas: oferta.rotasFixas || undefined,
             rota_ida: oferta.rotaIda || undefined,
             rota_volta: oferta.rotaVolta || undefined,
-            imagem_url: oferta.imagemUrl || undefined,
             ativo: oferta.ativo === 1,
         };
 
@@ -127,7 +125,6 @@ export async function buscarOfertaPorId(id: number): Promise<OfertaComDatas | nu
         rotas_fixas: oferta.rotasFixas || undefined,
         rota_ida: oferta.rotaIda || undefined,
         rota_volta: oferta.rotaVolta || undefined,
-        imagem_url: oferta.imagemUrl || undefined,
         ativo: oferta.ativo === 1,
     };
 
@@ -203,11 +200,10 @@ export async function criarOfertaPremium(
         companhiaAerea: input.companhia_aerea,
         classe: input.classe_voo,
         preco: input.preco.toString(),
-        parcelas: input.parcelas ? parseInt(input.parcelas) : 1,
+        parcelas: input.parcelas || null,
         rotasFixas: input.rotas_fixas || null,
         rotaIda: input.rota_ida || null,
         rotaVolta: input.rota_volta || null,
-        imagemUrl: input.imagem_url || null,
         ativo: input.ativo ? 1 : 0,
     });
 
@@ -283,11 +279,10 @@ export async function atualizarOfertaPremium(
             companhiaAerea: input.companhia_aerea,
             classe: input.classe_voo,
             preco: input.preco.toString(),
-            parcelas: input.parcelas ? parseInt(input.parcelas) : 1,
+            parcelas: input.parcelas || null,
             rotasFixas: input.rotas_fixas || null,
             rotaIda: input.rota_ida || null,
             rotaVolta: input.rota_volta || null,
-            imagemUrl: input.imagem_url || null,
             ativo: input.ativo ? 1 : 0,
         })
         .where(eq(ofertasVoo.id, id));

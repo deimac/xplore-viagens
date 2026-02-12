@@ -29,7 +29,6 @@ interface OfertaVooPremium {
     rotas_fixas?: string;
     rota_ida?: string;
     rota_volta?: string;
-    imagem_url?: string;
     ativo: boolean;
     datas_fixas?: Array<{ datas_opcao: string }>;
     datas_flexiveis?: Array<{ tipo: 'IDA' | 'VOLTA'; mes_referencia: string; dias_disponiveis: string }>;
