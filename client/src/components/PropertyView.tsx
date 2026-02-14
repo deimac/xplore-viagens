@@ -14,6 +14,7 @@ import { SleepingArrangements } from "@/components/SleepingArrangements";
 import type { PropertyWithDetails, PropertyImage, PropertyAmenity } from "@/types/properties";
 import { BookingDatePicker } from "@/components/BookingDatePicker";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Props {
     slug: string;
@@ -293,9 +294,9 @@ export function PropertyView({ slug, onClose }: Props) {
 
                         {/* Sobre esta hospedagem */}
                         {property.description_full && (
-                            <div className="mt-4 mb-8 flex flex-col justify-start w-full">
+                            <div className="mt-4 mb-8 flex flex-col justify-between w-full">
                                 <div
-                                    className="border border-gray-200 rounded-t-xl p-6 w-full bg-gray-50"
+                                    className="border border-gray-200 rounded-t-xl p-6 w-full bg-gray-50 flex-1 overflow-hidden"
                                     style={{
                                         boxShadow: '0 0 0 6px #fff',
                                         borderBottomLeftRadius: needsDescriptionButton ? 0 : '15px',
@@ -307,17 +308,11 @@ export function PropertyView({ slug, onClose }: Props) {
                                         ref={descriptionContentRef}
                                         className="text-base text-slate-700 leading-relaxed"
                                         style={{
-                                            maxHeight: !showFullDescription ? '200px' : 'none',
                                             overflow: 'hidden',
-                                            display: '-webkit-box',
-                                            WebkitBoxOrient: 'vertical',
-                                            WebkitLineClamp: !showFullDescription ? 3 : 'unset'
+                                            ...(showFullDescription ? {} : { display: '-webkit-box', WebkitBoxOrient: 'vertical' as any, WebkitLineClamp: 7 })
                                         }}
                                     >
-                                        {showFullDescription
-                                            ? property.description_full
-                                            : property.description_full
-                                        }
+                                        {property.description_full}
                                     </p>
                                 </div>
                                 {needsDescriptionButton && (
@@ -596,9 +591,9 @@ export function PropertyView({ slug, onClose }: Props) {
                         <div className="flex-1 max-w-2xl space-y-6 flex flex-col">
                             {/* Descrição completa e expansível */}
                             {property.description_full && (
-                                <div className="mt-4 mb-4 flex flex-col justify-start w-full max-w-2xl">
+                                <div className={cn("mt-4 mb-4 flex flex-col w-full max-w-2xl", !showFullDescription && "md:h-[280px]")}>
                                     <div
-                                        className="border border-gray-200 rounded-t-xl p-6 md:p-8 w-full bg-gray-50"
+                                        className="border border-gray-200 rounded-t-xl p-6 md:p-8 w-full bg-gray-50 flex-1 overflow-hidden"
                                         style={{
                                             boxShadow: '0 0 0 6px #fff',
                                             borderBottomLeftRadius: needsDescriptionButton ? 0 : '15px',
@@ -610,23 +605,17 @@ export function PropertyView({ slug, onClose }: Props) {
                                             ref={descriptionContentRef}
                                             className="text-base text-slate-700 leading-relaxed"
                                             style={{
-                                                maxHeight: !showFullDescription ? '200px' : 'none',
                                                 overflow: 'hidden',
-                                                display: '-webkit-box',
-                                                WebkitBoxOrient: 'vertical',
-                                                WebkitLineClamp: !showFullDescription ? 3 : 'unset'
+                                                ...(showFullDescription ? {} : { display: '-webkit-box', WebkitBoxOrient: 'vertical' as any, WebkitLineClamp: 7 })
                                             }}
                                         >
-                                            {showFullDescription
-                                                ? property.description_full
-                                                : property.description_full
-                                            }
+                                            {property.description_full}
                                         </p>
                                     </div>
                                     {needsDescriptionButton && (
                                         <button
                                             onClick={() => setShowFullDescription(prev => !prev)}
-                                            className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium text-center transition-all"
+                                            className="w-full h-12 flex-shrink-0 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium text-center transition-all"
                                             style={{
                                                 borderTopLeftRadius: 0,
                                                 borderTopRightRadius: 0,

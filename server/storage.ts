@@ -59,7 +59,9 @@ export async function storagePutLocal(
   console.log(`✅ File stored locally: ${key}`);
 
   // Return URL (relative path)
-  const url = `/${ENV.uploadsDir}/${key}`;
+  const baseUrl = ENV.publicUrl?.replace(/\/$/, "") || "";
+  const url = `${baseUrl}/${ENV.uploadsDir}/${key}`;
+
   return { url, key };
 }
 
@@ -93,7 +95,8 @@ export async function storagePut(
  * @returns { url, key }
  */
 export async function storageGet(key: string): Promise<{ url: string; key: string }> {
-  const url = `/${ENV.uploadsDir}/${key}`;
+  const baseUrl = ENV.publicUrl?.replace(/\/$/, "") || "";
+  const url = `${baseUrl}/${ENV.uploadsDir}/${key}`;
   return { url, key };
 }
 
