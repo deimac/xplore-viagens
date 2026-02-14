@@ -43,6 +43,12 @@ export function PropertyView({ slug, onClose }: Props) {
     };
     // Truncar texto e controlar expansão
     const [showFullDescription, setShowFullDescription] = useState(false);
+    const [showAllAmenities, setShowAllAmenities] = useState(false);
+    const [needsDescriptionButton, setNeedsDescriptionButton] = useState(false);
+    const [needsAmenitiesButton, setNeedsAmenitiesButton] = useState(false);
+    const descriptionContentRef = useRef<HTMLParagraphElement>(null);
+    const amenitiesContentRef = useRef<HTMLDivElement>(null);
+
     const truncateText = (text: string, maxLength: number) => {
         if (showFullDescription || !text) return text;
         if (text.length <= maxLength) return text;
@@ -50,6 +56,18 @@ export function PropertyView({ slug, onClose }: Props) {
     };
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+    // Número máximo de comodidades a exibir por padrão
+    const AMENITIES_LIMIT = 6;
+
+    // Função para verificar se o conteúdo precisa de botão de expandir
+    const checkIfNeedsButton = () => {
+        if (descriptionContentRef.current && !showFullDescription) {
+            const scrollHeight = descriptionContentRef.current.scrollHeight;
+            const clientHeight = descriptionContentRef.current.clientHeight;
+            setNeedsDescriptionButton(scrollHeight > clientHeight + 5); // +5px de tolerância
+        }
+    };
 
     const { data: property, isLoading } = trpc.properties.getBySlug.useQuery({ slug });
     const { data: companySettings } = trpc.companySettings.get.useQuery();
@@ -62,6 +80,29 @@ export function PropertyView({ slug, onClose }: Props) {
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
+
+    // Verificar se o conteúdo precisa de botão
+    useEffect(() => {
+        setTimeout(() => {
+            checkIfNeedsButton();
+        }, 100);
+
+        // Verificar também ao redimensionar a janela
+        const handleResize = () => {
+            setTimeout(() => checkIfNeedsButton(), 50);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [property?.description_full, showFullDescription]);
+
+    // Verificar comodidades
+    useEffect(() => {
+        if (property?.amenities) {
+            // Se houver mais amenidades que o limite, precisamos do botão
+            setNeedsAmenitiesButton(property.amenities.length > AMENITIES_LIMIT);
+        }
+    }, [property?.amenities]);
 
     if (isLoading) {
         return (
@@ -253,18 +294,33 @@ export function PropertyView({ slug, onClose }: Props) {
                         {/* Sobre esta hospedagem */}
                         {property.description_full && (
                             <div className="mt-4 mb-8 flex flex-col justify-start w-full">
-                                <div className="border border-gray-200 border-b-0 rounded-t-xl p-6 w-full bg-gray-50" style={{ boxShadow: '0 0 0 6px #fff' }}>
+                                <div
+                                    className="border border-gray-200 rounded-t-xl p-6 w-full bg-gray-50"
+                                    style={{
+                                        boxShadow: '0 0 0 6px #fff',
+                                        borderBottomLeftRadius: needsDescriptionButton ? 0 : '15px',
+                                        borderBottomRightRadius: needsDescriptionButton ? 0 : '15px'
+                                    }}
+                                >
                                     <h3 className="text-lg font-semibold text-accent mb-2">Sobre esta hospedagem</h3>
-                                    <p className="text-base text-slate-700 leading-relaxed">
+                                    <p
+                                        ref={descriptionContentRef}
+                                        className="text-base text-slate-700 leading-relaxed"
+                                        style={{
+                                            maxHeight: !showFullDescription ? '200px' : 'none',
+                                            overflow: 'hidden',
+                                            display: '-webkit-box',
+                                            WebkitBoxOrient: 'vertical',
+                                            WebkitLineClamp: !showFullDescription ? 3 : 'unset'
+                                        }}
+                                    >
                                         {showFullDescription
                                             ? property.description_full
-                                            : (property.description_full.length > 300
-                                                ? property.description_full.substring(0, 300) + '...'
-                                                : property.description_full)
+                                            : property.description_full
                                         }
                                     </p>
                                 </div>
-                                {property.description_full.length > 300 && (
+                                {needsDescriptionButton && (
                                     <button
                                         onClick={() => setShowFullDescription(prev => !prev)}
                                         className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium text-center transition-all"
@@ -293,23 +349,42 @@ export function PropertyView({ slug, onClose }: Props) {
 
                         {/* Comodidades */}
                         {property.amenities && property.amenities.length > 0 && (
-                            <div className="border border-muted/40 rounded-xl p-6 mb-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
-                                <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {property.amenities.map((amenity: PropertyAmenity) => {
-                                        let IconComponent = getIconByName(amenity.icon ?? "home");
-                                        return (
-                                            <div key={amenity.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-muted/20">
-                                                {amenity.icon ? (
-                                                    <IconComponent className="w-5 h-5 text-accent" />
-                                                ) : (
-                                                    <Home className="w-5 h-5 text-accent" />
-                                                )}
-                                                <span className="text-sm text-slate-700">{amenity.name}</span>
-                                            </div>
-                                        );
-                                    })}
+                            <div className="mt-4 mb-8 flex flex-col justify-start w-full">
+                                <div
+                                    className="border border-gray-200 rounded-t-xl p-6 w-full bg-gray-50"
+                                    style={{
+                                        boxShadow: '0 0 0 6px #fff',
+                                        borderBottomLeftRadius: needsAmenitiesButton ? 0 : '15px',
+                                        borderBottomRightRadius: needsAmenitiesButton ? 0 : '15px'
+                                    }}
+                                >
+                                    <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
+                                    <div ref={amenitiesContentRef} className="grid grid-cols-1 gap-3">
+                                        {property.amenities.slice(0, showAllAmenities ? undefined : AMENITIES_LIMIT).map((amenity: PropertyAmenity) => {
+                                            return (
+                                                <div key={amenity.id} className="flex items-center p-3 bg-white rounded-lg border border-muted/20">
+                                                    <span className="text-sm text-slate-700">{amenity.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
+                                {needsAmenitiesButton && (
+                                    <button
+                                        onClick={() => setShowAllAmenities(prev => !prev)}
+                                        className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium text-center transition-all"
+                                        style={{
+                                            borderTopLeftRadius: 0,
+                                            borderTopRightRadius: 0,
+                                            borderBottomLeftRadius: '15px',
+                                            borderBottomRightRadius: '15px',
+                                            padding: 0,
+                                            minHeight: '3rem',
+                                        }}
+                                    >
+                                        {showAllAmenities ? 'Ver menos' : 'Ver mais'}
+                                    </button>
+                                )}
                             </div>
                         )}
 
@@ -522,18 +597,33 @@ export function PropertyView({ slug, onClose }: Props) {
                             {/* Descrição completa e expansível */}
                             {property.description_full && (
                                 <div className="mt-4 mb-4 flex flex-col justify-start w-full max-w-2xl">
-                                    <div className="border border-gray-200 border-b-0 rounded-t-xl p-6 md:p-8 w-full bg-gray-50" style={{ boxShadow: '0 0 0 6px #fff' }}>
+                                    <div
+                                        className="border border-gray-200 rounded-t-xl p-6 md:p-8 w-full bg-gray-50"
+                                        style={{
+                                            boxShadow: '0 0 0 6px #fff',
+                                            borderBottomLeftRadius: needsDescriptionButton ? 0 : '15px',
+                                            borderBottomRightRadius: needsDescriptionButton ? 0 : '15px'
+                                        }}
+                                    >
                                         <h3 className="text-lg font-semibold text-accent mb-2">Sobre esta hospedagem</h3>
-                                        <p className="text-base text-slate-700 leading-relaxed">
+                                        <p
+                                            ref={descriptionContentRef}
+                                            className="text-base text-slate-700 leading-relaxed"
+                                            style={{
+                                                maxHeight: !showFullDescription ? '200px' : 'none',
+                                                overflow: 'hidden',
+                                                display: '-webkit-box',
+                                                WebkitBoxOrient: 'vertical',
+                                                WebkitLineClamp: !showFullDescription ? 3 : 'unset'
+                                            }}
+                                        >
                                             {showFullDescription
                                                 ? property.description_full
-                                                : (property.description_full.length > 300
-                                                    ? property.description_full.substring(0, 300) + '...'
-                                                    : property.description_full)
+                                                : property.description_full
                                             }
                                         </p>
                                     </div>
-                                    {property.description_full.length > 300 && (
+                                    {needsDescriptionButton && (
                                         <button
                                             onClick={() => setShowFullDescription(prev => !prev)}
                                             className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium text-center transition-all"
@@ -560,23 +650,42 @@ export function PropertyView({ slug, onClose }: Props) {
 
                             {/* Container 3: Comodidades */}
                             {property.amenities && property.amenities.length > 0 && (
-                                <div className="border border-muted/40 rounded-xl p-6 md:p-8" style={{ background: '#FAFAFA', boxShadow: '0 0 0 6px #fff' }}>
-                                    <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {property.amenities.map((amenity: PropertyAmenity) => {
-                                            let IconComponent = getIconByName(amenity.icon ?? "home");
-                                            return (
-                                                <div key={amenity.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-muted/20">
-                                                    {amenity.icon ? (
-                                                        <IconComponent className="w-5 h-5 text-accent" />
-                                                    ) : (
-                                                        <Home className="w-5 h-5 text-accent" />
-                                                    )}
-                                                    <span className="text-sm text-slate-700">{amenity.name}</span>
-                                                </div>
-                                            );
-                                        })}
+                                <div className="flex flex-col justify-start w-full">
+                                    <div
+                                        className="border border-gray-200 rounded-t-xl p-6 md:p-8 w-full bg-gray-50"
+                                        style={{
+                                            boxShadow: '0 0 0 6px #fff',
+                                            borderBottomLeftRadius: needsAmenitiesButton ? 0 : '15px',
+                                            borderBottomRightRadius: needsAmenitiesButton ? 0 : '15px'
+                                        }}
+                                    >
+                                        <h3 className="text-lg font-semibold text-accent mb-4">Comodidades</h3>
+                                        <div ref={amenitiesContentRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {property.amenities.slice(0, showAllAmenities ? undefined : AMENITIES_LIMIT).map((amenity: PropertyAmenity) => {
+                                                return (
+                                                    <div key={amenity.id} className="flex items-center p-3 bg-white rounded-lg border border-muted/20">
+                                                        <span className="text-sm text-slate-700">{amenity.name}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
+                                    {needsAmenitiesButton && (
+                                        <button
+                                            onClick={() => setShowAllAmenities(prev => !prev)}
+                                            className="w-full h-12 flex items-center justify-center border border-gray-200 bg-gray-100 hover:bg-gray-200 text-slate-700 font-medium text-center transition-all"
+                                            style={{
+                                                borderTopLeftRadius: 0,
+                                                borderTopRightRadius: 0,
+                                                borderBottomLeftRadius: '15px',
+                                                borderBottomRightRadius: '15px',
+                                                padding: 0,
+                                                minHeight: '3rem',
+                                            }}
+                                        >
+                                            {showAllAmenities ? 'Ver menos' : 'Ver mais'}
+                                        </button>
+                                    )}
                                 </div>
                             )}
 

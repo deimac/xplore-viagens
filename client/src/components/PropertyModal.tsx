@@ -6,6 +6,7 @@ import { PropertyImageUpload } from "@/components/PropertyImageUpload";
 import { AmenitySelector } from "@/components/AmenitySelector";
 import { MapPreview } from "@/components/MapPreview";
 import { SpacesAndBedsManager } from "@/components/SpacesAndBedsManager";
+import { LocalSpacesManager, LocalSpace } from "@/components/LocalSpacesManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
     const [selectedAmenityIds, setSelectedAmenityIds] = useState<number[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [showMap, setShowMap] = useState(false);
+    const [localSpaces, setLocalSpaces] = useState<LocalSpace[]>([]);
 
     const utils = trpc.useUtils();
 
@@ -188,6 +190,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
         setImages([]);
         setOriginalImages([]);
         setSelectedAmenityIds([]);
+        setLocalSpaces([]);
         setCurrentStep(0);
         setShowMap(false);
     };
@@ -346,6 +349,33 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                 });
             }
 
+            // Criar espaços e camas se for criação de nova propriedade e houver espaços definidos
+            if (!property && localSpaces.length > 0) {
+                toast.info(`Criando ${localSpaces.length} espaço(s)...`);
+
+                for (const space of localSpaces) {
+                    // Criar o espaço
+                    const createdSpace = await utils.client.propertyRooms.create.mutate({
+                        propertyId,
+                        roomTypeId: space.roomTypeId,
+                        name: space.name || undefined,
+                    });
+
+                    // Criar as camas do espaço
+                    if (space.beds.length > 0) {
+                        for (const bed of space.beds) {
+                            await utils.client.roomBeds.create.mutate({
+                                roomId: createdSpace.id,
+                                bedTypeId: bed.bedTypeId,
+                                quantity: bed.quantity,
+                            });
+                        }
+                    }
+                }
+
+                toast.success(`Espaços criados com sucesso!`);
+            }
+
             handleSuccess();
         } catch (error: any) {
             console.error("Error saving property:", error);
@@ -372,7 +402,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
             case 3: // Comodidades
                 return true; // Comodidades são opcionais
             case 4: // Espaços
-                return !!property; // Só disponível para propriedades já criadas
+                return true; // Sempre acessível, mas requer salvar primeiro
             default:
                 return false;
         }
@@ -391,11 +421,8 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
         // Sempre permite navegar para a primeira seção
         if (stepIndex === 0) return true;
 
-        // Permite navegar para seções opcionais (Imagens e Comodidades) sempre
+        // Permite navegar para seções opcionais (Imagens, Comodidades e Espaços) sempre
         if (stepIndex >= 3 && stepIndex <= 4) return true;
-
-        // Quartos e Camas só disponível para propriedades já criadas
-        if (stepIndex === 5) return !!property;
 
         // Para Localização (index 1), só precisa que Informações Básicas seja válida
         if (stepIndex === 1) return isStepValid(0);
@@ -522,6 +549,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     <Label htmlFor="property_type">Tipo de Propriedade *</Label>
                                     <select
                                         id="property_type"
+                                        title="Tipo de Propriedade"
                                         value={formData.property_type_id || ""}
                                         onChange={(e) => setFormData({
                                             ...formData,
@@ -761,14 +789,23 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                             </div>
                         )}
 
-                        {currentStep === 4 && property && (
+                        {currentStep === 4 && (
                             <div>
-                                <SpacesAndBedsManager propertyId={property.id} />
-                                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p className="text-sm text-blue-800">
-                                        <strong>Dica:</strong> Configure os espaços e as camas disponíveis. Apenas espaços com camas serão exibidos na seção "Onde você vai dormir".
-                                    </p>
-                                </div>
+                                {property ? (
+                                    <>
+                                        <SpacesAndBedsManager propertyId={property.id} />
+                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p className="text-sm text-blue-800">
+                                                <strong>Dica:</strong> Configure os espaços e as camas disponíveis. Apenas espaços com camas serão exibidos na seção "Onde você vai dormir".
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <LocalSpacesManager
+                                        spaces={localSpaces}
+                                        onSpacesChange={setLocalSpaces}
+                                    />
+                                )}
                             </div>
                         )}
                     </div>

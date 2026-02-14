@@ -19,6 +19,7 @@ export interface Property {
     bedrooms: number;
     beds: number;
     bathrooms: number;
+    area_m2?: number | string;
     active: boolean;
     is_featured?: boolean;
     created_at: string;
@@ -77,6 +78,7 @@ export interface PropertyFormData {
     bedrooms: number;
     beds: number;
     bathrooms: number;
+    area_m2?: number | string;
     is_featured?: boolean;
 }
 

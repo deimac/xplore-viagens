@@ -106,7 +106,7 @@ const features = [
 
 export default function ServicesBentoSection() {
     return (
-        <section id="servicos" className="py-16 md:py-24" style={{ background: '#e6f0fa' }}>
+        <section id="experiencias-premium" className="py-16 md:py-24" style={{ background: '#e6f0fa' }}>
             <div className="container">
                 {/* Header */}
                 <FadeInContainer>

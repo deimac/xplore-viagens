@@ -52,6 +52,7 @@ import {
   Facebook,
   Linkedin,
   Twitter,
+  Crown,
 } from "lucide-react";
 
 export default function Home() {
@@ -128,7 +129,7 @@ export default function Home() {
 
   const sidebarItems = [
     { id: "home", icon: HomeIcon, label: "Home" },
-    { id: "servicos", icon: Compass, label: "Serviços" },
+    { id: "ofertas-premium", icon: Crown, label: "Experiências Premium" },
     { id: "pacotes", icon: Plane, label: "Pacotes" },
     { id: "hospedagens", icon: HomeIcon, label: "Hospedagens" },
     { id: "portfolio", icon: MapPin, label: "Portfólio" },
@@ -617,7 +618,7 @@ export default function Home() {
                       </span>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-6 justify-center pt-2">
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-2">
                       <Button
                         size="lg"
                         className="bg-accent text-accent-foreground hover:opacity-90 border-2 border-accent rounded-lg font-medium micro-shadow"

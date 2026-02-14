@@ -84,7 +84,11 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
                         const map = new Map(mapRef.current!, {
                             center: location,
                             zoom: 12,
-                            mapId: 'DEMO_MAP_ID'
+                            mapId: 'DEMO_MAP_ID',
+                            mapTypeControl: false,
+                            streetViewControl: false,
+                            fullscreenControl: true,
+                            zoomControl: true
                         });
 
                         // Criar marker
