@@ -51,7 +51,7 @@ const menuItems: MenuItem[] = [
             },
             {
                 icon: DoorOpen,
-                label: "Tipos de Quartos",
+                label: "Espaços",
                 href: "/admin/tipos-quartos",
             },
             {

@@ -104,7 +104,7 @@ export default function RoomTypesManager() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                            Tipos de Espaço
+                            Espaços
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Gerencie os tipos de espaços disponíveis nas hospedagens

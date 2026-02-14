@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Upload, X } from "lucide-react";
+import { Plus, Trash2, GripVertical, ChevronDown, Upload, X, Bed, Users, ImageIcon, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
     Select,
@@ -12,18 +12,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
 import {
     DndContext,
     closestCenter,
@@ -56,7 +47,7 @@ interface Space {
     sleepingPhoto: string | null;
 }
 
-interface Bed {
+interface BedItem {
     id: number;
     bedTypeId: number;
     quantity: number;
@@ -70,26 +61,26 @@ function SortableSpaceCard({
     isOpen,
     onToggle,
     onUpdate,
-    onDelete,
     beds,
     onAddBed,
     onDeleteBed,
     bedTypes,
     propertyId,
     onPhotoUpdate,
+    onShowDeleteDialog,
 }: {
     space: Space;
     index: number;
     isOpen: boolean;
     onToggle: () => void;
     onUpdate: (id: number, data: { name?: string }) => void;
-    onDelete: (id: number) => void;
-    beds: Bed[];
+    beds: BedItem[];
     onAddBed: (spaceId: number, bedTypeId: number, quantity: number) => void;
     onDeleteBed: (bedId: number) => void;
     bedTypes: any[];
     propertyId: number;
     onPhotoUpdate: () => void;
+    onShowDeleteDialog: (spaceId: number, spaceName: string) => void;
 }) {
     const {
         attributes,
@@ -109,9 +100,12 @@ function SortableSpaceCard({
     const [newBedTypeId, setNewBedTypeId] = useState("");
     const [newBedQuantity, setNewBedQuantity] = useState("1");
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [deleteBedDialog, setDeleteBedDialog] = useState<{ open: boolean; bedId?: number; bedName?: string }>({ open: false });
 
     const displayName = space.name || `${space.roomTypeName} ${index + 1}`;
     const hasBeds = beds.length > 0;
+    const capacity = beds.reduce((sum, bed) => sum + bed.quantity * bed.sleepsCount, 0);
+    const bedCount = beds.reduce((sum, bed) => sum + bed.quantity, 0);
 
     const uploadPhotoMutation = trpc.propertyRooms.uploadPhoto.useMutation({
         onSuccess: () => {
@@ -186,156 +180,245 @@ function SortableSpaceCard({
         setNewBedQuantity("1");
     };
 
+    const handleConfirmDeleteBed = () => {
+        if (deleteBedDialog.bedId) {
+            onDeleteBed(deleteBedDialog.bedId);
+        }
+        setDeleteBedDialog({ open: false });
+    };
+
     return (
-        <Card ref={setNodeRef} style={style} className="mb-3">
-            <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                    <button
-                        className="cursor-grab active:cursor-grabbing touch-none"
-                        {...attributes}
-                        {...listeners}
-                    >
-                        <GripVertical className="h-5 w-5 text-gray-400" />
-                    </button>
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+                "border rounded-xl overflow-hidden transition-all duration-200",
+                isOpen
+                    ? "border-primary/40 shadow-md bg-background"
+                    : "border-border hover:border-primary/20 hover:shadow-sm bg-background"
+            )}
+        >
+            {/* Header - sempre visível */}
+            <div
+                className={cn(
+                    "flex items-center gap-2 px-3 py-3 transition-colors cursor-pointer",
+                    isOpen ? "bg-primary/5" : "hover:bg-muted/50"
+                )}
+                onClick={onToggle}
+            >
+                {/* Drag handle */}
+                <button
+                    className="cursor-grab active:cursor-grabbing touch-none shrink-0 p-0.5"
+                    {...attributes}
+                    {...listeners}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <GripVertical className="h-4 w-4 text-muted-foreground/60" />
+                </button>
 
-                    <div className="flex-1">
-                        {editingName ? (
-                            <div className="flex gap-2">
-                                <Input
-                                    value={tempName}
-                                    onChange={(e) => setTempName(e.target.value)}
-                                    placeholder={`${space.roomTypeName} ${index + 1}`}
-                                    className="h-8"
-                                />
-                                <Button size="sm" onClick={handleSaveName}>Salvar</Button>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setEditingName(false);
-                                        setTempName(space.name || "");
-                                    }}
-                                >
-                                    Cancelar
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <CardTitle className="text-lg">{displayName}</CardTitle>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setEditingName(true)}
-                                    className="h-6 px-2 text-xs"
-                                >
-                                    Editar nome
-                                </Button>
-                            </div>
-                        )}
-                        <CardDescription className="text-xs mt-1">
-                            Tipo: {space.roomTypeName}
-                        </CardDescription>
+                {/* Miniatura */}
+                {space.sleepingPhoto ? (
+                    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border">
+                        <img src={space.sleepingPhoto} alt="" className="w-full h-full object-cover" />
                     </div>
+                ) : (
+                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <Bed className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                )}
 
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm truncate">{displayName}</span>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                            {space.roomTypeName}
+                        </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                        {hasBeds ? (
+                            <>
+                                <span className="flex items-center gap-1">
+                                    <Bed className="h-3 w-3" />
+                                    {bedCount} cama{bedCount !== 1 ? "s" : ""}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {capacity} pessoa{capacity !== 1 ? "s" : ""}
+                                </span>
+                                {space.sleepingPhoto && (
+                                    <span className="flex items-center gap-1">
+                                        <ImageIcon className="h-3 w-3" />
+                                        Foto
+                                    </span>
+                                )}
+                            </>
+                        ) : (
+                            <span className="text-amber-600">Sem camas configuradas</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Ações */}
+                <div className="flex items-center gap-1 shrink-0">
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                            if (confirm(`Remover "${displayName}"?`)) {
-                                onDelete(space.id);
-                            }
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onShowDeleteDialog(space.id, displayName);
                         }}
                     >
                         <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
-
-                    <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={onToggle}>
-                            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                    </CollapsibleTrigger>
-                </div>
-            </CardHeader>
-
-            <CollapsibleContent>
-                <CardContent className="pt-0">
-                    <div className="border-t pt-4">
-                        <h4 className="font-medium mb-3">Camas neste espaço</h4>
-
-                        {beds.length === 0 ? (
-                            <p className="text-sm text-gray-500 mb-3">Nenhuma cama adicionada</p>
-                        ) : (
-                            <div className="space-y-2 mb-4">
-                                {beds.map((bed) => (
-                                    <div key={bed.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
-                                        <div className="flex-1">
-                                            <span className="font-medium">{bed.bedTypeName}</span>
-                                            <span className="text-sm text-gray-600 ml-2">
-                                                ({bed.quantity}x) - {bed.quantity * bed.sleepsCount} pessoa(s)
-                                            </span>
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => {
-                                                if (confirm("Remover esta cama?")) {
-                                                    onDeleteBed(bed.id);
-                                                }
-                                            }}
-                                        >
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
+                    <ChevronDown
+                        className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                            isOpen && "rotate-180"
                         )}
+                    />
+                </div>
+            </div>
 
-                        <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-                            <h5 className="font-medium text-sm">Adicionar cama</h5>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="text-xs">Tipo de cama</Label>
-                                    <Select value={newBedTypeId} onValueChange={setNewBedTypeId}>
-                                        <SelectTrigger className="h-9">
-                                            <SelectValue placeholder="Selecione" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {bedTypes.map((type: any) => (
-                                                <SelectItem key={type.id} value={type.id.toString()}>
-                                                    {type.name} ({type.sleepsCount} pessoa{type.sleepsCount > 1 ? 's' : ''})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div>
-                                    <Label className="text-xs">Quantidade</Label>
+            {/* Conteúdo expandido */}
+            <div
+                className={cn(
+                    "grid transition-all duration-200 ease-in-out",
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                )}
+            >
+                <div className="overflow-hidden">
+                    <div className="px-4 pb-4 pt-2 border-t space-y-5">
+                        {/* Nome customizado */}
+                        <div>
+                            <Label className="text-sm font-medium">Nome do espaço</Label>
+                            {editingName ? (
+                                <div className="flex gap-2 mt-1.5">
                                     <Input
-                                        type="number"
-                                        min="1"
-                                        value={newBedQuantity}
-                                        onChange={(e) => setNewBedQuantity(e.target.value)}
+                                        value={tempName}
+                                        onChange={(e) => setTempName(e.target.value)}
+                                        placeholder={`${space.roomTypeName} ${index + 1}`}
                                         className="h-9"
+                                        autoFocus
                                     />
+                                    <Button size="sm" onClick={handleSaveName} className="h-9 px-3">
+                                        <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-9 px-3"
+                                        onClick={() => {
+                                            setEditingName(false);
+                                            setTempName(space.name || "");
+                                        }}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                            </div>
-
-                            <Button size="sm" onClick={handleAddBed} className="w-full">
-                                <Plus className="h-4 w-4 mr-1" />
-                                Adicionar cama
-                            </Button>
+                            ) : (
+                                <div className="flex items-center gap-2 mt-1.5">
+                                    <span className="text-sm text-muted-foreground">
+                                        {space.name || `${space.roomTypeName} ${index + 1}`}
+                                    </span>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={() => setEditingName(true)}
+                                    >
+                                        <Pencil className="h-3 w-3 mr-1" />
+                                        Editar
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Foto do espaço (onde você vai dormir) */}
+                        {/* Camas */}
+                        <div>
+                            <Label className="text-sm font-medium mb-2 block">Camas neste espaço</Label>
+
+                            {beds.length > 0 && (
+                                <div className="space-y-1.5 mb-3">
+                                    {beds.map((bed) => (
+                                        <div
+                                            key={bed.id}
+                                            className="flex items-center gap-3 px-3 py-2 bg-muted/50 rounded-lg"
+                                        >
+                                            <Bed className="h-4 w-4 text-muted-foreground shrink-0" />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium">{bed.bedTypeName}</span>
+                                                <span className="text-xs text-muted-foreground ml-2">
+                                                    {bed.quantity}x &middot; {bed.quantity * bed.sleepsCount} pessoa(s)
+                                                </span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                onClick={() => {
+                                                    setDeleteBedDialog({ open: true, bedId: bed.id, bedName: bed.bedTypeName });
+                                                }}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {beds.length === 0 && (
+                                <p className="text-sm text-amber-600 mb-3">
+                                    Adicione pelo menos uma cama ao espaço
+                                </p>
+                            )}
+
+                            <div className="bg-muted/30 border rounded-lg p-3 space-y-3">
+                                <div className="grid grid-cols-[1fr_80px] gap-2">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Tipo de cama</Label>
+                                        <Select value={newBedTypeId} onValueChange={setNewBedTypeId}>
+                                            <SelectTrigger className="h-9">
+                                                <SelectValue placeholder="Selecione..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {bedTypes.map((type: any) => (
+                                                    <SelectItem key={type.id} value={type.id.toString()}>
+                                                        {type.name} ({type.sleepsCount} pessoa{type.sleepsCount > 1 ? 's' : ''})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Qtd.</Label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            value={newBedQuantity}
+                                            onChange={(e) => setNewBedQuantity(e.target.value)}
+                                            className="h-9"
+                                        />
+                                    </div>
+                                </div>
+                                <Button size="sm" variant="outline" onClick={handleAddBed} className="w-full">
+                                    <Plus className="h-3.5 w-3.5 mr-1" />
+                                    Adicionar cama
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Foto do espaço */}
                         {hasBeds && (
-                            <div className="mt-6 pt-6 border-t">
-                                <h4 className="font-medium mb-3">Foto do espaço (onde você vai dormir)</h4>
+                            <div>
+                                <Label className="text-sm font-medium mb-2 block">
+                                    Foto do espaço
+                                </Label>
 
                                 {space.sleepingPhoto ? (
-                                    <div className="space-y-3">
-                                        <div className="relative w-48 aspect-video rounded-lg overflow-hidden bg-gray-100">
+                                    <div className="space-y-2">
+                                        <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100">
                                             <img
                                                 src={space.sleepingPhoto}
                                                 alt={displayName}
@@ -344,42 +427,18 @@ function SortableSpaceCard({
                                             <Button
                                                 variant="destructive"
                                                 size="icon"
-                                                className="absolute top-2 right-2"
+                                                className="absolute top-2 right-2 h-7 w-7"
                                                 onClick={handleDeletePhoto}
                                                 disabled={deletePhotoMutation.isPending}
                                             >
-                                                <X className="h-4 w-4" />
+                                                <X className="h-3.5 w-3.5" />
                                             </Button>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Label htmlFor={`photo-upload-${space.id}`} className="flex-1">
-                                                <div className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                                                    <Upload className="h-4 w-4" />
-                                                    <span className="text-sm">
-                                                        {isUploadingPhoto ? "Enviando..." : "Substituir foto"}
-                                                    </span>
-                                                </div>
-                                                <Input
-                                                    id={`photo-upload-${space.id}`}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={handlePhotoUpload}
-                                                    disabled={isUploadingPhoto}
-                                                />
-                                            </Label>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
                                         <Label htmlFor={`photo-upload-${space.id}`}>
-                                            <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
-                                                <Upload className="h-8 w-8 text-gray-400" />
-                                                <span className="text-sm text-gray-600">
-                                                    {isUploadingPhoto ? "Enviando foto..." : "Clique para enviar uma foto"}
-                                                </span>
-                                                <span className="text-xs text-gray-500">
-                                                    JPG, PNG ou WEBP
+                                            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-background border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                                                <Upload className="h-4 w-4" />
+                                                <span className="text-sm">
+                                                    {isUploadingPhoto ? "Enviando..." : "Substituir foto"}
                                                 </span>
                                             </div>
                                             <Input
@@ -392,20 +451,56 @@ function SortableSpaceCard({
                                             />
                                         </Label>
                                     </div>
+                                ) : (
+                                    <Label htmlFor={`photo-upload-${space.id}`}>
+                                        <div className="flex flex-col items-center justify-center gap-1.5 px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                                            <Upload className="h-6 w-6 text-muted-foreground/60" />
+                                            <span className="text-sm text-muted-foreground">
+                                                {isUploadingPhoto ? "Enviando foto..." : "Clique para enviar uma foto"}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground/60">
+                                                JPG, PNG ou WEBP
+                                            </span>
+                                        </div>
+                                        <Input
+                                            id={`photo-upload-${space.id}`}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handlePhotoUpload}
+                                            disabled={isUploadingPhoto}
+                                        />
+                                    </Label>
                                 )}
                             </div>
                         )}
                     </div>
-                </CardContent>
-            </CollapsibleContent>
-        </Card>
+                </div>
+            </div>
+
+            {/* Delete Bed Dialog */}
+            <DeleteConfirmDialog
+                open={deleteBedDialog.open}
+                onOpenChange={(open) => setDeleteBedDialog({ ...deleteBedDialog, open })}
+                title="Excluir Cama"
+                itemName={deleteBedDialog.bedName}
+                description="Tem certeza que deseja remover esta cama do espaço? Esta ação não pode ser desfeita."
+                onConfirm={handleConfirmDeleteBed}
+            />
+        </div>
     );
 }
 
 export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) {
-    const [openSpaces, setOpenSpaces] = useState<Set<number>>(new Set());
+    // Apenas um espaço aberto por vez (null = nenhum)
+    const [expandedSpaceId, setExpandedSpaceId] = useState<number | null>(null);
     const [newSpaceTypeId, setNewSpaceTypeId] = useState("");
-    const [spaceBeds, setSpaceBeds] = useState<Record<number, Bed[]>>({});
+    const [spaceBeds, setSpaceBeds] = useState<Record<number, BedItem[]>>({});
+    const [deleteSpaceDialog, setDeleteSpaceDialog] = useState<{
+        open: boolean;
+        id?: number;
+        name?: string;
+    }>({ open: false });
 
     const utils = (trpc as any).useContext();
 
@@ -423,9 +518,9 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
             refetchSpaces();
             toast.success("Espaço adicionado!");
             setNewSpaceTypeId("");
-            // Auto-open the new space
+            // Auto-expande e fecha os demais
             if (data?.id) {
-                setOpenSpaces((prev) => new Set(prev).add(data.id));
+                setExpandedSpaceId(data.id);
                 loadSpaceBeds(data.id);
             }
         },
@@ -493,18 +588,16 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
         }
     };
 
-    // Toggle space open/closed
+    // Toggle exclusivo: abre um, fecha o resto
     const toggleSpace = (spaceId: number) => {
-        const newOpenSpaces = new Set(openSpaces);
-        if (newOpenSpaces.has(spaceId)) {
-            newOpenSpaces.delete(spaceId);
+        if (expandedSpaceId === spaceId) {
+            setExpandedSpaceId(null);
         } else {
-            newOpenSpaces.add(spaceId);
+            setExpandedSpaceId(spaceId);
             if (!spaceBeds[spaceId]) {
                 loadSpaceBeds(spaceId);
             }
         }
-        setOpenSpaces(newOpenSpaces);
     };
 
     // Drag and drop
@@ -550,8 +643,24 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
         updateSpace.mutate({ id, ...data });
     };
 
-    const handleDeleteSpace = (id: number) => {
-        deleteSpace.mutate({ id });
+    const handleDeleteSpace = (id: number, name: string) => {
+        setDeleteSpaceDialog({ open: true, id, name });
+    };
+
+    const handleConfirmDeleteSpace = () => {
+        if (deleteSpaceDialog.id) {
+            deleteSpace.mutate(
+                { id: deleteSpaceDialog.id },
+                {
+                    onSuccess: () => {
+                        if (expandedSpaceId === deleteSpaceDialog.id) {
+                            setExpandedSpaceId(null);
+                        }
+                        setDeleteSpaceDialog({ open: false });
+                    },
+                }
+            );
+        }
     };
 
     const handleAddBed = (spaceId: number, bedTypeId: number, quantity: number) => {
@@ -583,49 +692,46 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
     return (
         <div className="space-y-4">
             <div>
-                <h3 className="text-lg font-semibold mb-2">Configuração de Espaços e Dormidas</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                    Monte os espaços do imóvel e defina as camas em cada um deles.
-                    Arraste para reordenar.
+                <h3 className="text-lg font-semibold mb-1">Configuração de Espaços e Dormidas</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                    Monte os espaços do imóvel e defina as camas em cada um deles. Arraste para reordenar.
                 </p>
             </div>
 
-            {/* Add Space Form */}
-            <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="pt-6">
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <Label className="text-sm mb-2 block">Adicionar novo espaço</Label>
-                            <Select value={newSpaceTypeId} onValueChange={setNewSpaceTypeId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o tipo de espaço" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {spaceTypes.map((type: any) => (
-                                        <SelectItem key={type.id} value={type.id.toString()}>
-                                            {type.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex items-end">
-                            <Button onClick={handleAddSpace} disabled={createSpace.isLoading}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Adicionar espaço
-                            </Button>
-                        </div>
+            {/* Botão Adicionar - sticky no topo */}
+            <div className="sticky top-0 z-10 bg-background pb-3 pt-1 border-b mb-4">
+                <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                        <Label className="text-sm mb-1.5 block font-medium">Adicionar novo espaço</Label>
+                        <Select value={newSpaceTypeId} onValueChange={setNewSpaceTypeId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo de espaço..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {spaceTypes.map((type: any) => (
+                                    <SelectItem key={type.id} value={type.id.toString()}>
+                                        {type.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
-                </CardContent>
-            </Card>
+                    <Button onClick={handleAddSpace} disabled={createSpace.isLoading} className="shrink-0">
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Adicionar
+                    </Button>
+                </div>
+            </div>
 
-            {/* Spaces List */}
+            {/* Lista de Espaços */}
             {spaces.length === 0 ? (
-                <Card>
-                    <CardContent className="py-8 text-center text-gray-500">
-                        Nenhum espaço configurado. Adicione o primeiro espaço acima.
-                    </CardContent>
-                </Card>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl py-12 text-center">
+                    <Bed className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+                    <p className="text-muted-foreground font-medium">Nenhum espaço configurado</p>
+                    <p className="text-sm text-muted-foreground/70 mt-1">
+                        Adicione o primeiro espaço acima para começar
+                    </p>
+                </div>
             ) : (
                 <DndContext
                     sensors={sensors}
@@ -633,15 +739,16 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
                     onDragEnd={handleDragEnd}
                 >
                     <SortableContext items={spaces.map((s: Space) => s.id)} strategy={verticalListSortingStrategy}>
-                        {spaces.map((space: Space, index: number) => (
-                            <Collapsible key={space.id} open={openSpaces.has(space.id)}>
+                        <div className="space-y-2">
+                            {spaces.map((space: Space, index: number) => (
                                 <SortableSpaceCard
+                                    key={space.id}
                                     space={space}
                                     index={index}
-                                    isOpen={openSpaces.has(space.id)}
+                                    isOpen={expandedSpaceId === space.id}
                                     onToggle={() => toggleSpace(space.id)}
                                     onUpdate={handleUpdateSpace}
-                                    onDelete={handleDeleteSpace}
+                                    onShowDeleteDialog={handleDeleteSpace}
                                     beds={spaceBeds[space.id] || []}
                                     onAddBed={handleAddBed}
                                     onDeleteBed={(bedId) => handleDeleteBed(bedId, space.id)}
@@ -649,11 +756,30 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
                                     propertyId={propertyId}
                                     onPhotoUpdate={() => refetchSpaces()}
                                 />
-                            </Collapsible>
-                        ))}
+                            ))}
+                        </div>
                     </SortableContext>
                 </DndContext>
             )}
+
+            {/* Dica */}
+            {spaces.length > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                        <strong>Dica:</strong> Apenas espaços com camas serão exibidos na seção "Onde você vai dormir".
+                    </p>
+                </div>
+            )}
+
+            {/* Delete Space Dialog */}
+            <DeleteConfirmDialog
+                open={deleteSpaceDialog.open}
+                onOpenChange={(open) => setDeleteSpaceDialog({ ...deleteSpaceDialog, open })}
+                title="Excluir Espaço"
+                itemName={deleteSpaceDialog.name}
+                description="Tem certeza que deseja remover este espaço? Todas as camas associadas serão removidas. Esta ação não pode ser desfeita."
+                onConfirm={handleConfirmDeleteSpace}
+            />
         </div>
     );
 }

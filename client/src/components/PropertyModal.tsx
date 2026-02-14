@@ -371,6 +371,29 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                             });
                         }
                     }
+
+                    // Fazer upload da imagem do espaço, se houver
+                    if (space.imageFile && space.imagePreview) {
+                        try {
+                            // Converter File para base64/DataURL
+                            const imageData = await new Promise<string>((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    resolve(reader.result as string);
+                                };
+                                reader.readAsDataURL(space.imageFile);
+                            });
+
+                            await utils.client.propertyRooms.uploadPhoto.mutate({
+                                roomId: createdSpace.id,
+                                propertyId,
+                                imageData: imageData,
+                            });
+                        } catch (error) {
+                            console.error(`Erro ao fazer upload da imagem do espaço ${space.name}:`, error);
+                            // Não falhar o processo de criação se o upload falhar
+                        }
+                    }
                 }
 
                 toast.success(`Espaços criados com sucesso!`);
@@ -794,11 +817,6 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                 {property ? (
                                     <>
                                         <SpacesAndBedsManager propertyId={property.id} />
-                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <p className="text-sm text-blue-800">
-                                                <strong>Dica:</strong> Configure os espaços e as camas disponíveis. Apenas espaços com camas serão exibidos na seção "Onde você vai dormir".
-                                            </p>
-                                        </div>
                                     </>
                                 ) : (
                                     <LocalSpacesManager
