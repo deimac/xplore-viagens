@@ -418,11 +418,11 @@ function SortableSpaceCard({
 
                                 {space.sleepingPhoto ? (
                                     <div className="space-y-2">
-                                        <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100">
+                                        <div className="relative w-64 h-40 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                                             <img
                                                 src={space.sleepingPhoto}
                                                 alt={displayName}
-                                                className="w-full h-full object-cover"
+                                                className="max-w-full max-h-full object-contain"
                                             />
                                             <Button
                                                 variant="destructive"
@@ -698,8 +698,8 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
                 </p>
             </div>
 
-            {/* Botão Adicionar - sticky no topo */}
-            <div className="sticky top-0 z-10 bg-background pb-3 pt-1 border-b mb-4">
+            {/* Botão Adicionar */}
+            <div className="bg-background pb-3 pt-1 border-b mb-4">
                 <div className="flex gap-2 items-end">
                     <div className="flex-1">
                         <Label className="text-sm mb-1.5 block font-medium">Adicionar novo espaço</Label>
