@@ -7,17 +7,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface MapPreviewProps {
-    property: {
-        address_street?: string;
-        address_number?: string;
-        city?: string;
-        state_region?: string;
-        country?: string;
-    };
+    address: string;
+    label?: string;
     height?: string;
 }
 
-export function MapPreview({ property, height = '300px' }: MapPreviewProps) {
+export function MapPreview({ address, label, height = '300px' }: MapPreviewProps) {
     const mapRef = useRef<HTMLDivElement>(null);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -26,39 +21,11 @@ export function MapPreview({ property, height = '300px' }: MapPreviewProps) {
         setError(null);
         setIsLoading(true);
 
-        // Montar endereço completo ou usar apenas cidade
-        let addressToGeocode = '';
-
-        // Tentar endereço completo primeiro
-        const addressParts = [
-            property.address_street,
-            property.address_number,
-            property.city,
-            property.state_region,
-            property.country
-        ].filter(Boolean);
-
-        if (addressParts.length >= 3) {
-            // Endereço completo
-            addressToGeocode = addressParts.join(', ');
-        } else if (property.city) {
-            // Apenas cidade
-            const cityParts = [
-                property.city,
-                property.state_region,
-                property.country
-            ].filter(Boolean);
-            addressToGeocode = cityParts.join(', ');
-        }
-
-        // Se não tiver endereço nenhum, não renderizar
-        if (!addressToGeocode) {
+        if (!address) {
             setError('Endereço não disponível');
             setIsLoading(false);
             return;
         }
-
-        console.log('[MapPreview] Endereço:', addressToGeocode);
 
         // Aguardar modal abrir (300ms para admin)
         const initMap = async () => {
@@ -76,7 +43,7 @@ export function MapPreview({ property, height = '300px' }: MapPreviewProps) {
 
                 const geocoder = new Geocoder();
 
-                geocoder.geocode({ address: addressToGeocode }, (results, status) => {
+                geocoder.geocode({ address }, (results, status) => {
                     if (status === 'OK' && results && results[0]) {
                         const location = results[0].geometry.location;
 
@@ -91,7 +58,7 @@ export function MapPreview({ property, height = '300px' }: MapPreviewProps) {
                         new Marker({
                             position: location,
                             map: map,
-                            title: property.city || 'Localização'
+                            title: label || 'Localização'
                         });
 
                         setIsLoading(false);
@@ -119,10 +86,10 @@ export function MapPreview({ property, height = '300px' }: MapPreviewProps) {
         return () => {
             clearTimeout(timer);
         };
-    }, [property.address_street, property.address_number, property.city, property.state_region, property.country]);
+    }, [address, label]);
 
-    // Se não tiver cidade, não renderizar
-    if (!property.city) {
+    // Se não tiver endereço, não renderizar
+    if (!address) {
         return null;
     }
 

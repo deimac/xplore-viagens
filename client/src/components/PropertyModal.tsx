@@ -60,6 +60,8 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
     const [isUploading, setIsUploading] = useState(false);
     const [showMap, setShowMap] = useState(false);
     const [localSpaces, setLocalSpaces] = useState<LocalSpace[]>([]);
+    const [mapAddress, setMapAddress] = useState("");
+    const [mapLabel, setMapLabel] = useState("");
 
     const utils = trpc.useUtils();
 
@@ -122,6 +124,9 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
     const [originalImages, setOriginalImages] = useState<ImageFile[]>([]);
 
     useEffect(() => {
+        // Additional state for map address and label
+        setMapAddress("");
+        setMapLabel("");
         if (isOpen) {
             if (property) {
                 setFormData({
@@ -173,6 +178,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                 setImages([]);
                 setOriginalImages([]);
                 setSelectedAmenityIds([]);
+                setLocalSpaces([]);
             }
             setCurrentStep(0);
         }
@@ -193,6 +199,44 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
         setLocalSpaces([]);
         setCurrentStep(0);
         setShowMap(false);
+    };
+
+    const buildMapAddress = () => {
+        const parts = [
+            formData.address_street,
+            formData.address_number,
+            formData.city,
+            formData.state_region,
+            formData.country,
+        ].filter(Boolean);
+
+        return parts.join(', ');
+    };
+
+    const handleToggleMap = () => {
+        if (showMap) {
+            setShowMap(false);
+            setMapAddress("");
+            setMapLabel("");
+            return;
+        }
+
+        const computed = buildMapAddress();
+        if (!computed) return;
+
+        setMapAddress(computed);
+        setMapLabel(formData.city || computed);
+        setShowMap(true);
+    };
+
+    const handleRefreshMap = () => {
+        if (!showMap) return;
+
+        const computed = buildMapAddress();
+        if (!computed) return;
+
+        setMapAddress(computed);
+        setMapLabel(formData.city || computed);
     };
 
 
@@ -538,7 +582,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                         {currentStep === 0 && (
                             <div className="space-y-6">
                                 <div>
-                                    <Label htmlFor="name">Nome da Hospedagem *</Label>
+                                    <Label htmlFor="name" className="mb-2 block">Nome da Hospedagem *</Label>
                                     <Input
                                         id="name"
                                         value={formData.name}
@@ -548,7 +592,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="description_short">Descrição Curta</Label>
+                                    <Label htmlFor="description_short" className="mb-2 block">Descrição Curta</Label>
                                     <Input
                                         id="description_short"
                                         value={formData.description_short}
@@ -558,7 +602,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="description_full">Descrição Completa</Label>
+                                    <Label htmlFor="description_full" className="mb-2 block">Descrição Completa</Label>
                                     <Textarea
                                         id="description_full"
                                         rows={6}
@@ -569,7 +613,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="property_type">Tipo de Propriedade *</Label>
+                                    <Label htmlFor="property_type" className="mb-2 block">Tipo de Propriedade *</Label>
                                     <select
                                         id="property_type"
                                         title="Tipo de Propriedade"
@@ -604,7 +648,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                     <div>
-                                        <Label htmlFor="max_guests">
+                                        <Label htmlFor="max_guests" className="mb-2 block">
                                             <div className="flex items-center gap-2">
                                                 <Users className="w-4 h-4" />
                                                 Quantidade de Hóspedes
@@ -620,7 +664,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="area_m2">
+                                        <Label htmlFor="area_m2" className="mb-2 block">
                                             <div className="flex items-center gap-2">
                                                 <span>📐</span>
                                                 Área (m²)
@@ -666,7 +710,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="md:col-span-2">
-                                        <Label htmlFor="address_street">Rua / Avenida</Label>
+                                        <Label htmlFor="address_street" className="mb-2 block">Rua / Avenida</Label>
                                         <Input
                                             id="address_street"
                                             value={formData.address_street || ""}
@@ -676,7 +720,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="address_number">Número</Label>
+                                        <Label htmlFor="address_number" className="mb-2 block">Número</Label>
                                         <Input
                                             id="address_number"
                                             value={formData.address_number || ""}
@@ -688,7 +732,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="address_complement">Complemento</Label>
+                                        <Label htmlFor="address_complement" className="mb-2 block">Complemento</Label>
                                         <Input
                                             id="address_complement"
                                             value={formData.address_complement || ""}
@@ -698,7 +742,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="neighborhood">Bairro</Label>
+                                        <Label htmlFor="neighborhood" className="mb-2 block">Bairro</Label>
                                         <Input
                                             id="neighborhood"
                                             value={formData.neighborhood || ""}
@@ -710,7 +754,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="city">Cidade *</Label>
+                                        <Label htmlFor="city" className="mb-2 block">Cidade *</Label>
                                         <Input
                                             id="city"
                                             value={formData.city}
@@ -720,7 +764,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="state_region">Estado</Label>
+                                        <Label htmlFor="state_region" className="mb-2 block">Estado</Label>
                                         <Input
                                             id="state_region"
                                             value={formData.state_region || ""}
@@ -732,7 +776,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="country">País</Label>
+                                        <Label htmlFor="country" className="mb-2 block">País</Label>
                                         <Input
                                             id="country"
                                             value={formData.country}
@@ -742,7 +786,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="postal_code">CEP</Label>
+                                        <Label htmlFor="postal_code" className="mb-2 block">CEP</Label>
                                         <Input
                                             id="postal_code"
                                             value={formData.postal_code || ""}
@@ -758,7 +802,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => setShowMap(!showMap)}
+                                            onClick={handleToggleMap}
                                             disabled={!formData.city}
                                             className="w-full"
                                         >
@@ -768,24 +812,31 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <p className="text-xs text-muted-foreground mt-2">
                                             {!formData.city
                                                 ? "Preencha pelo menos a cidade para ver o mapa"
-                                                : "Clique para visualizar a localização no mapa"}
+                                                : showMap
+                                                    ? "Clique em Atualizar mapa para aplicar alterações"
+                                                    : "Clique para visualizar a localização no mapa"}
                                         </p>
                                     </div>
 
                                     {/* Map Preview */}
-                                    {showMap && formData.city && (
-                                        <div>
+                                    {showMap && mapAddress && (
+                                        <div className="space-y-3">
                                             <Label className="mb-2 block">Localização</Label>
                                             <MapPreview
-                                                property={{
-                                                    address_street: formData.address_street,
-                                                    address_number: formData.address_number,
-                                                    city: formData.city,
-                                                    state_region: formData.state_region,
-                                                    country: formData.country,
-                                                }}
+                                                address={mapAddress}
+                                                label={mapLabel}
                                                 height="300px"
                                             />
+                                            <div className="flex justify-end">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={handleRefreshMap}
+                                                >
+                                                    Atualizar mapa
+                                                </Button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

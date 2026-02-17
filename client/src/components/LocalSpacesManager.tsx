@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, ChevronDown, Upload, X, Bed, Users, ImageIcon } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Bed, Users, ImageIcon } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
+import { SpaceImageUpload } from "@/components/SpaceImageUpload";
 
 export interface LocalSpace {
     tempId: string; // ID temporário único
@@ -206,8 +207,8 @@ export function LocalSpacesManager({ spaces, onSpacesChange }: LocalSpacesManage
                 </p>
             </div>
 
-            {/* Botão Adicionar - sticky no topo */}
-            <div className="sticky top-0 z-10 bg-background pb-3 pt-1 border-b mb-4">
+            {/* Botão Adicionar */}
+            <div className="bg-background pb-3 pt-1 border-b mb-4">
                 <div className="flex gap-2 items-end">
                     <div className="flex-1">
                         <Label className="text-sm mb-1.5 block font-medium">Adicionar novo espaço</Label>
@@ -361,51 +362,6 @@ export function LocalSpacesManager({ spaces, onSpacesChange }: LocalSpacesManage
                                                 </p>
                                             </div>
 
-                                            {/* Upload de Imagem */}
-                                            <div>
-                                                <Label className="text-sm font-medium mb-2 block">Imagem do espaço</Label>
-                                                {space.imagePreview ? (
-                                                    <div className="relative w-full">
-                                                        <img
-                                                            src={space.imagePreview}
-                                                            alt="Preview"
-                                                            className="w-full h-32 object-cover rounded-lg border"
-                                                        />
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="absolute top-1.5 right-1.5 bg-white/80 hover:bg-white h-7 w-7"
-                                                            onClick={() => handleRemoveImage(space.tempId)}
-                                                        >
-                                                            <X className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <div
-                                                        onDragOver={(e) => e.preventDefault()}
-                                                        onDrop={(e) => handleImageDrop(space.tempId, e)}
-                                                        className="relative border-2 border-dashed border-gray-300 rounded-lg p-5 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                                                    >
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={(e) => handleImageChange(space.tempId, e)}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                            id={`image-upload-${space.tempId}`}
-                                                        />
-                                                        <label
-                                                            htmlFor={`image-upload-${space.tempId}`}
-                                                            className="flex flex-col items-center gap-1.5 cursor-pointer"
-                                                        >
-                                                            <Upload className="h-5 w-5 text-gray-400" />
-                                                            <p className="text-sm font-medium text-gray-600">
-                                                                Arraste ou clique para enviar
-                                                            </p>
-                                                        </label>
-                                                    </div>
-                                                )}
-                                            </div>
-
                                             {/* Camas */}
                                             <div>
                                                 <Label className="text-sm font-medium mb-2 block">Camas neste espaço</Label>
@@ -488,6 +444,14 @@ export function LocalSpacesManager({ spaces, onSpacesChange }: LocalSpacesManage
                                                     </Button>
                                                 </div>
                                             </div>
+
+                                            {/* Upload de Imagem */}
+                                            <SpaceImageUpload
+                                                imagePreview={space.imagePreview || null}
+                                                onImageChange={(file) => handleImageUpload(space.tempId, file)}
+                                                onImageRemove={() => handleRemoveImage(space.tempId)}
+                                                uploadId={space.tempId}
+                                            />
                                         </div>
                                     </div>
                                 </div>

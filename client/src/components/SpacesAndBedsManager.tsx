@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, GripVertical, ChevronDown, Upload, X, Bed, Users, ImageIcon, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, ChevronDown, Bed, Users, ImageIcon, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
     Select,
@@ -32,6 +32,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { SpaceImageUpload } from "@/components/SpaceImageUpload";
 
 interface SpacesAndBedsManagerProps {
     propertyId: number;
@@ -101,6 +102,7 @@ function SortableSpaceCard({
     const [newBedQuantity, setNewBedQuantity] = useState("1");
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [deleteBedDialog, setDeleteBedDialog] = useState<{ open: boolean; bedId?: number; bedName?: string }>({ open: false });
+    const [deletePhotoDialog, setDeletePhotoDialog] = useState(false);
 
     const displayName = space.name || `${space.roomTypeName} ${index + 1}`;
     const hasBeds = beds.length > 0;
@@ -128,10 +130,7 @@ function SortableSpaceCard({
         },
     });
 
-    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
+    const handlePhotoUpload = async (file: File) => {
         if (!file.type.startsWith('image/')) {
             toast.error("Por favor, selecione uma imagem");
             return;
@@ -156,13 +155,16 @@ function SortableSpaceCard({
         reader.readAsDataURL(file);
     };
 
-    const handleDeletePhoto = async () => {
-        if (!confirm("Remover foto do espaço?")) return;
+    const handleDeletePhoto = () => {
+        setDeletePhotoDialog(true);
+    };
 
+    const handleConfirmDeletePhoto = async () => {
         await deletePhotoMutation.mutateAsync({
             roomId: space.id,
             propertyId: propertyId,
         });
+        setDeletePhotoDialog(false);
     };
 
     const handleSaveName = () => {
@@ -410,70 +412,14 @@ function SortableSpaceCard({
                         </div>
 
                         {/* Foto do espaço */}
-                        {hasBeds && (
-                            <div>
-                                <Label className="text-sm font-medium mb-2 block">
-                                    Foto do espaço
-                                </Label>
-
-                                {space.sleepingPhoto ? (
-                                    <div className="space-y-2">
-                                        <div className="relative w-64 h-40 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-                                            <img
-                                                src={space.sleepingPhoto}
-                                                alt={displayName}
-                                                className="max-w-full max-h-full object-contain"
-                                            />
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute top-2 right-2 h-7 w-7"
-                                                onClick={handleDeletePhoto}
-                                                disabled={deletePhotoMutation.isPending}
-                                            >
-                                                <X className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                        <Label htmlFor={`photo-upload-${space.id}`}>
-                                            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-background border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                                                <Upload className="h-4 w-4" />
-                                                <span className="text-sm">
-                                                    {isUploadingPhoto ? "Enviando..." : "Substituir foto"}
-                                                </span>
-                                            </div>
-                                            <Input
-                                                id={`photo-upload-${space.id}`}
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handlePhotoUpload}
-                                                disabled={isUploadingPhoto}
-                                            />
-                                        </Label>
-                                    </div>
-                                ) : (
-                                    <Label htmlFor={`photo-upload-${space.id}`}>
-                                        <div className="flex flex-col items-center justify-center gap-1.5 px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
-                                            <Upload className="h-6 w-6 text-muted-foreground/60" />
-                                            <span className="text-sm text-muted-foreground">
-                                                {isUploadingPhoto ? "Enviando foto..." : "Clique para enviar uma foto"}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground/60">
-                                                JPG, PNG ou WEBP
-                                            </span>
-                                        </div>
-                                        <Input
-                                            id={`photo-upload-${space.id}`}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handlePhotoUpload}
-                                            disabled={isUploadingPhoto}
-                                        />
-                                    </Label>
-                                )}
-                            </div>
-                        )}
+                        {/* Foto do espaço */}
+                        <SpaceImageUpload
+                            imagePreview={space.sleepingPhoto}
+                            onImageChange={handlePhotoUpload}
+                            onImageRemove={handleDeletePhoto}
+                            isLoading={isUploadingPhoto}
+                            uploadId={`space-${space.id}`}
+                        />
                     </div>
                 </div>
             </div>
@@ -486,6 +432,16 @@ function SortableSpaceCard({
                 itemName={deleteBedDialog.bedName}
                 description="Tem certeza que deseja remover esta cama do espaço? Esta ação não pode ser desfeita."
                 onConfirm={handleConfirmDeleteBed}
+            />
+
+            {/* Delete Photo Dialog */}
+            <DeleteConfirmDialog
+                open={deletePhotoDialog}
+                onOpenChange={setDeletePhotoDialog}
+                title="Remover Foto"
+                description="Tem certeza que deseja remover a foto deste espaço? Esta ação não pode ser desfeita."
+                onConfirm={handleConfirmDeletePhoto}
+                isLoading={deletePhotoMutation.isPending}
             />
         </div>
     );
@@ -699,7 +655,7 @@ export function SpacesAndBedsManager({ propertyId }: SpacesAndBedsManagerProps) 
             </div>
 
             {/* Botão Adicionar */}
-            <div className="bg-background pb-3 pt-1 border-b mb-4">
+            <div className="bg-background pb-3 pt-1 border-b mb-4 relative z-0">
                 <div className="flex gap-2 items-end">
                     <div className="flex-1">
                         <Label className="text-sm mb-1.5 block font-medium">Adicionar novo espaço</Label>
