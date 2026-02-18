@@ -26,6 +26,7 @@ export interface Property {
     updated_at: string;
     primary_image?: string;
     image_count?: number;
+    rooms_count?: number;
 }
 
 export interface PropertyImage {

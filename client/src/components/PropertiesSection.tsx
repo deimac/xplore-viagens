@@ -251,9 +251,8 @@ export function PropertiesSection() {
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <Home className="w-3 h-3" />
-                                                        <span>{property.bedrooms}</span>
+                                                        <span>{property.rooms_count || 0}</span>
                                                     </div>
-                                                    {/* Área não disponível no tipo Property */}
                                                 </div>
                                             </div>
                                         </td>

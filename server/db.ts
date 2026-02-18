@@ -834,8 +834,11 @@ export async function getAllPropertiesAdmin() {
         p.active,
         p.is_featured,
         p.created_at,
-        p.updated_at
+        p.updated_at,
+        COUNT(DISTINCT pr.id) AS rooms_count
       FROM properties p
+      LEFT JOIN property_rooms pr ON pr.property_id = p.id
+      GROUP BY p.id
       ORDER BY p.created_at DESC
       LIMIT 100
     `);
