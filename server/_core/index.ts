@@ -68,6 +68,19 @@ async function startServer() {
     return next();
   });
 
+  // Páginas estáticas para Meta crawler (não executa JS)
+  // Dev: static/ na raiz do projeto (../../static desde server/_core/)
+  // Prod: dist/static/ (copiado pelo build, mesmo nível que dist/index.js)
+  const staticDir = process.env.NODE_ENV === "development"
+    ? path.resolve(import.meta.dirname, "../..", "static")
+    : path.resolve(import.meta.dirname, "static");
+  app.get("/politica-de-privacidade", (_req, res) => {
+    res.sendFile(path.join(staticDir, "privacy.html"));
+  });
+  app.get("/exclusao-dados", (_req, res) => {
+    res.sendFile(path.join(staticDir, "delete-data.html"));
+  });
+
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
