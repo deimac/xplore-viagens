@@ -54,7 +54,7 @@ function Router() {
 
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/politica-de-privacidade"} component={PrivacidadePage} />
-      <Route path={"/exclusao-dados"} component={ExclusaoDadosPage} />
+      <Route path={"/exclusao-de-dados"} component={ExclusaoDadosPage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

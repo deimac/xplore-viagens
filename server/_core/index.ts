@@ -77,7 +77,7 @@ async function startServer() {
   app.get("/politica-de-privacidade", (_req, res) => {
     res.sendFile(path.join(staticDir, "privacy.html"));
   });
-  app.get("/exclusao-dados", (_req, res) => {
+  app.get("/exclusao-de-dados", (_req, res) => {
     res.sendFile(path.join(staticDir, "delete-data.html"));
   });
 
