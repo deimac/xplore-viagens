@@ -16,6 +16,7 @@ import AdminRoute from "./components/AdminRoute";
 import TravelDetails from "./pages/TravelDetails";
 import CompanySettings from "./pages/CompanySettings";
 import ReviewPage from "./pages/ReviewPage";
+import PrivacidadePage from "./pages/PrivacidadePage";
 import DebugApi from "./pages/DebugApi";
 import RoomTypesManager from "./components/RoomTypesManager";
 import BedTypesManager from "./components/BedTypesManager";
@@ -51,6 +52,7 @@ function Router() {
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
 
       <Route path={"/avaliar"} component={ReviewPage} />
+      <Route path={"/privacidade"} component={PrivacidadePage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
