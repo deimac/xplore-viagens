@@ -1,5 +1,5 @@
 import { APP_LOGO, APP_TITLE } from '@/const';
-import { Shield, Mail, UserCircle, Trash2 } from 'lucide-react';
+import { Shield, Mail } from 'lucide-react';
 
 export default function PrivacidadePage() {
     return (
@@ -27,83 +27,110 @@ export default function PrivacidadePage() {
                     </div>
 
                     {/* Intro */}
-                    <p className="text-muted-foreground leading-relaxed mb-8 text-center">
-                        A <span className="font-medium text-accent">Xplore Viagens</span> valoriza a sua privacidade.
-                        Ao utilizar o Login do Facebook ou Google em nosso portal, coletamos apenas as informações
-                        necessárias para oferecer a melhor experiência.
+                    <p className="text-muted-foreground leading-relaxed mb-8">
+                        A <span className="font-medium text-accent">Xplore Viagens</span> respeita a sua privacidade
+                        e está comprometida com a proteção dos dados pessoais de seus usuários, em conformidade com a
+                        Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).
                     </p>
 
-                    {/* Items */}
-                    <div className="space-y-6 mb-10">
-                        {/* Nome e Foto */}
-                        <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <UserCircle className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-medium text-accent mb-1">Nome e Foto do Perfil</h2>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Utilizamos seu nome e foto para personalizar sua experiência no nosso portal,
-                                    como exibir sua avaliação com sua identidade.
-                                </p>
-                            </div>
-                        </div>
+                    {/* Sections */}
+                    <div className="space-y-8 text-sm leading-relaxed">
+                        {/* 1 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">1. Coleta de Informações</h2>
+                            <p className="text-muted-foreground mb-3">
+                                Ao utilizar o Login via Facebook ou Google em nosso portal, podemos coletar as seguintes
+                                informações, mediante sua autorização:
+                            </p>
+                            <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                                <li>Nome completo</li>
+                                <li>Foto do perfil</li>
+                                <li>Endereço de e-mail</li>
+                            </ul>
+                            <p className="text-muted-foreground mt-3">
+                                Esses dados são fornecidos pelas plataformas de autenticação e utilizados exclusivamente
+                                para identificação e personalização da experiência do usuário.
+                            </p>
+                        </section>
 
-                        {/* Email */}
-                        <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Mail className="w-5 h-5 text-green-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-medium text-accent mb-1">Endereço de E-mail</h2>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Seu e-mail é coletado para identificação da sua conta e envio de
-                                    confirmações de reservas.
-                                </p>
-                            </div>
-                        </div>
+                        {/* 2 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">2. Finalidade do Uso dos Dados</h2>
+                            <p className="text-muted-foreground mb-3">As informações coletadas são utilizadas para:</p>
+                            <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                                <li>Criar e gerenciar sua conta em nosso sistema</li>
+                                <li>Identificar avaliações e interações realizadas por você</li>
+                                <li>Enviar confirmações de reservas e comunicações relacionadas aos serviços contratados</li>
+                                <li>Melhorar a experiência do usuário na plataforma</li>
+                            </ul>
+                        </section>
 
-                        {/* Segurança */}
-                        <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
-                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Shield className="w-5 h-5 text-amber-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-medium text-accent mb-1">Segurança dos Dados</h2>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Não compartilhamos seus dados com terceiros. Suas informações são armazenadas
-                                    de forma segura e utilizadas exclusivamente para os fins descritos acima.
-                                </p>
-                            </div>
-                        </div>
+                        {/* 3 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">3. Compartilhamento de Dados</h2>
+                            <p className="text-muted-foreground">
+                                A Xplore Viagens não vende, aluga ou compartilha seus dados pessoais com terceiros,
+                                exceto quando necessário para cumprimento de obrigação legal.
+                            </p>
+                        </section>
 
-                        {/* Exclusão */}
-                        <div className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
-                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Trash2 className="w-5 h-5 text-red-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-medium text-accent mb-1">Exclusão de Dados</h2>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Você pode solicitar a exclusão dos seus dados a qualquer momento entrando
-                                    em contato conosco.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                        {/* 4 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">4. Armazenamento e Segurança</h2>
+                            <p className="text-muted-foreground">
+                                Os dados são armazenados em ambiente seguro, com medidas técnicas e administrativas
+                                adequadas para proteger contra acesso não autorizado, perda ou alteração indevida.
+                            </p>
+                        </section>
 
-                    {/* Contact */}
-                    <div className="text-center border-t border-gray-100 pt-8">
-                        <p className="text-sm text-muted-foreground mb-2">
-                            Entre em contato para dúvidas ou solicitações:
-                        </p>
-                        <a
-                            href="mailto:voe@xploreviagens.com.br"
-                            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                        >
-                            <Mail className="w-4 h-4" />
-                            voe@xploreviagens.com.br
-                        </a>
+                        {/* 5 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">5. Retenção de Dados</h2>
+                            <p className="text-muted-foreground">
+                                Os dados pessoais são mantidos enquanto sua conta estiver ativa ou pelo tempo necessário
+                                para cumprimento de obrigações legais.
+                            </p>
+                        </section>
+
+                        {/* 6 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">6. Direitos do Titular</h2>
+                            <p className="text-muted-foreground mb-3">Nos termos da LGPD, você pode solicitar:</p>
+                            <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                                <li>Confirmação da existência de tratamento</li>
+                                <li>Acesso aos dados</li>
+                                <li>Correção de dados incompletos ou desatualizados</li>
+                                <li>Exclusão dos dados pessoais</li>
+                            </ul>
+                        </section>
+
+                        {/* 7 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">7. Exclusão de Dados</h2>
+                            <p className="text-muted-foreground mb-3">
+                                Você pode solicitar a exclusão da sua conta e de seus dados pessoais a qualquer momento
+                                enviando um e-mail para:
+                            </p>
+                            <a
+                                href="mailto:voe@xploreviagens.com.br?subject=Exclus%C3%A3o%20de%20Dados"
+                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                            >
+                                <Mail className="w-4 h-4" />
+                                voe@xploreviagens.com.br
+                            </a>
+                            <p className="text-muted-foreground mt-3">
+                                Após a solicitação, seus dados serão excluídos no prazo legal aplicável.
+                            </p>
+                        </section>
+
+                        {/* 8 */}
+                        <section>
+                            <h2 className="font-semibold text-accent mb-2">8. Alterações nesta Política</h2>
+                            <p className="text-muted-foreground">
+                                Esta Política de Privacidade poderá ser atualizada periodicamente. Recomendamos a
+                                revisão regular deste documento.
+                            </p>
+                        </section>
                     </div>
                 </div>
 
