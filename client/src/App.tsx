@@ -53,7 +53,7 @@ function Router() {
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
 
       <Route path={"/avaliar"} component={ReviewPage} />
-      <Route path={"/privacidade"} component={PrivacidadePage} />
+      <Route path={"/politica-de-privacidade"} component={PrivacidadePage} />
       <Route path={"/exclusao-dados"} component={ExclusaoDadosPage} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
