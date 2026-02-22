@@ -403,29 +403,35 @@ export async function getOfertasDatasFlexiveisByOfertaIds(ofertaIds: number[]) {
 }
 
 // Review Authors queries
-export async function upsertReviewAuthor(author: InsertReviewAuthor) {
+export async function upsertReviewAuthor(author: {
+  providerId: string;
+  loginMethod: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+}) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Check if author exists
-  const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.googleId, author.googleId)).limit(1);
+  // Check if author exists by providerId
+  const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
   if (existing.length > 0) {
     // Update existing
     await db.update(reviewAuthors)
       .set({ name: author.name, email: author.email, avatarUrl: author.avatarUrl })
-      .where(eq(reviewAuthors.googleId, author.googleId));
+      .where(eq(reviewAuthors.providerId, author.providerId));
     return existing[0];
   } else {
     // Insert new
-    const result = await db.insert(reviewAuthors).values(author);
-    const newAuthor = await db.select().from(reviewAuthors).where(eq(reviewAuthors.googleId, author.googleId)).limit(1);
+    await db.insert(reviewAuthors).values(author);
+    const newAuthor = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
     return newAuthor[0];
   }
 }
 
-export async function getReviewAuthorByGoogleId(googleId: string) {
+export async function getReviewAuthorByProviderId(providerId: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(reviewAuthors).where(eq(reviewAuthors.googleId, googleId)).limit(1);
+  const result = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, providerId)).limit(1);
   return result.length > 0 ? result[0] : null;
 }
 

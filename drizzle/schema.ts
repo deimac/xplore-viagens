@@ -181,11 +181,14 @@ export type OfertaDataFixa = typeof ofertasDatasFixas.$inferSelect;
 export type OfertaDataFlexivel = typeof ofertasDatasFlexiveis.$inferSelect;
 
 /**
- * Review Authors table - stores Google OAuth user data for reviews
+ * Review Authors table - stores OAuth user data for reviews (Google / Facebook / etc.)
+ * providerId = external ID from the OAuth provider (Google sub, Facebook ID, etc.)
+ * loginMethod = identifies which provider was used ("google" | "facebook")
  */
 export const reviewAuthors = mysqlTable("reviewAuthors", {
   id: int("id").autoincrement().primaryKey(),
-  googleId: varchar("googleId", { length: 255 }).notNull().unique(),
+  providerId: varchar("providerId", { length: 255 }).notNull().unique(),
+  loginMethod: varchar("loginMethod", { length: 32 }).default("google").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   avatarUrl: text("avatarUrl"),

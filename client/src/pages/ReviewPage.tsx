@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GoogleLoginButton } from '@/components/GoogleLoginButton';
+import { FacebookLoginButton } from '@/components/FacebookLoginButton';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star } from 'lucide-react';
@@ -137,15 +138,26 @@ export default function ReviewPage() {
             <div className="space-y-6">
               <div className="text-center">
                 <p className="text-muted-foreground mb-6">
-                  Para deixar sua avaliação, faça login com sua conta Google
+                  Para deixar sua avaliação, faça login com sua conta Google ou Facebook
                 </p>
-                <GoogleLoginButton
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                />
+                <div className="space-y-4">
+                  <GoogleLoginButton
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                  />
+                  <div className="flex items-center gap-4 max-w-[300px] mx-auto">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-sm text-muted-foreground">ou</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <FacebookLoginButton
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                  />
+                </div>
               </div>
               <div className="text-center text-sm text-muted-foreground">
-                <p>Usaremos seu nome e foto do Google para exibir sua avaliação</p>
+                <p>Usaremos seu nome e foto da sua conta para exibir sua avaliação</p>
               </div>
             </div>
           ) : (
@@ -183,11 +195,10 @@ export default function ReviewPage() {
                       className="transition-transform hover:scale-110"
                     >
                       <Star
-                        className={`w-10 h-10 ${
-                          star <= (hoveredRating || rating)
+                        className={`w-10 h-10 ${star <= (hoveredRating || rating)
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       />
                     </button>
                   ))}

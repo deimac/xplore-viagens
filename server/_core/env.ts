@@ -63,6 +63,10 @@ export const ENV = {
 
   // GOOGLE MAPS
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+
+  // FACEBOOK OAUTH
+  facebookAppId: process.env.FACEBOOK_APP_ID || '2368392583585442',
+  facebookAppSecret: process.env.FACEBOOK_APP_SECRET || '',
 };
 
 export function validateEnv(): void {

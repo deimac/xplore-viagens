@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { storagePut } from "./storage";
 import crypto from "crypto";
 import { verifyGoogleToken } from "./_core/googleAuth";
+import { verifyFacebookToken } from "./_core/facebookAuth";
 import { SignJWT } from "jose";
 import bcrypt from 'bcryptjs';
 import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPessoas, getOrcamento } from "./_core/iddasApi";
@@ -426,7 +427,8 @@ export const appRouter = router({
 
           // Upsert review author
           const author = await db.upsertReviewAuthor({
-            googleId: userInfo.googleId,
+            providerId: userInfo.providerId,
+            loginMethod: 'google',
             name: userInfo.name,
             email: userInfo.email,
             avatarUrl: userInfo.picture,
@@ -445,6 +447,39 @@ export const appRouter = router({
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Failed to verify Google token",
+          });
+        }
+      }),
+
+    // Verify Facebook token and return user info
+    verifyFacebook: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .mutation(async ({ input }) => {
+        try {
+          const userInfo = await verifyFacebookToken(input.accessToken);
+
+          // Upsert review author
+          const author = await db.upsertReviewAuthor({
+            providerId: userInfo.providerId,
+            loginMethod: 'facebook',
+            name: userInfo.name,
+            email: userInfo.email,
+            avatarUrl: userInfo.picture,
+          });
+
+          return {
+            success: true,
+            author: {
+              id: author.id,
+              name: author.name,
+              email: author.email,
+              avatarUrl: author.avatarUrl,
+            },
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Failed to verify Facebook token",
           });
         }
       }),
