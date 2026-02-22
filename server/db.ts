@@ -410,21 +410,43 @@ export async function upsertReviewAuthor(author: {
   email: string;
   avatarUrl: string | null;
 }) {
+  console.log('[DB] upsertReviewAuthor called with:', JSON.stringify(author, null, 2));
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  // Check if author exists by providerId
-  const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
-  if (existing.length > 0) {
-    // Update existing
-    await db.update(reviewAuthors)
-      .set({ name: author.name, email: author.email, avatarUrl: author.avatarUrl })
-      .where(eq(reviewAuthors.providerId, author.providerId));
-    return existing[0];
-  } else {
-    // Insert new
-    await db.insert(reviewAuthors).values(author);
-    const newAuthor = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
-    return newAuthor[0];
+  if (!db) {
+    console.error('[DB] Database NOT available!');
+    throw new Error("Database not available");
+  }
+  console.log('[DB] Database connection OK');
+
+  try {
+    // Check if author exists by providerId
+    console.log('[DB] Checking if author exists with providerId:', author.providerId);
+    const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
+    console.log('[DB] Existing author query result:', existing.length > 0 ? JSON.stringify(existing[0], null, 2) : 'NOT FOUND');
+
+    if (existing.length > 0) {
+      // Update existing
+      console.log('[DB] Updating existing author id:', existing[0].id);
+      await db.update(reviewAuthors)
+        .set({ name: author.name, email: author.email, avatarUrl: author.avatarUrl })
+        .where(eq(reviewAuthors.providerId, author.providerId));
+      console.log('[DB] Update successful');
+      return existing[0];
+    } else {
+      // Insert new
+      console.log('[DB] Inserting new author...');
+      await db.insert(reviewAuthors).values(author);
+      console.log('[DB] Insert successful, fetching new author...');
+      const newAuthor = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
+      console.log('[DB] New author:', newAuthor.length > 0 ? JSON.stringify(newAuthor[0], null, 2) : 'NOT FOUND AFTER INSERT');
+      return newAuthor[0];
+    }
+  } catch (dbError: any) {
+    console.error('[DB] Error in upsertReviewAuthor:', dbError?.message);
+    console.error('[DB] SQL Error code:', dbError?.code);
+    console.error('[DB] SQL Error errno:', dbError?.errno);
+    console.error('[DB] Stack:', dbError?.stack);
+    throw dbError;
   }
 }
 

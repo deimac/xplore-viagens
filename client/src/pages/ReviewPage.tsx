@@ -20,7 +20,7 @@ export default function ReviewPage() {
 
   const createReview = trpc.reviews.create.useMutation();
 
-  const handleGoogleSuccess = (id: number, info: { name: string; email: string; avatarUrl: string | null }) => {
+  const handleLoginSuccess = (id: number, info: { name: string; email: string; avatarUrl: string | null }) => {
     setIsAuthenticated(true);
     setAuthorId(id);
     setAuthorInfo(info);
@@ -29,6 +29,10 @@ export default function ReviewPage() {
 
   const handleGoogleError = () => {
     toast.error('Falha ao fazer login com Google. Tente novamente.');
+  };
+
+  const handleFacebookError = () => {
+    toast.error('Falha ao fazer login com Facebook. Tente novamente.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,7 +146,7 @@ export default function ReviewPage() {
                 </p>
                 <div className="space-y-4">
                   <GoogleLoginButton
-                    onSuccess={handleGoogleSuccess}
+                    onSuccess={handleLoginSuccess}
                     onError={handleGoogleError}
                   />
                   <div className="flex items-center gap-4 max-w-[300px] mx-auto">
@@ -151,8 +155,8 @@ export default function ReviewPage() {
                     <div className="flex-1 h-px bg-gray-200" />
                   </div>
                   <FacebookLoginButton
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
+                    onSuccess={handleLoginSuccess}
+                    onError={handleFacebookError}
                   />
                 </div>
               </div>
@@ -196,8 +200,8 @@ export default function ReviewPage() {
                     >
                       <Star
                         className={`w-10 h-10 ${star <= (hoveredRating || rating)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
                           }`}
                       />
                     </button>

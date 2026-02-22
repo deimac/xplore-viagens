@@ -455,19 +455,28 @@ export const appRouter = router({
     verifyFacebook: publicProcedure
       .input(z.object({ accessToken: z.string() }))
       .mutation(async ({ input }) => {
+        console.log('=== TRPC verifyFacebook MUTATION START ===');
+        console.log('[verifyFacebook] accessToken received:', input.accessToken ? `YES (${input.accessToken.substring(0, 20)}...)` : 'EMPTY');
         try {
+          console.log('[verifyFacebook] Step 1: Calling verifyFacebookToken...');
           const userInfo = await verifyFacebookToken(input.accessToken);
+          console.log('[verifyFacebook] Step 1 OK - userInfo:', JSON.stringify(userInfo, null, 2));
 
           // Upsert review author
-          const author = await db.upsertReviewAuthor({
+          console.log('[verifyFacebook] Step 2: Calling upsertReviewAuthor...');
+          const authorData = {
             providerId: userInfo.providerId,
             loginMethod: 'facebook',
             name: userInfo.name,
             email: userInfo.email,
             avatarUrl: userInfo.picture,
-          });
+          };
+          console.log('[verifyFacebook] Author data to upsert:', JSON.stringify(authorData, null, 2));
 
-          return {
+          const author = await db.upsertReviewAuthor(authorData);
+          console.log('[verifyFacebook] Step 2 OK - author from DB:', JSON.stringify(author, null, 2));
+
+          const result = {
             success: true,
             author: {
               id: author.id,
@@ -476,10 +485,17 @@ export const appRouter = router({
               avatarUrl: author.avatarUrl,
             },
           };
-        } catch (error) {
+          console.log('[verifyFacebook] Returning success:', JSON.stringify(result, null, 2));
+          console.log('=== TRPC verifyFacebook MUTATION SUCCESS ===');
+          return result;
+        } catch (error: any) {
+          console.error('=== TRPC verifyFacebook MUTATION FAILED ===');
+          console.error('[verifyFacebook] Error type:', error?.constructor?.name);
+          console.error('[verifyFacebook] Error message:', error?.message);
+          console.error('[verifyFacebook] Error stack:', error?.stack);
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Failed to verify Facebook token",
+            message: `Failed to verify Facebook token: ${error?.message}`,
           });
         }
       }),

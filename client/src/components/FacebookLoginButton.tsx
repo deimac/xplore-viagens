@@ -111,24 +111,31 @@ export function FacebookLoginButton({ onSuccess, onError }: FacebookLoginButtonP
     const sendTokenToBackend = useCallback(
         async (accessToken: string, profile: { name: string; email: string; pictureUrl: string }) => {
             try {
+                console.log('[Facebook] Sending token to backend...');
+                console.log('[Facebook] Profile from SDK:', JSON.stringify(profile));
                 const res = await fetch('/api/trpc/reviews.verifyFacebook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ accessToken }),
                 });
+                console.log('[Facebook] Backend HTTP status:', res.status);
                 const data = await res.json();
+                console.log('[Facebook] Backend response:', JSON.stringify(data, null, 2));
 
                 if (data.result?.data?.success && data.result?.data?.author) {
                     const author = data.result.data.author;
+                    console.log('[Facebook] Login SUCCESS - author:', JSON.stringify(author));
                     onSuccess(author.id, {
                         name: author.name,
                         email: author.email,
                         avatarUrl: author.avatarUrl,
                     });
                 } else {
+                    console.error('[Facebook] Backend returned unexpected format:', JSON.stringify(data));
                     onError();
                 }
-            } catch {
+            } catch (err: any) {
+                console.error('[Facebook] Error sending token to backend:', err?.message, err);
                 onError();
             }
         },
@@ -137,14 +144,19 @@ export function FacebookLoginButton({ onSuccess, onError }: FacebookLoginButtonP
 
     const handleFBResponse = useCallback(
         (response: FacebookLoginStatusResponse) => {
+            console.log('[Facebook] FB.login response status:', response.status);
+            console.log('[Facebook] authResponse:', response.authResponse ? 'present' : 'missing');
             if (response.status === 'connected' && response.authResponse) {
                 const { accessToken } = response.authResponse;
+                console.log('[Facebook] accessToken:', accessToken ? `${accessToken.substring(0, 20)}...` : 'EMPTY');
+                console.log('[Facebook] userID:', response.authResponse.userID);
 
                 // Fetch profile info from Graph API
                 window.FB.api(
                     '/me',
                     { fields: 'id,name,email,picture.type(large)' },
                     (profile: any) => {
+                        console.log('[Facebook] Graph API /me response:', JSON.stringify(profile));
                         if (profile && !profile.error) {
                             sendTokenToBackend(accessToken, {
                                 name: profile.name || '',
@@ -152,11 +164,13 @@ export function FacebookLoginButton({ onSuccess, onError }: FacebookLoginButtonP
                                 pictureUrl: profile.picture?.data?.url || '',
                             });
                         } else {
+                            console.error('[Facebook] Graph API error:', profile?.error);
                             onError();
                         }
                     },
                 );
             } else {
+                console.log('[Facebook] Not connected, status:', response.status);
                 setIsLoading(false);
             }
         },
