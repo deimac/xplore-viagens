@@ -342,6 +342,8 @@ export async function getAllViagens() {
     LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
     LEFT JOIN destaques d ON vd.destaqueId = d.id
     WHERE v.ativo = TRUE
+      AND v.dataIda IS NOT NULL
+      AND DATE(v.dataIda) > CURDATE()
     GROUP BY v.id
     ORDER BY v.criadoEm DESC
   `);

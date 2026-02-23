@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Users, Building2, Moon, MessageCircle } from "lucide-react";
+import { MapPin, Users, Building2, Moon, MessageCircle, AlertTriangle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import CategoryFilter from "@/components/CategoryFilter";
 import FadeInContainer from "@/components/FadeInContainer";
@@ -85,7 +85,19 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
   const travelsQuery = trpc.viagens.list.useQuery();
   const categoriesQuery = trpc.categorias.list.useQuery();
 
-  const allTravels = (travelsQuery.data as any)?.json || travelsQuery.data || [];
+  const isAllowedByDepartureDate = (travel: any) => {
+    if (!travel?.dataIda) return false;
+    const departure = new Date(travel.dataIda);
+    if (Number.isNaN(departure.getTime())) return false;
+
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    departure.setHours(0, 0, 0, 0);
+
+    return departure > todayStart;
+  };
+
+  const allTravels = ((travelsQuery.data as any)?.json || travelsQuery.data || []).filter(isAllowedByDepartureDate);
   const allCategories = (categoriesQuery.data as any)?.json || categoriesQuery.data || [];
 
   // Filter categories to show only those with associated travels
@@ -241,7 +253,7 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
                         }}
                       >
                         {/* Image Section - Top */}
-                        <div className="relative h-[52%] md:h-[50%] overflow-hidden">
+                        <div className="relative h-[54%] md:h-[52%] overflow-hidden">
                           <img
                             src={travel.imagemUrl}
                             alt={travel.titulo}
@@ -264,7 +276,7 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
                           )}
 
                           {/* Título e origem sobre a imagem (acima do espaço branco) */}
-                          <div className="absolute bottom-0 left-0 right-0 p-3 md:p-5 text-white">
+                          <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 pt-3 md:px-5 md:pb-3 md:pt-5 text-white">
                             <h3 className="text-[15px] md:text-lg font-bold leading-tight line-clamp-2">
                               {travel.titulo}
                             </h3>
@@ -278,7 +290,7 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
                         </div>
 
                         {/* Info Section - Bottom */}
-                        <div className="pl-4 pr-4 pb-4 pt-3 md:pl-5 md:pr-5 md:pb-5 md:pt-5 h-[48%] md:h-[50%] flex flex-col">
+                        <div className="pl-4 pr-4 pb-4 pt-3 md:pl-5 md:pr-5 md:pb-5 md:pt-5 h-[46%] md:h-[48%] flex flex-col">
                           <div className="grid grid-rows-3 gap-1.5 md:gap-2 text-gray-500 text-xs md:text-sm">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <Moon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -355,6 +367,16 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
               </div>
             </div>
 
+            <div className="mt-1 mb-1 px-2 flex justify-center">
+              <div className="w-full max-w-[280px] md:max-w-md inline-flex items-center justify-center gap-2 text-[11px] md:text-xs text-amber-600 text-center">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-600" />
+                <p>
+                  Tarifas sujeitas a alteração e disponibilidade.<br />
+                  Consulte disponibilidade para datas diferentes.
+                </p>
+              </div>
+            </div>
+
             {/* Navegação */}
             <CarouselNavigation
               currentIndex={currentIndex}
@@ -382,7 +404,7 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
           </div>
 
         </FadeInContainer>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
