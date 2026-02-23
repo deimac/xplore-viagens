@@ -30,21 +30,10 @@ export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingD
         onChange?.(newDate);
     };
 
-    const handleDateSelect = (
-        newDate: DateRange | undefined,
-        selectedDay?: Date
-    ) => {
+    const handleDateSelect = (newDate: DateRange | undefined) => {
         // If DayPicker cleared selection
         if (!newDate?.from) {
             onChange?.(undefined);
-            return;
-        }
-
-        const clicked = selectedDay ?? newDate.from;
-
-        // If both dates already selected, start a new range from the clicked date
-        if (value?.from && value?.to) {
-            onChange?.({ from: clicked, to: undefined });
             return;
         }
 
@@ -56,11 +45,11 @@ export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingD
             newDate.from.getTime() === newDate.to.getTime()
         ) {
             // Mantém apenas o check-in, força o usuário a escolher um check-out válido
-            onChange?.({ from: clicked, to: undefined });
+            onChange?.({ from: newDate.from, to: undefined });
             return;
         }
 
-        // Normal flow (setting return date or changing an in-progress selection)
+        // Normal flow (flight/accommodation range selection)
         onChange?.(newDate);
     };
 
@@ -152,7 +141,11 @@ export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingD
                                     : value?.from
                                         ? "Selecione a data de check-out."
                                         : "Selecione as datas de check-in e check-out.")
-                                : (value?.from && !value?.to ? "Selecione a volta ou clique em Confirmar para Apenas Ida." : "Selecione as datas.")}
+                                : (value?.from && value?.to
+                                    ? `Viagem de ${differenceInDays(value.to, value.from)} dia${differenceInDays(value.to, value.from) !== 1 ? 's' : ''}.`
+                                    : value?.from
+                                        ? "Selecione a volta ou clique em Confirmar para Apenas Ida."
+                                        : "Selecione as datas.")}
                         </div>
                         <div className="flex gap-2">
                             <Button

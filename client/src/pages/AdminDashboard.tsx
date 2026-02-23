@@ -64,8 +64,8 @@ export default function AdminDashboard() {
   }>({ open: false, type: null, id: undefined, title: "" });
 
   // tRPC queries
-  const categoriesQuery = trpc.categories.list.useQuery(undefined);
-  const travelsQuery = trpc.travels.list.useQuery(undefined);
+  const categoriesQuery = trpc.categorias.list.useQuery(undefined);
+  const travelsQuery = trpc.viagens.list.useQuery(undefined);
   const slidesQuery = trpc.heroSlides.list.useQuery(undefined);
   const reviewsQuery = trpc.reviews.list.useQuery(undefined);
 
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
   });
 
   // tRPC mutations
-  const createCategoryMutation = trpc.categories.create.useMutation({
+  const createCategoryMutation = trpc.categorias.create.useMutation({
     onSuccess: () => {
       categoriesQuery.refetch();
       setCategoryModalOpen(false);
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const updateCategoryMutation = trpc.categories.update.useMutation({
+  const updateCategoryMutation = (trpc as any).categorias.update?.useMutation({
     onSuccess: () => {
       categoriesQuery.refetch();
       setCategoryModalOpen(false);
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const deleteCategoryMutation = trpc.categories.delete.useMutation({
+  const deleteCategoryMutation = trpc.categorias.delete.useMutation({
     onSuccess: () => {
       categoriesQuery.refetch();
       toast.success("Categoria deletada com sucesso");
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const createTravelMutation = trpc.travels.create.useMutation({
+  const createTravelMutation = trpc.viagens.create.useMutation({
     onSuccess: () => {
       travelsQuery.refetch();
       setTravelModalOpen(false);
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const updateTravelMutation = trpc.travels.update.useMutation({
+  const updateTravelMutation = trpc.viagens.update.useMutation({
     onSuccess: () => {
       travelsQuery.refetch();
       setTravelModalOpen(false);
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const deleteTravelMutation = trpc.travels.delete.useMutation({
+  const deleteTravelMutation = trpc.viagens.delete.useMutation({
     onSuccess: () => {
       travelsQuery.refetch();
       toast.success("Viagem deletada com sucesso");

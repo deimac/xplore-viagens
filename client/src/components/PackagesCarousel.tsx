@@ -50,8 +50,8 @@ export default function PackagesCarousel() {
   };
 
   // Fetch travels from database
-  const travelsQuery = trpc.travels.list.useQuery(undefined);
-  const categoriesQuery = trpc.categories.list.useQuery(undefined);
+  const travelsQuery = trpc.viagens.list.useQuery(undefined);
+  const categoriesQuery = trpc.categorias.list.useQuery(undefined);
 
   // Get travels data - superjson wraps data in { json: [...] }
   const allTravels = (travelsQuery.data as any)?.json || travelsQuery.data || [];

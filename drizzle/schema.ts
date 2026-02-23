@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, primaryKey } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, primaryKey, date, decimal, boolean } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -77,6 +77,93 @@ export const travelCategories = mysqlTable(
 
 export type TravelCategory = typeof travelCategories.$inferSelect;
 export type InsertTravelCategory = typeof travelCategories.$inferInsert;
+
+/**
+ * Viagens table (new structure)
+ */
+export const viagens = mysqlTable("viagens", {
+  id: int("id").autoincrement().primaryKey(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  descricao: text("descricao").notNull(),
+  origem: varchar("origem", { length: 120 }).notNull(),
+  dataIda: date("dataIda"),
+  dataVolta: date("dataVolta"),
+  quantidadePessoas: int("quantidadePessoas").notNull().default(1),
+  valorTotal: decimal("valorTotal", { precision: 10, scale: 2 }).notNull(),
+  quantidadeParcelas: int("quantidadeParcelas"),
+  valorParcela: decimal("valorParcela", { precision: 10, scale: 2 }),
+  temJuros: boolean("temJuros").default(false),
+  xp: int("xp").default(0),
+  hospedagem: text("hospedagem"),
+  imagemUrl: text("imagemUrl").notNull(),
+  ativo: boolean("ativo").default(true),
+  criadoEm: timestamp("criadoEm").defaultNow(),
+  atualizadoEm: timestamp("atualizadoEm").defaultNow().onUpdateNow(),
+});
+
+export type Viagem = typeof viagens.$inferSelect;
+export type InsertViagem = typeof viagens.$inferInsert;
+
+/**
+ * Categorias table (new structure)
+ */
+export const categorias = mysqlTable("categorias", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  criadoEm: timestamp("criadoEm").defaultNow(),
+});
+
+export type Categoria = typeof categorias.$inferSelect;
+export type InsertCategoria = typeof categorias.$inferInsert;
+
+/**
+ * ViagemCategorias junction table (N:N)
+ */
+export const viagemCategorias = mysqlTable(
+  "viagemCategorias",
+  {
+    viagemId: int("viagemId")
+      .notNull()
+      .references(() => viagens.id, { onDelete: "cascade" }),
+    categoriaId: int("categoriaId")
+      .notNull()
+      .references(() => categorias.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.viagemId, table.categoriaId] }),
+  })
+);
+
+/**
+ * Destaques table (tags do topo do card)
+ */
+export const destaques = mysqlTable("destaques", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 60 }).notNull(),
+  criadoEm: timestamp("criadoEm").defaultNow(),
+});
+
+export type Destaque = typeof destaques.$inferSelect;
+export type InsertDestaque = typeof destaques.$inferInsert;
+
+/**
+ * ViagemDestaques junction table (N:N)
+ */
+export const viagemDestaques = mysqlTable(
+  "viagemDestaques",
+  {
+    viagemId: int("viagemId")
+      .notNull()
+      .references(() => viagens.id, { onDelete: "cascade" }),
+    destaqueId: int("destaqueId")
+      .notNull()
+      .references(() => destaques.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.viagemId, table.destaqueId] }),
+  })
+);
 
 /**
  * Quotations table - for travel quote requests

@@ -285,6 +285,220 @@ export async function deleteCategory(id: number) {
   await db.delete(categories).where(eq(categories.id, id));
 }
 
+// ==========================================
+// NEW Viagens / Categorias / Destaques queries
+// ==========================================
+
+/** Normalizes a MySQL DATE (Date object or string) to 'YYYY-MM-DD' or null */
+function normalizeDateColumn(d: any): string | null {
+  if (!d) return null;
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  if (typeof d === 'string') {
+    const match = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+  return null;
+}
+
+function parseViagensRows(rows: any[]) {
+  return rows.map((row: any) => ({
+    ...row,
+    dataIda: normalizeDateColumn(row.dataIda),
+    dataVolta: normalizeDateColumn(row.dataVolta),
+    valorTotal: row.valorTotal != null ? parseFloat(row.valorTotal) : 0,
+    valorParcela: row.valorParcela != null ? parseFloat(row.valorParcela) : null,
+    temJuros: !!row.temJuros,
+    ativo: !!row.ativo,
+    categorias: row.categorias_raw
+      ? row.categorias_raw.split('|').map((s: string) => {
+        const [id, ...rest] = s.split(':');
+        return { id: parseInt(id), nome: rest.join(':') };
+      })
+      : [],
+    destaques: row.destaques_raw
+      ? row.destaques_raw.split('|').map((s: string) => {
+        const [id, ...rest] = s.split(':');
+        return { id: parseInt(id), nome: rest.join(':') };
+      })
+      : [],
+    categorias_raw: undefined,
+    destaques_raw: undefined,
+  }));
+}
+
+export async function getAllViagens() {
+  const rows = await executeQuery<any[]>(`
+    SELECT v.*,
+      GROUP_CONCAT(DISTINCT CONCAT(c.id, ':', c.nome) SEPARATOR '|') as categorias_raw,
+      GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
+    FROM viagens v
+    LEFT JOIN viagemCategorias vc ON v.id = vc.viagemId
+    LEFT JOIN categorias c ON vc.categoriaId = c.id
+    LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
+    LEFT JOIN destaques d ON vd.destaqueId = d.id
+    WHERE v.ativo = TRUE
+    GROUP BY v.id
+    ORDER BY v.criadoEm DESC
+  `);
+  return parseViagensRows(rows);
+}
+
+export async function getAllViagensAdmin() {
+  const rows = await executeQuery<any[]>(`
+    SELECT v.*,
+      GROUP_CONCAT(DISTINCT CONCAT(c.id, ':', c.nome) SEPARATOR '|') as categorias_raw,
+      GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
+    FROM viagens v
+    LEFT JOIN viagemCategorias vc ON v.id = vc.viagemId
+    LEFT JOIN categorias c ON vc.categoriaId = c.id
+    LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
+    LEFT JOIN destaques d ON vd.destaqueId = d.id
+    GROUP BY v.id
+    ORDER BY v.criadoEm DESC
+  `);
+  return parseViagensRows(rows);
+}
+
+export async function getViagemById(id: number) {
+  const rows = await executeQuery<any[]>(`
+    SELECT v.*,
+      GROUP_CONCAT(DISTINCT CONCAT(c.id, ':', c.nome) SEPARATOR '|') as categorias_raw,
+      GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
+    FROM viagens v
+    LEFT JOIN viagemCategorias vc ON v.id = vc.viagemId
+    LEFT JOIN categorias c ON vc.categoriaId = c.id
+    LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
+    LEFT JOIN destaques d ON vd.destaqueId = d.id
+    WHERE v.id = ?
+    GROUP BY v.id
+  `, [id]);
+  if (rows.length === 0) return null;
+  return parseViagensRows(rows)[0];
+}
+
+export async function createViagem(data: any) {
+  const result = await executeQuery<any>(`
+    INSERT INTO viagens (titulo, slug, descricao, origem, dataIda, dataVolta, quantidadePessoas, valorTotal, quantidadeParcelas, valorParcela, temJuros, xp, hospedagem, imagemUrl, ativo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    data.titulo,
+    data.slug,
+    data.descricao,
+    data.origem,
+    data.dataIda || null,
+    data.dataVolta || null,
+    data.quantidadePessoas ?? 1,
+    data.valorTotal,
+    data.quantidadeParcelas || null,
+    data.valorParcela || null,
+    data.temJuros ? 1 : 0,
+    data.xp || 0,
+    data.hospedagem || null,
+    data.imagemUrl,
+    data.ativo !== false ? 1 : 0,
+  ]);
+  const viagemId = result.insertId;
+
+  if (data.categoriaIds?.length) {
+    const placeholders = data.categoriaIds.map(() => '(?, ?)').join(',');
+    const values = data.categoriaIds.flatMap((cid: number) => [viagemId, cid]);
+    await executeQuery(`INSERT INTO viagemCategorias (viagemId, categoriaId) VALUES ${placeholders}`, values);
+  }
+  if (data.destaqueIds?.length) {
+    const placeholders = data.destaqueIds.map(() => '(?, ?)').join(',');
+    const values = data.destaqueIds.flatMap((did: number) => [viagemId, did]);
+    await executeQuery(`INSERT INTO viagemDestaques (viagemId, destaqueId) VALUES ${placeholders}`, values);
+  }
+
+  return { insertId: viagemId };
+}
+
+export async function updateViagem(id: number, data: any) {
+  const fields: string[] = [];
+  const params: any[] = [];
+
+  const fieldMap: Record<string, any> = {
+    titulo: data.titulo,
+    slug: data.slug,
+    descricao: data.descricao,
+    origem: data.origem,
+    dataIda: data.dataIda,
+    dataVolta: data.dataVolta,
+    quantidadePessoas: data.quantidadePessoas,
+    valorTotal: data.valorTotal,
+    quantidadeParcelas: data.quantidadeParcelas,
+    valorParcela: data.valorParcela,
+    temJuros: data.temJuros !== undefined ? (data.temJuros ? 1 : 0) : undefined,
+    xp: data.xp,
+    hospedagem: data.hospedagem,
+    imagemUrl: data.imagemUrl,
+    ativo: data.ativo !== undefined ? (data.ativo ? 1 : 0) : undefined,
+  };
+
+  for (const [key, value] of Object.entries(fieldMap)) {
+    if (value !== undefined) {
+      fields.push(`${key} = ?`);
+      params.push(value);
+    }
+  }
+
+  if (fields.length > 0) {
+    params.push(id);
+    await executeQuery(`UPDATE viagens SET ${fields.join(', ')} WHERE id = ?`, params);
+  }
+
+  if (data.categoriaIds !== undefined) {
+    await executeQuery(`DELETE FROM viagemCategorias WHERE viagemId = ?`, [id]);
+    if (data.categoriaIds.length) {
+      const placeholders = data.categoriaIds.map(() => '(?, ?)').join(',');
+      const values = data.categoriaIds.flatMap((cid: number) => [id, cid]);
+      await executeQuery(`INSERT INTO viagemCategorias (viagemId, categoriaId) VALUES ${placeholders}`, values);
+    }
+  }
+
+  if (data.destaqueIds !== undefined) {
+    await executeQuery(`DELETE FROM viagemDestaques WHERE viagemId = ?`, [id]);
+    if (data.destaqueIds.length) {
+      const placeholders = data.destaqueIds.map(() => '(?, ?)').join(',');
+      const values = data.destaqueIds.flatMap((did: number) => [id, did]);
+      await executeQuery(`INSERT INTO viagemDestaques (viagemId, destaqueId) VALUES ${placeholders}`, values);
+    }
+  }
+}
+
+export async function deleteViagem(id: number) {
+  await executeQuery(`DELETE FROM viagens WHERE id = ?`, [id]);
+}
+
+export async function getAllCategorias() {
+  return await executeQuery<any[]>(`SELECT * FROM categorias ORDER BY nome`);
+}
+
+export async function createCategoria(nome: string) {
+  return await executeQuery<any>(`INSERT INTO categorias (nome) VALUES (?)`, [nome]);
+}
+
+export async function deleteCategoria(id: number) {
+  await executeQuery(`DELETE FROM categorias WHERE id = ?`, [id]);
+}
+
+export async function getAllDestaques() {
+  return await executeQuery<any[]>(`SELECT * FROM destaques ORDER BY nome`);
+}
+
+export async function createDestaque(nome: string) {
+  return await executeQuery<any>(`INSERT INTO destaques (nome) VALUES (?)`, [nome]);
+}
+
+export async function deleteDestaque(id: number) {
+  await executeQuery(`DELETE FROM destaques WHERE id = ?`, [id]);
+}
+
 // Quotations queries
 export async function createQuotation(quotation: InsertQuotation) {
   const db = await getDb();
@@ -410,43 +624,21 @@ export async function upsertReviewAuthor(author: {
   email: string;
   avatarUrl: string | null;
 }) {
-  console.log('[DB] upsertReviewAuthor called with:', JSON.stringify(author, null, 2));
   const db = await getDb();
-  if (!db) {
-    console.error('[DB] Database NOT available!');
-    throw new Error("Database not available");
-  }
-  console.log('[DB] Database connection OK');
-
-  try {
-    // Check if author exists by providerId
-    console.log('[DB] Checking if author exists with providerId:', author.providerId);
-    const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
-    console.log('[DB] Existing author query result:', existing.length > 0 ? JSON.stringify(existing[0], null, 2) : 'NOT FOUND');
-
-    if (existing.length > 0) {
-      // Update existing
-      console.log('[DB] Updating existing author id:', existing[0].id);
-      await db.update(reviewAuthors)
-        .set({ name: author.name, email: author.email, avatarUrl: author.avatarUrl })
-        .where(eq(reviewAuthors.providerId, author.providerId));
-      console.log('[DB] Update successful');
-      return existing[0];
-    } else {
-      // Insert new
-      console.log('[DB] Inserting new author...');
-      await db.insert(reviewAuthors).values(author);
-      console.log('[DB] Insert successful, fetching new author...');
-      const newAuthor = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
-      console.log('[DB] New author:', newAuthor.length > 0 ? JSON.stringify(newAuthor[0], null, 2) : 'NOT FOUND AFTER INSERT');
-      return newAuthor[0];
-    }
-  } catch (dbError: any) {
-    console.error('[DB] Error in upsertReviewAuthor:', dbError?.message);
-    console.error('[DB] SQL Error code:', dbError?.code);
-    console.error('[DB] SQL Error errno:', dbError?.errno);
-    console.error('[DB] Stack:', dbError?.stack);
-    throw dbError;
+  if (!db) throw new Error("Database not available");
+  // Check if author exists by providerId
+  const existing = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
+  if (existing.length > 0) {
+    // Update existing
+    await db.update(reviewAuthors)
+      .set({ name: author.name, email: author.email, avatarUrl: author.avatarUrl })
+      .where(eq(reviewAuthors.providerId, author.providerId));
+    return existing[0];
+  } else {
+    // Insert new
+    await db.insert(reviewAuthors).values(author);
+    const newAuthor = await db.select().from(reviewAuthors).where(eq(reviewAuthors.providerId, author.providerId)).limit(1);
+    return newAuthor[0];
   }
 }
 

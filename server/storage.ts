@@ -143,8 +143,46 @@ export function getFileSize(key: string): number {
 }
 
 /**
+ * Create viagem images directory
+ *
+ * @param viagemId - Viagem ID
+ */
+export function ensureViagemDir(viagemId: number): string {
+  const viagemDir = path.join(UPLOADS_DIR, 'viagens', viagemId.toString());
+  if (!fs.existsSync(viagemDir)) {
+    fs.mkdirSync(viagemDir, { recursive: true });
+    console.log(`✅ Created viagem directory: ${viagemDir}`);
+  }
+  return viagemDir;
+}
+
+/**
+ * Store viagem cover image as webp
+ *
+ * @param viagemId - Viagem ID
+ * @param imageData - Image buffer
+ * @returns { url, key }
+ */
+export async function storeViagemImage(
+  viagemId: number,
+  imageData: Buffer
+): Promise<{ url: string; key: string }> {
+  const sharp = await import('sharp');
+
+  ensureViagemDir(viagemId);
+
+  // Convert to webp
+  const webpData = await sharp.default(imageData)
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  const key = `viagens/${viagemId}/cover.webp`;
+  return await storagePut(key, webpData, 'image/webp');
+}
+
+/**
  * Create property images directory
- * 
+ *
  * @param propertyId - Property ID
  */
 export function ensurePropertyDir(propertyId: number): string {

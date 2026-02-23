@@ -494,7 +494,7 @@ export default function Home() {
 
             {/* Packages Section */}
             <section id="pacotes" className="py-0">
-              <PackagesCarouselTail />
+              <PackagesCarouselTail whatsappNumber={companySettings?.whatsapp} />
             </section>
 
             {/* Portfolio Section */}

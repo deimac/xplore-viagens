@@ -4,34 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Plus, SquarePen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import TravelModal from "@/components/TravelModal";
+import TravelModal, { type ViagemFormData } from "@/components/TravelModal";
 import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
-
-interface Travel {
-    id?: number;
-    title: string;
-    description: string;
-    origin: string;
-    departureDate: string | null;
-    returnDate: string | null;
-    travelers: string | null;
-    price: string;
-    imageUrl: string | null;
-    createdAt?: string;
-    updatedAt?: string;
-}
 
 export default function ViagensPage() {
     const [travelModalOpen, setTravelModalOpen] = useState(false);
-    const [selectedTravel, setSelectedTravel] = useState<Travel | undefined>();
+    const [selectedTravel, setSelectedTravel] = useState<any>(undefined);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [travelToDelete, setTravelToDelete] = useState<{ id: number; title: string } | null>(null);
+    const [travelToDelete, setTravelToDelete] = useState<{ id: number; titulo: string } | null>(null);
 
     // @ts-expect-error - tRPC types are generated when server is running
-    const travelsQuery = trpc.travels.list.useQuery(undefined);
+    const travelsQuery = trpc.viagens.listAdmin.useQuery(undefined);
 
     // @ts-expect-error - tRPC types are generated when server is running
-    const createTravelMutation = trpc.travels.create.useMutation({
+    const createTravelMutation = trpc.viagens.create.useMutation({
         onSuccess: () => {
             travelsQuery.refetch();
             setTravelModalOpen(false);
@@ -43,7 +29,7 @@ export default function ViagensPage() {
     });
 
     // @ts-expect-error - tRPC types are generated when server is running
-    const updateTravelMutation = trpc.travels.update.useMutation({
+    const updateTravelMutation = trpc.viagens.update.useMutation({
         onSuccess: () => {
             travelsQuery.refetch();
             setTravelModalOpen(false);
@@ -55,7 +41,7 @@ export default function ViagensPage() {
     });
 
     // @ts-expect-error - tRPC types are generated when server is running
-    const deleteTravelMutation = trpc.travels.delete.useMutation({
+    const deleteTravelMutation = trpc.viagens.delete.useMutation({
         onSuccess: () => {
             travelsQuery.refetch();
             setDeleteDialogOpen(false);
@@ -66,20 +52,20 @@ export default function ViagensPage() {
         },
     });
 
-    const travels: Travel[] = (travelsQuery.data as any)?.json || travelsQuery.data || [];
+    const travels: any[] = (travelsQuery.data as any)?.json || travelsQuery.data || [];
 
     const handleAddTravel = () => {
         setSelectedTravel(undefined);
         setTravelModalOpen(true);
     };
 
-    const handleEditTravel = (travel: Travel) => {
+    const handleEditTravel = (travel: any) => {
         setSelectedTravel(travel);
         setTravelModalOpen(true);
     };
 
-    const handleDeleteTravel = (id: number, title: string) => {
-        setTravelToDelete({ id, title });
+    const handleDeleteTravel = (id: number, titulo: string) => {
+        setTravelToDelete({ id, titulo });
         setDeleteDialogOpen(true);
     };
 
@@ -89,30 +75,39 @@ export default function ViagensPage() {
         }
     };
 
-    const handleSaveTravel = (travel: Travel) => {
-        if (travel.id) {
-            updateTravelMutation.mutate({
-                id: travel.id,
-                title: travel.title,
-                description: travel.description,
-                origin: travel.origin,
-                departureDate: travel.departureDate || "",
-                returnDate: travel.returnDate || "",
-                travelers: travel.travelers || "",
-                price: travel.price,
-                imageUrl: travel.imageUrl || "",
-            });
+    const formatCurrency = (val: number) => val?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const handleSaveTravel = (viagem: ViagemFormData) => {
+        const quantidadePessoas = Number(viagem.quantidadePessoas);
+        const payload: any = {
+            titulo: viagem.titulo,
+            slug: viagem.slug,
+            descricao: viagem.descricao,
+            origem: viagem.origem,
+            dataIda: viagem.dataIda || null,
+            dataVolta: viagem.dataVolta || null,
+            quantidadePessoas: Number.isFinite(quantidadePessoas) && quantidadePessoas > 0 ? quantidadePessoas : 1,
+            valorTotal: viagem.valorTotal,
+            quantidadeParcelas: viagem.quantidadeParcelas || null,
+            valorParcela: viagem.valorParcela || null,
+            temJuros: viagem.temJuros || false,
+            xp: viagem.xp || 0,
+            hospedagem: viagem.hospedagem || null,
+            imagemUrl: viagem.imagemUrl,
+            ativo: viagem.ativo !== false,
+            categoriaIds: viagem.categoriaIds || [],
+            destaqueIds: viagem.destaqueIds || [],
+        };
+
+        // Attach image payload if present
+        if (viagem.imagem) {
+            payload.imagem = viagem.imagem;
+        }
+
+        if (viagem.id) {
+            updateTravelMutation.mutate({ id: viagem.id, ...payload });
         } else {
-            createTravelMutation.mutate({
-                title: travel.title,
-                description: travel.description,
-                origin: travel.origin,
-                departureDate: travel.departureDate || "",
-                returnDate: travel.returnDate || "",
-                travelers: travel.travelers || "",
-                price: travel.price,
-                imageUrl: travel.imageUrl || "",
-            });
+            createTravelMutation.mutate(payload);
         }
     };
 
@@ -163,10 +158,10 @@ export default function ViagensPage() {
                                         Origem
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        Data Ida
+                                        Valor
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        Preço
+                                        Ativo
                                     </th>
                                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Ações
@@ -174,22 +169,24 @@ export default function ViagensPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {travels.map((travel) => (
+                                {travels.map((travel: any) => (
                                     <tr
                                         key={travel.id}
                                         className="hover:bg-blue-50/50 transition-all duration-200"
                                     >
                                         <td className="px-6 py-4">
-                                            <div className="text-sm font-semibold text-gray-900">{travel.title}</div>
+                                            <div className="text-sm font-semibold text-gray-900">{travel.titulo}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-600">{travel.origin}</div>
+                                            <div className="text-sm text-gray-600">{travel.origem}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-600">{travel.departureDate}</div>
+                                            <div className="text-sm font-semibold text-blue-600">{formatCurrency(travel.valorTotal)}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm font-semibold text-blue-600">{travel.price}</div>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${travel.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                {travel.ativo ? 'Sim' : 'Não'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -205,7 +202,7 @@ export default function ViagensPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => handleDeleteTravel(travel.id!, travel.title)}
+                                                    onClick={() => handleDeleteTravel(travel.id!, travel.titulo)}
                                                     className="h-9 w-9 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 transition-all"
                                                     aria-label="Excluir viagem"
                                                 >
@@ -233,7 +230,7 @@ export default function ViagensPage() {
                     open={deleteDialogOpen}
                     onOpenChange={setDeleteDialogOpen}
                     title="Excluir Viagem"
-                    itemName={travelToDelete?.title}
+                    itemName={travelToDelete?.titulo}
                     onConfirm={handleConfirmDelete}
                     isLoading={deleteTravelMutation.isPending}
                 />

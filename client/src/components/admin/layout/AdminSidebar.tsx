@@ -12,6 +12,9 @@ import {
     Bed,
     DoorOpen,
     Settings,
+    Tag,
+    Sparkles,
+    List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -64,7 +67,23 @@ const menuItems: MenuItem[] = [
     {
         icon: MapPin,
         label: "Viagens",
-        href: "/admin/viagens",
+        children: [
+            {
+                icon: List,
+                label: "Lista de Viagens",
+                href: "/admin/viagens",
+            },
+            {
+                icon: Tag,
+                label: "Categorias",
+                href: "/admin/viagens/categorias",
+            },
+            {
+                icon: Sparkles,
+                label: "Destaques",
+                href: "/admin/viagens/destaques",
+            },
+        ],
     },
     {
         icon: Image,
@@ -85,7 +104,7 @@ const menuItems: MenuItem[] = [
 
 export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     const [location] = useLocation();
-    const [expandedItems, setExpandedItems] = useState<string[]>(["Hospedagens"]);
+    const [expandedItems, setExpandedItems] = useState<string[]>(["Hospedagens", "Viagens"]);
 
     const toggleExpanded = (label: string) => {
         setExpandedItems(prev =>

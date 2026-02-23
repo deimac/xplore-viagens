@@ -1,15 +1,15 @@
 import { trpc } from "@/lib/trpc";
 
 export default function TRPCDebug() {
-  const travelsQuery = trpc.travels.list.useQuery(undefined);
-  
+  const travelsQuery = trpc.viagens.list.useQuery(undefined);
+
   return (
-    <div style={{ 
-      position: 'fixed', 
-      bottom: 0, 
-      right: 0, 
-      background: 'white', 
-      border: '2px solid red', 
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      right: 0,
+      background: 'white',
+      border: '2px solid red',
       padding: '10px',
       maxWidth: '400px',
       maxHeight: '300px',

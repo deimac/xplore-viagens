@@ -11,7 +11,7 @@ export default function Dashboard() {
     // @ts-expect-error - tRPC types are generated when server is running
     const propertiesQuery = trpc.properties.listAll.useQuery();
     // @ts-expect-error - tRPC types are generated when server is running
-    const travelsQuery = trpc.travels.list.useQuery();
+    const travelsQuery = trpc.viagens.list.useQuery();
     // @ts-expect-error - tRPC types are generated when server is running
     const reviewsQuery = trpc.reviews.list.useQuery();
     // @ts-expect-error - tRPC types are generated when server is running

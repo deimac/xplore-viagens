@@ -72,91 +72,142 @@ export const appRouter = router({
     }),
   }),
 
-  travels: router({
+  viagens: router({
     list: publicProcedure.query(async () => {
-      return await db.getAllTravels();
+      return await db.getAllViagens();
+    }),
+    listAdmin: adminProcedure.query(async () => {
+      return await db.getAllViagensAdmin();
     }),
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
-        return await db.getTravelById(input.id);
+        return await db.getViagemById(input.id);
       }),
-    create: publicProcedure
+    create: adminProcedure
       .input(
         z.object({
-          title: z.string(),
-          description: z.string(),
-          origin: z.string(),
-          departureDate: z.string().optional(),
-          returnDate: z.string().optional(),
-          travelers: z.string().optional(),
-          price: z.string(),
-          imageUrl: z.string().optional(),
+          titulo: z.string(),
+          slug: z.string(),
+          descricao: z.string(),
+          origem: z.string(),
+          dataIda: z.string().optional().nullable(),
+          dataVolta: z.string().optional().nullable(),
+          quantidadePessoas: z.coerce.number().int().min(1).optional(),
+          valorTotal: z.number(),
+          quantidadeParcelas: z.number().optional().nullable(),
+          valorParcela: z.number().optional().nullable(),
+          temJuros: z.boolean().optional(),
+          xp: z.number().optional(),
+          hospedagem: z.string().optional().nullable(),
+          imagemUrl: z.string().optional().default(""),
+          ativo: z.boolean().optional(),
+          categoriaIds: z.array(z.number()).optional(),
+          destaqueIds: z.array(z.number()).optional(),
+          imagem: z.object({
+            fileName: z.string(),
+            fileData: z.string(),
+            mimeType: z.string(),
+          }).optional(),
         })
       )
       .mutation(async ({ input }) => {
-        return await db.createTravel(input);
+        const { imagem, ...data } = input;
+
+        // Create viagem first
+        const result = await db.createViagem({ ...data, imagemUrl: data.imagemUrl || "" });
+        const viagemId = result.insertId;
+
+        // Upload image if provided
+        if (imagem) {
+          const { storeViagemImage } = await import("./storage");
+          const buffer = Buffer.from(imagem.fileData, "base64");
+          const { url } = await storeViagemImage(viagemId, buffer);
+          await db.updateViagem(viagemId, { imagemUrl: url });
+        }
+
+        return { insertId: viagemId };
       }),
-    update: publicProcedure
+    update: adminProcedure
       .input(
         z.object({
           id: z.number(),
-          title: z.string().optional(),
-          description: z.string().optional(),
-          origin: z.string().optional(),
-          departureDate: z.string().optional(),
-          returnDate: z.string().optional(),
-          travelers: z.string().optional(),
-          price: z.string().optional(),
-          imageUrl: z.string().optional(),
+          titulo: z.string().optional(),
+          slug: z.string().optional(),
+          descricao: z.string().optional(),
+          origem: z.string().optional(),
+          dataIda: z.string().optional().nullable(),
+          dataVolta: z.string().optional().nullable(),
+          quantidadePessoas: z.coerce.number().int().min(1).optional(),
+          valorTotal: z.number().optional(),
+          quantidadeParcelas: z.number().optional().nullable(),
+          valorParcela: z.number().optional().nullable(),
+          temJuros: z.boolean().optional(),
+          xp: z.number().optional(),
+          hospedagem: z.string().optional().nullable(),
+          imagemUrl: z.string().optional(),
+          ativo: z.boolean().optional(),
+          categoriaIds: z.array(z.number()).optional(),
+          destaqueIds: z.array(z.number()).optional(),
+          imagem: z.object({
+            fileName: z.string(),
+            fileData: z.string(),
+            mimeType: z.string(),
+          }).optional(),
         })
       )
       .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        await db.updateTravel(id, data);
+        const { id, imagem, ...data } = input;
+
+        // Upload new image if provided
+        if (imagem) {
+          const { storeViagemImage } = await import("./storage");
+          const buffer = Buffer.from(imagem.fileData, "base64");
+          const { url } = await storeViagemImage(id, buffer);
+          data.imagemUrl = url;
+        }
+
+        await db.updateViagem(id, data);
         return { success: true };
       }),
-    delete: publicProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        await db.deleteTravel(input.id);
+        await db.deleteViagem(input.id);
         return { success: true };
       }),
   }),
 
-  categories: router({
+  categorias: router({
     list: publicProcedure.query(async () => {
-      return await db.getAllCategories();
+      return await db.getAllCategorias();
     }),
-    create: publicProcedure
-      .input(
-        z.object({
-          name: z.string(),
-          description: z.string().optional(),
-          icon: z.string().optional(),
-        })
-      )
+    create: adminProcedure
+      .input(z.object({ nome: z.string() }))
       .mutation(async ({ input }) => {
-        return await db.createCategory(input);
+        return await db.createCategoria(input.nome);
       }),
-    update: publicProcedure
-      .input(
-        z.object({
-          id: z.number(),
-          name: z.string().optional(),
-          description: z.string().optional(),
-          icon: z.string().optional(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        await db.updateCategory(id, data);
-        return { success: true };
-      }),
-    delete: publicProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        await db.deleteCategory(input.id);
+        await db.deleteCategoria(input.id);
+        return { success: true };
+      }),
+  }),
+
+  destaques: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllDestaques();
+    }),
+    create: adminProcedure
+      .input(z.object({ nome: z.string() }))
+      .mutation(async ({ input }) => {
+        return await db.createDestaque(input.nome);
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteDestaque(input.id);
         return { success: true };
       }),
   }),
@@ -455,28 +506,19 @@ export const appRouter = router({
     verifyFacebook: publicProcedure
       .input(z.object({ accessToken: z.string() }))
       .mutation(async ({ input }) => {
-        console.log('=== TRPC verifyFacebook MUTATION START ===');
-        console.log('[verifyFacebook] accessToken received:', input.accessToken ? `YES (${input.accessToken.substring(0, 20)}...)` : 'EMPTY');
         try {
-          console.log('[verifyFacebook] Step 1: Calling verifyFacebookToken...');
           const userInfo = await verifyFacebookToken(input.accessToken);
-          console.log('[verifyFacebook] Step 1 OK - userInfo:', JSON.stringify(userInfo, null, 2));
 
           // Upsert review author
-          console.log('[verifyFacebook] Step 2: Calling upsertReviewAuthor...');
-          const authorData = {
+          const author = await db.upsertReviewAuthor({
             providerId: userInfo.providerId,
             loginMethod: 'facebook',
             name: userInfo.name,
             email: userInfo.email,
             avatarUrl: userInfo.picture,
-          };
-          console.log('[verifyFacebook] Author data to upsert:', JSON.stringify(authorData, null, 2));
+          });
 
-          const author = await db.upsertReviewAuthor(authorData);
-          console.log('[verifyFacebook] Step 2 OK - author from DB:', JSON.stringify(author, null, 2));
-
-          const result = {
+          return {
             success: true,
             author: {
               id: author.id,
@@ -485,17 +527,10 @@ export const appRouter = router({
               avatarUrl: author.avatarUrl,
             },
           };
-          console.log('[verifyFacebook] Returning success:', JSON.stringify(result, null, 2));
-          console.log('=== TRPC verifyFacebook MUTATION SUCCESS ===');
-          return result;
-        } catch (error: any) {
-          console.error('=== TRPC verifyFacebook MUTATION FAILED ===');
-          console.error('[verifyFacebook] Error type:', error?.constructor?.name);
-          console.error('[verifyFacebook] Error message:', error?.message);
-          console.error('[verifyFacebook] Error stack:', error?.stack);
+        } catch (error) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: `Failed to verify Facebook token: ${error?.message}`,
+            message: "Failed to verify Facebook token",
           });
         }
       }),
