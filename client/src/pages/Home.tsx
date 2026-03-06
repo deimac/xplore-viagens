@@ -360,7 +360,7 @@ export default function Home() {
 
             {/* Dropdown Menu - Grid 2 Colunas */}
             {isMobileMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 bg-card border-2 border-muted rounded-2xl shadow-lg overflow-hidden animate-fade-in z-50 p-4 w-80">
+              <div className="absolute top-full right-0 mt-2 bg-card border-2 border-muted rounded-2xl shadow-lg animate-fade-in z-50 p-4 w-[340px]">
                 <div className="grid grid-cols-2 gap-3">
                   {sidebarItems.map((item, index) => {
                     const Icon = item.icon;
@@ -370,15 +370,15 @@ export default function Home() {
                       <button
                         key={item.id}
                         onClick={() => scrollToSection(item.id)}
-                        className={`border-2 rounded-lg px-4 py-3 flex items-center justify-center gap-2 hover:opacity-90 transition-all font-medium text-sm ${activeSection === item.id
+                        className={`border-2 rounded-lg px-3 py-3 flex items-center gap-2 hover:opacity-90 transition-all font-medium text-xs ${activeSection === item.id
                           ? "border-accent bg-accent text-accent-foreground"
                           : "border-muted/40 bg-muted/15 text-accent"
-                          } ${isLastAndOdd ? "col-span-2" : ""
+                          } ${isLastAndOdd ? "col-span-2 justify-center" : ""
                           }`}
                       >
-                        {Icon && <Icon className={`w-5 h-5 ${activeSection === item.id ? "text-accent-foreground" : "text-accent"
+                        {Icon && <Icon className={`w-5 h-5 flex-shrink-0 ${activeSection === item.id ? "text-accent-foreground" : "text-accent"
                           }`} strokeWidth={1.5} />}
-                        <span>{item.label}</span>
+                        <span className="truncate">{item.label}</span>
                       </button>
                     );
                   })}
