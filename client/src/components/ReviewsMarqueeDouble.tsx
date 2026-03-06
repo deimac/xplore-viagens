@@ -118,7 +118,7 @@ export default function ReviewsMarqueeDouble() {
                 <SectionTitle
                     title="O que Nossos Clientes"
                     highlight="Dizem"
-                    subtitle="Avaliações reais de quem viajou conosco"
+                    subtitle="Depoimentos reais de quem viajou conosco"
                 />
 
                 {/* Desktop: Duas linhas horizontais */}

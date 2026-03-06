@@ -25,6 +25,7 @@ import { PremiumFlightsSection } from "@/components/PremiumFlightsSection";
 import { HospedagensSection } from "@/components/HospedagensSection";
 import { AllHospedagensView } from "@/components/AllHospedagensView";
 import { PropertyView } from "@/components/PropertyView";
+import { AllPacotesView } from "@/components/AllPacotesView";
 
 
 
@@ -53,16 +54,16 @@ import {
   Linkedin,
   Twitter,
   Crown,
+  Building2,
 } from "lucide-react";
 
 export default function Home() {
-  // ...existing code...
-  // (Removido: declarações duplicadas de isMobileMenuOpen e isQuotationOpen)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isQuotationOpen, setIsQuotationOpen] = useState(false);
-  const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
+  const [showAllPacotes, setShowAllPacotes] = useState(false);
   const [showAllHospedagens, setShowAllHospedagens] = useState(false);
+  const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
   const [navigationOrigin, setNavigationOrigin] = useState<'home' | 'list' | null>(null);
+  const [isQuotationOpen, setIsQuotationOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Garantir que ao abrir a lista de hospedagens, a seção fique visível instantaneamente
   // Ref para detectar transição de PropertyView para lista
@@ -130,10 +131,9 @@ export default function Home() {
   const sidebarItems = [
     { id: "home", icon: HomeIcon, label: "Home" },
     { id: "ofertas-premium", icon: Crown, label: "Experiências Premium" },
+    { id: "hospedagens-section", icon: Building2, label: "Hospedagens" },
     { id: "pacotes", icon: Plane, label: "Pacotes" },
-    { id: "hospedagens", icon: HomeIcon, label: "Hospedagens" },
-    { id: "portfolio", icon: MapPin, label: "Portfólio" },
-    { id: "depoimentos", icon: Users, label: "Clientes" },
+    { id: "depoimentos", icon: Star, label: "Depoimentos" },
     { id: "contato", icon: Mail, label: "Contato" },
   ];
   // Botão de exemplo para abrir modal
@@ -152,10 +152,19 @@ export default function Home() {
   const scrollToSection = (sectionId: string) => {
     setIsMobileMenuOpen(false);
 
-    // Se modal está aberto, fechar e aguardar antes de fazer scroll
+    // Se algum modal está aberto, fechar e aguardar antes de fazer scroll
     if (isQuotationOpen) {
       setIsQuotationOpen(false);
-      // Aguardar o modal fechar (100ms de delay)
+      setTimeout(() => {
+        performScroll(sectionId);
+      }, 100);
+    } else if (showAllPacotes) {
+      setShowAllPacotes(false);
+      setTimeout(() => {
+        performScroll(sectionId);
+      }, 100);
+    } else if (showAllHospedagens) {
+      setShowAllHospedagens(false);
       setTimeout(() => {
         performScroll(sectionId);
       }, 100);
@@ -226,7 +235,7 @@ export default function Home() {
         {/* Flex-1 para centralizar o menu */}
         <div className="flex-1 flex items-center justify-end w-full">
           {/* Menu Container - Sutil */}
-          <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40">
+          <div className="flex flex-col gap-2 bg-muted/15 rounded-lg p-2 border border-muted/40">
             {/* Menu Items */}
             <nav className="flex flex-col gap-1 w-full">
               {sidebarItems.map((item) => {
@@ -241,10 +250,10 @@ export default function Home() {
                       : "hover:bg-muted/40"
                       }`}
                   >
-                    <Icon className={`w-5 h-5 ${isActive
-                      ? "stroke-accent-foreground text-accent-foreground"
-                      : "stroke-accent text-accent"
-                      }`} strokeWidth={1.5} />
+                    {Icon && <Icon className={`w-5 h-5 ${isActive
+                      ? "text-accent-foreground"
+                      : "text-accent"
+                      }`} strokeWidth={1.5} />}
                     {/* Sombra branca quase transparente */}
                     <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
@@ -367,8 +376,8 @@ export default function Home() {
                           } ${isLastAndOdd ? "col-span-2" : ""
                           }`}
                       >
-                        <Icon className={`w-4 h-4 ${activeSection === item.id ? "stroke-accent-foreground text-accent-foreground" : "stroke-accent text-accent"
-                          }`} strokeWidth={1.5} />
+                        {Icon && <Icon className={`w-5 h-5 ${activeSection === item.id ? "text-accent-foreground" : "text-accent"
+                          }`} strokeWidth={1.5} />}
                         <span>{item.label}</span>
                       </button>
                     );
@@ -413,6 +422,12 @@ export default function Home() {
                 // Update URL with property slug for sharing
                 window.history.replaceState(null, '', `/hospedagem/${slug}`);
               }}
+            />
+          </div>
+        ) : showAllPacotes ? (
+          <div id="all-pacotes-section">
+            <AllPacotesView
+              onClose={() => setShowAllPacotes(false)}
             />
           </div>
         ) : (
@@ -476,7 +491,9 @@ export default function Home() {
             <ServicesBentoSection />
 
             {ofertasVoo && ofertasVoo.length > 0 && (
-              <PremiumFlightsSection ofertas={ofertasVoo} whatsappNumber={companySettings?.whatsapp} />
+              <section id="ofertas-premium">
+                <PremiumFlightsSection ofertas={ofertasVoo} whatsappNumber={companySettings?.whatsapp} />
+              </section>
             )}
 
             {/* Hospedagens Section */}
@@ -494,11 +511,30 @@ export default function Home() {
 
             {/* Packages Section */}
             <section id="pacotes" className="py-0">
-              <PackagesCarouselTail whatsappNumber={companySettings?.whatsapp} />
+              {showAllPacotes ? (
+                <AllPacotesView onClose={() => setShowAllPacotes(false)} />
+              ) : (
+                <>
+                  <PackagesCarouselTail whatsappNumber={companySettings?.whatsapp} />
+                  <div className="flex justify-center mt-8">
+                    <Button
+                      onClick={() => {
+                        setShowAllPacotes(true);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      variant="outline"
+                      className="text-accent hover:bg-accent hover:text-white border-accent"
+                    >
+                      Ver todos os nossos destinos
+                    </Button>
+                  </div>
+                </>
+              )}
             </section>
 
             {/* Portfolio Section */}
-            <section id="portfolio" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative">
+            <section id="portfolio" className="min-h-screen flex items-center justify-center px-6 md:px-16 py-20 relative hidden">
+              {/* Seção de portfólio oculta. Para reexibir, remova a classe 'hidden'. */}
               <div className="max-w-4xl w-full section-transition">
                 <FadeInContainer>
                   <SectionTitle
@@ -578,7 +614,7 @@ export default function Home() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
                           <div>
                             <h3 className="text-2xl font-light text-white mb-1">Nova York - A Cidade que Nunca Dorme</h3>
-                            <p className="text-sm text-white/80">Viva a energia urbana</p>
+                            <p className="text-sm text-white/80">Viva o ritmo frenético da Big Apple</p>
                           </div>
                         </div>
                       </div>
@@ -590,9 +626,11 @@ export default function Home() {
 
 
             {/* Nova seção de testemunhos com marquee duplo */}
-            <FadeInContainer>
-              <ReviewsMarqueeDouble />
-            </FadeInContainer>
+            <section id="depoimentos">
+              <FadeInContainer>
+                <ReviewsMarqueeDouble />
+              </FadeInContainer>
+            </section>
 
 
             {/* Contact Section */}
@@ -644,28 +682,27 @@ export default function Home() {
         {/* Footer */}
         {!isQuotationOpen && (
           <footer className="bg-accent text-accent-foreground py-12 px-6 md:px-16 w-full">
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                <div>
-                  <h4 className="text-lg font-semibold mb-4">Sobre Nós</h4>
+            <div className="max-w-6xl mx-auto">
+              <div className="flex flex-col md:flex-row gap-8 mb-8">
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold mb-4">Xplore Milhas e Viagens Ltda</h4>
                   <p className="text-sm opacity-80">
-                    {companySettings?.companyName || "Xplore Viagens"} é uma agência de viagens premium dedicada a criar experiências inesquecíveis.
+                    Cnpj: 57.874.236/0001-74
                   </p>
                 </div>
-                <div>
-                  <h4 className="text-lg font-semibold mb-4">Links Rápidos</h4>
-                  <ul className="text-sm space-y-2 opacity-80">
-                    <li><button onClick={() => scrollToSection('servicos')} className="hover:opacity-100 transition-opacity">Serviços</button></li>
-                    <li><button onClick={() => scrollToSection('portfolio')} className="hover:opacity-100 transition-opacity">Portfólio</button></li>
-                    <li><button onClick={() => scrollToSection('contato')} className="hover:opacity-100 transition-opacity">Contato</button></li>
-                  </ul>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold mb-4">Onde estamos localizados</h4>
+                  <div className="text-sm opacity-80 space-y-1">
+                    <p>Ironberg Bodybuilder Training Center</p>
+                    <p>Av. Colombo, 3234 - Zona 7, Maringá - PR</p>
+                  </div>
                 </div>
-                <div>
+                <div className="md:ml-auto">
                   <h4 className="text-lg font-semibold mb-4">Contato</h4>
-                  <div className="text-sm space-y-2 opacity-80">
+                  <div className="text-sm space-y-1 opacity-80">
                     {companySettings?.email && (
                       <p className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
+                        <Mail className="w-4 h-4 flex-shrink-0" />
                         <a href={`mailto:${companySettings.email}`} className="hover:opacity-100 transition-opacity">
                           {companySettings.email}
                         </a>
@@ -673,7 +710,7 @@ export default function Home() {
                     )}
                     {companySettings?.phone && (
                       <p className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
+                        <Phone className="w-4 h-4 flex-shrink-0" />
                         <a href={`tel:${companySettings.phone.replace(/\D/g, '')}`} className="hover:opacity-100 transition-opacity">
                           {companySettings.phone}
                         </a>
@@ -681,33 +718,35 @@ export default function Home() {
                     )}
                     {companySettings?.whatsapp && (
                       <p className="flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
+                        <MessageCircle className="w-4 h-4 flex-shrink-0" />
                         <a href={`https://wa.me/${companySettings.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
                           WhatsApp: {companySettings.whatsapp}
                         </a>
                       </p>
                     )}
-
-                    <div className="flex gap-3 mt-4">
-                      {companySettings?.instagram && (
-                        <a href={companySettings.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity flex items-center gap-2">
-                          <Instagram className="w-5 h-5" />
-                          <span>@xploreviagens</span>
+                    {companySettings?.instagram && (
+                      <p className="flex items-center gap-2">
+                        <Instagram className="w-4 h-4 flex-shrink-0" />
+                        <a href={companySettings.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                          @xploreviagens
                         </a>
-                      )}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2">
                       {companySettings?.facebook && (
                         <a href={companySettings.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                          <Facebook className="w-5 h-5" />
+                          <Facebook className="w-4 h-4" />
                         </a>
                       )}
                       {companySettings?.linkedin && (
                         <a href={companySettings.linkedin} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                          <Linkedin className="w-5 h-5" />
+                          <Linkedin className="w-4 h-4" />
                         </a>
                       )}
                       {companySettings?.twitter && (
                         <a href={companySettings.twitter} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
-                          <Twitter className="w-5 h-5" />
+                          <Twitter className="w-4 h-4" />
                         </a>
                       )}
                     </div>

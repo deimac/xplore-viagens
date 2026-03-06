@@ -15,7 +15,7 @@ export default function ReviewsSection() {
             <SectionTitle
               title="O que Nossos Clientes"
               highlight="Dizem"
-              subtitle="Avaliações reais de quem viajou conosco"
+              subtitle="Depoimentos reais de quem viajou conosco"
             />
           </FadeInContainer>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -56,7 +56,7 @@ export default function ReviewsSection() {
           <SectionTitle
             title="O que Nossos Clientes"
             highlight="Dizem"
-            subtitle="Avaliações reais de quem viajou conosco"
+            subtitle="Depoimentos reais de quem viajou conosco"
           />
         </FadeInContainer>
 
@@ -81,11 +81,10 @@ export default function ReviewsSection() {
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
+                          className={`w-4 h-4 ${i < review.rating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
+                            }`}
                         />
                       ))}
                     </div>

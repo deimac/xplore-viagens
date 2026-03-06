@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins,
+    cacheDir: path.resolve(__dirname, "node_modules", ".vite-client"),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "client", "src"),

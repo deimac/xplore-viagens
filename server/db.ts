@@ -41,11 +41,51 @@ import { ENV } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
 
+const DB_QUERY_TIMEOUT_MS = Number(process.env.DB_QUERY_TIMEOUT_MS || 10000);
+const DB_RETRY_COUNT = Number(process.env.DB_RETRY_COUNT || 1);
+
+function isTransientDbError(error: any): boolean {
+  const code = String(error?.code || "");
+  const message = String(error?.message || "");
+
+  if (["ETIMEDOUT", "ECONNRESET", "PROTOCOL_CONNECTION_LOST", "EPIPE", "ECONNREFUSED"].includes(code)) {
+    return true;
+  }
+
+  return /ETIMEDOUT|timeout|connection\s+lost|read\s+econreset/i.test(message);
+}
+
+async function recreatePool() {
+  try {
+    if (_pool) {
+      await new Promise<void>((resolve) => _pool!.end(() => resolve()));
+    }
+  } catch {
+    // ignore errors while tearing down pool
+  }
+
+  _pool = null;
+  _db = null;
+  await getDb();
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _pool = mysql.createPool(process.env.DATABASE_URL);
+      _pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        waitForConnections: true,
+        connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+        queueLimit: Number(process.env.DB_QUEUE_LIMIT || 50),
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
+        connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 10000),
+      });
       _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
@@ -56,27 +96,70 @@ export async function getDb() {
   return _db;
 }
 
-async function executeQuery<T = any>(query: string, params: any[] = [], timeout: number = 10000): Promise<T> {
+async function executeQuery<T = any>(query: string, params: any[] = [], timeout: number = DB_QUERY_TIMEOUT_MS): Promise<T> {
   if (!_pool) {
     await getDb();
     if (!_pool) throw new Error("Database not available");
   }
 
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(`Query timeout after ${timeout}ms: ${query.slice(0, 100)}...`));
-    }, timeout);
+  const executeOnce = () =>
+    new Promise<T>((resolve, reject) => {
+      _pool!.getConnection((connErr, connection) => {
+        if (connErr || !connection) {
+          reject(connErr || new Error("Failed to get DB connection"));
+          return;
+        }
 
-    _pool!.execute(query, params, (err, results) => {
-      clearTimeout(timer);
-      if (err) {
-        console.error(`[Database Error] ${err.message}`, { query: query.slice(0, 100), params });
-        reject(err);
-      } else {
-        resolve(results as T);
-      }
+        let timedOut = false;
+        const timer = setTimeout(() => {
+          timedOut = true;
+          connection.destroy();
+          reject(new Error(`Query timeout after ${timeout}ms: ${query.slice(0, 120)}...`));
+        }, timeout);
+
+        connection.execute(query, params, (err, results) => {
+          clearTimeout(timer);
+          if (!timedOut) {
+            connection.release();
+          }
+
+          if (timedOut) {
+            return;
+          }
+
+          if (err) {
+            console.error(`[Database Error] ${err.message}`, { query: query.slice(0, 100), params });
+            reject(err);
+            return;
+          }
+
+          resolve(results as T);
+        });
+      });
     });
-  });
+
+  const maxAttempts = Math.max(1, DB_RETRY_COUNT + 1);
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await executeOnce();
+    } catch (error) {
+      lastError = error;
+      const canRetry = attempt < maxAttempts && isTransientDbError(error);
+      if (!canRetry) {
+        throw error;
+      }
+
+      console.warn(`[Database] transient error, retrying (${attempt}/${maxAttempts - 1})`, {
+        message: (error as Error)?.message,
+      });
+      await recreatePool();
+      await delay(150 * attempt);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Database query failed");
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -332,22 +415,27 @@ function parseViagensRows(rows: any[]) {
 }
 
 export async function getAllViagens() {
-  const rows = await executeQuery<any[]>(`
-    SELECT v.*,
-      GROUP_CONCAT(DISTINCT CONCAT(c.id, ':', c.nome) SEPARATOR '|') as categorias_raw,
-      GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
-    FROM viagens v
-    LEFT JOIN viagemCategorias vc ON v.id = vc.viagemId
-    LEFT JOIN categorias c ON vc.categoriaId = c.id
-    LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
-    LEFT JOIN destaques d ON vd.destaqueId = d.id
-    WHERE v.ativo = TRUE
-      AND v.dataIda IS NOT NULL
-      AND DATE(v.dataIda) > CURDATE()
-    GROUP BY v.id
-    ORDER BY v.criadoEm DESC
-  `);
-  return parseViagensRows(rows);
+  try {
+    const rows = await executeQuery<any[]>(`
+      SELECT v.*,
+        GROUP_CONCAT(DISTINCT CONCAT(c.id, ':', c.nome) SEPARATOR '|') as categorias_raw,
+        GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
+      FROM viagens v
+      LEFT JOIN viagemCategorias vc ON v.id = vc.viagemId
+      LEFT JOIN categorias c ON vc.categoriaId = c.id
+      LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
+      LEFT JOIN destaques d ON vd.destaqueId = d.id
+      WHERE v.ativo = TRUE
+        AND v.dataIda IS NOT NULL
+        AND DATE(v.dataIda) > CURDATE()
+      GROUP BY v.id
+      ORDER BY v.criadoEm DESC
+    `);
+    return parseViagensRows(rows);
+  } catch (error) {
+    console.error('[getAllViagens] returning empty list due to DB error:', (error as Error).message);
+    return [];
+  }
 }
 
 export async function getAllViagensAdmin() {
@@ -478,7 +566,12 @@ export async function deleteViagem(id: number) {
 }
 
 export async function getAllCategorias() {
-  return await executeQuery<any[]>(`SELECT * FROM categorias ORDER BY nome`);
+  try {
+    return await executeQuery<any[]>(`SELECT * FROM categorias ORDER BY nome`);
+  } catch (error) {
+    console.error('[getAllCategorias] returning empty list due to DB error:', (error as Error).message);
+    return [];
+  }
 }
 
 export async function createCategoria(nome: string) {
@@ -935,17 +1028,20 @@ export async function getFeaturedProperties() {
         )
       WHERE p.active = true AND p.is_featured = true
       ORDER BY RAND()
+      LIMIT 6
     `);
 
     // Se não tiver 6 em destaque, completar com outras aleatórias
     if (featured.length < 6) {
-      const remaining = 6 - featured.length;
-      const featuredIds = featured.map((p: any) => p.id).filter((id: any) => id != null);
+      const remaining = Math.max(0, 6 - featured.length);
+      const featuredIds = featured
+        .map((p: any) => Number(p.id))
+        .filter((id: number) => Number.isInteger(id) && id > 0);
 
       let additional: any[];
       if (featuredIds.length > 0) {
-        const placeholders = featuredIds.map(() => '?').join(',');
-        const notInClause = featuredIds.length > 0 ? `AND p.id NOT IN (${placeholders})` : '';
+        const notInClause = `AND p.id NOT IN (${featuredIds.join(',')})`;
+        const safeLimit = Math.max(0, Math.floor(remaining));
         const query = `
           SELECT p.*, pi.image_url as primary_image
           FROM properties p
@@ -958,16 +1054,11 @@ export async function getFeaturedProperties() {
           WHERE p.active = true
           ${notInClause}
           ORDER BY RAND()
-          LIMIT ?
+          LIMIT ${safeLimit}
         `;
-        const params = [...featuredIds, remaining];
-        // Debug logs
-        const numPlaceholders = (query.match(/\?/g) || []).length;
-        console.log('[getFeaturedProperties] SQL:', query);
-        console.log('[getFeaturedProperties] Params:', params);
-        console.log('[getFeaturedProperties] Number of placeholders:', numPlaceholders, 'Params length:', params.length);
-        additional = await executeQuery<any[]>(query, params);
+        additional = await executeQuery<any[]>(query);
       } else {
+        const safeLimit = Math.max(0, Math.floor(remaining));
         const query = `
           SELECT p.*, pi.image_url as primary_image
           FROM properties p
@@ -979,14 +1070,9 @@ export async function getFeaturedProperties() {
             )
           WHERE p.active = true
           ORDER BY RAND()
-          LIMIT ?
+          LIMIT ${safeLimit}
         `;
-        const params = [remaining];
-        const numPlaceholders = (query.match(/\?/g) || []).length;
-        console.log('[getFeaturedProperties] SQL:', query);
-        console.log('[getFeaturedProperties] Params:', params);
-        console.log('[getFeaturedProperties] Number of placeholders:', numPlaceholders, 'Params length:', params.length);
-        additional = await executeQuery<any[]>(query, params);
+        additional = await executeQuery<any[]>(query);
       }
 
       return [...featured, ...additional];
@@ -994,37 +1080,28 @@ export async function getFeaturedProperties() {
 
     return featured;
   } catch (error) {
-    // Fallback para propriedades aleatórias se o campo is_featured não existir
+    // Fallback para propriedades ativas se o campo is_featured não existir
     console.log('[getFeaturedProperties] Fallback to random properties:', (error as Error).message);
-    return await executeQuery<any[]>(
-      `
-        SELECT p.*, pi.image_url as primary_image
-        FROM properties p
-        LEFT JOIN property_images pi ON p.id = pi.property_id
-          AND pi.sort_order = (
-            SELECT MIN(sort_order)
-            FROM property_images pi2
-            WHERE pi2.property_id = p.id
-          )
-        WHERE p.active = true
-        ORDER BY RAND()
-        LIMIT 6
-      `);
-    const randomProperties = await executeQuery<any[]>(`
-      SELECT p.*, pi.image_url as primary_image
-      FROM properties p
-      LEFT JOIN property_images pi ON p.id = pi.property_id 
-        AND pi.sort_order = (
-          SELECT MIN(sort_order) 
-          FROM property_images pi2 
-          WHERE pi2.property_id = p.id
-        )
-      WHERE p.active = true
-      ORDER BY RAND()
-      LIMIT 6
-    `, []);
-
-    return randomProperties;
+    try {
+      return await executeQuery<any[]>(
+        `
+          SELECT p.*, pi.image_url as primary_image
+          FROM properties p
+          LEFT JOIN property_images pi ON p.id = pi.property_id
+            AND pi.sort_order = (
+              SELECT MIN(sort_order)
+              FROM property_images pi2
+              WHERE pi2.property_id = p.id
+            )
+          WHERE p.active = true
+          ORDER BY p.updated_at DESC, p.created_at DESC
+          LIMIT 6
+        `
+      );
+    } catch (fallbackError) {
+      console.error('[getFeaturedProperties] returning empty list due to fallback DB error:', (fallbackError as Error).message);
+      return [];
+    }
   }
 }
 
