@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Plane, Star, Image } from "lucide-react";
+import { Building2, Plane, Star, Image, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
 export default function Dashboard() {
@@ -16,6 +17,9 @@ export default function Dashboard() {
     const reviewsQuery = trpc.reviews.list.useQuery();
     // @ts-expect-error - tRPC types are generated when server is running
     const slidesQuery = trpc.heroSlides.list.useQuery();
+
+    const reviews: any[] = (reviewsQuery.data as any)?.json || reviewsQuery.data || [];
+    const pendingReviewsCount = reviews.filter((r: any) => r.status === "pending").length;
 
     const stats = [
         {
@@ -34,7 +38,7 @@ export default function Dashboard() {
         },
         {
             title: "Avaliações Pendentes",
-            value: reviewsQuery.data?.filter((r: any) => r.status === "pending").length || 0,
+            value: pendingReviewsCount,
             icon: Star,
             color: "text-yellow-600",
             bgColor: "bg-yellow-50",
@@ -76,6 +80,32 @@ export default function Dashboard() {
                         );
                     })}
                 </div>
+
+                {pendingReviewsCount > 0 && (
+                    <Card className="border-amber-200 bg-amber-50">
+                        <CardContent className="pt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                                <div className="bg-amber-100 text-amber-700 rounded-lg p-2">
+                                    <AlertTriangle className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-amber-900">
+                                        Atenção: você tem {pendingReviewsCount} {pendingReviewsCount === 1 ? "avaliação pendente" : "avaliações pendentes"} para aprovar.
+                                    </p>
+                                    <p className="text-sm text-amber-800 mt-1">
+                                        Revise as avaliações para manter os depoimentos da home atualizados.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                onClick={() => navigate("/admin/avaliacoes")}
+                                className="bg-amber-600 hover:bg-amber-700 text-white"
+                            >
+                                Ir para avaliações
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader>

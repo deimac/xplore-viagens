@@ -160,20 +160,20 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         }
 
         return (
-            <Link key={item.href} href={item.href || "#"}>
-                <a
-                    className={cn(
-                        "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors",
-                        level > 0 && "text-sm",
-                        location === item.href
-                            ? "bg-primary text-white"
-                            : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                    )}
-                    onClick={onClose}
-                >
-                    <Icon className={cn("h-5 w-5", level > 0 && "h-4 w-4")} />
-                    <span>{item.label}</span>
-                </a>
+            <Link
+                key={item.href}
+                href={item.href || "#"}
+                className={cn(
+                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors",
+                    level > 0 && "text-sm",
+                    location === item.href
+                        ? "bg-primary text-white"
+                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                )}
+                onClick={onClose}
+            >
+                <Icon className={cn("h-5 w-5", level > 0 && "h-4 w-4")} />
+                <span>{item.label}</span>
             </Link>
         );
     };

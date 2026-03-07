@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Users, Building2, Moon, MessageCircle, AlertTriangle } from "lucide-react";
+import { MapPin, Users, Building2, Moon, MessageCircle, AlertTriangle, Bed } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import CategoryFilter from "@/components/CategoryFilter";
 import FadeInContainer from "@/components/FadeInContainer";
@@ -94,7 +94,22 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     departure.setHours(0, 0, 0, 0);
 
-    return departure > todayStart;
+    // Check if departure date is in the future
+    if (departure <= todayStart) return false;
+
+    // Check if travel is active
+    if (!travel.ativo) return false;
+
+    // Check if expiration date is in the future (or not set)
+    if (travel.dataExpiracao) {
+      const expiration = new Date(travel.dataExpiracao);
+      if (!Number.isNaN(expiration.getTime())) {
+        expiration.setHours(0, 0, 0, 0);
+        if (expiration <= todayStart) return false;
+      }
+    }
+
+    return true;
   };
 
   const allTravels = ((travelsQuery.data as any)?.json || travelsQuery.data || []).filter(isAllowedByDepartureDate);
@@ -280,7 +295,12 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
                             <h3 className="text-[15px] md:text-lg font-bold leading-tight line-clamp-2">
                               {travel.titulo}
                             </h3>
-                            {travel.origem && (
+                            {travel.tipoViagem === "hospedagem" ? (
+                              <div className="flex items-center gap-1.5 text-white/90 text-[11px] md:text-sm mt-0.5 md:mt-1">
+                                <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                                <span>{travel.hospedagem && String(travel.hospedagem).trim() ? travel.hospedagem : "Hospedagem não informada"}</span>
+                              </div>
+                            ) : travel.origem && (
                               <div className="flex items-center gap-1.5 text-white/90 text-[11px] md:text-sm mt-0.5 md:mt-1">
                                 <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                                 <span>Saindo de {travel.origem}</span>
@@ -309,16 +329,33 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
 
                             <div className="flex items-center gap-1.5 min-w-0">
                               <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">{travel.quantidadePessoas} {travel.quantidadePessoas === 1 ? 'viajante' : 'viajantes'}</span>
+                              <span className="truncate">
+                                {travel.quantidadePessoas} {travel.tipoViagem === "hospedagem"
+                                  ? (travel.quantidadePessoas === 1 ? "hóspede" : "hóspedes")
+                                  : (travel.quantidadePessoas === 1 ? "viajante" : "viajantes")}
+                              </span>
                             </div>
 
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">
-                                {travel.hospedagem && String(travel.hospedagem).trim()
-                                  ? travel.hospedagem
-                                  : "Hospedagem não informada"}
-                              </span>
+                              {travel.tipoViagem === "hospedagem" ? (
+                                <>
+                                  <Bed className="w-3.5 h-3.5 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {travel.tipoQuarto && String(travel.tipoQuarto).trim()
+                                      ? travel.tipoQuarto
+                                      : "Tipo de quarto não informado"}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {travel.hospedagem && String(travel.hospedagem).trim()
+                                      ? travel.hospedagem
+                                      : "Hospedagem não informada"}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
 

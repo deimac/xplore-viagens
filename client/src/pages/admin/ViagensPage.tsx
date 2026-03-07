@@ -83,9 +83,11 @@ export default function ViagensPage() {
             titulo: viagem.titulo,
             slug: viagem.slug,
             descricao: viagem.descricao,
+            tipoViagem: viagem.tipoViagem,
             origem: viagem.origem,
             dataIda: viagem.dataIda || null,
             dataVolta: viagem.dataVolta || null,
+            dataExpiracao: viagem.dataExpiracao || null,
             quantidadePessoas: Number.isFinite(quantidadePessoas) && quantidadePessoas > 0 ? quantidadePessoas : 1,
             valorTotal: viagem.valorTotal,
             quantidadeParcelas: viagem.quantidadeParcelas || null,
@@ -93,6 +95,7 @@ export default function ViagensPage() {
             temJuros: viagem.temJuros || false,
             xp: viagem.xp || 0,
             hospedagem: viagem.hospedagem || null,
+            tipoQuarto: viagem.tipoViagem === "hospedagem" ? (viagem.tipoQuarto || null) : null,
             imagemUrl: viagem.imagemUrl,
             ativo: viagem.ativo !== false,
             categoriaIds: viagem.categoriaIds || [],
@@ -155,6 +158,9 @@ export default function ViagensPage() {
                                         Título
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Tipo
+                                    </th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Origem
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -178,7 +184,12 @@ export default function ViagensPage() {
                                             <div className="text-sm font-semibold text-gray-900">{travel.titulo}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-600">{travel.origem}</div>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${travel.tipoViagem === 'hospedagem' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                {travel.tipoViagem === 'hospedagem' ? 'Hospedagem' : 'Pacote'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-600">{travel.origem || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm font-semibold text-blue-600">{formatCurrency(travel.valorTotal)}</div>

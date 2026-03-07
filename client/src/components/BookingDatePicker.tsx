@@ -103,14 +103,16 @@ export function BookingDatePicker({ value, onChange, mode = "flight" }: BookingD
                                 </div>
 
                                 {value?.to && !isAccommodation && (
-                                    <button
-                                        type="button"
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
                                         aria-label="Limpar data de retorno"
-                                        onClick={clearReturnDate}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-destructive/10 rounded-full text-destructive"
+                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); clearReturnDate(e as any); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); clearReturnDate(e as any); } }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-destructive/10 rounded-full text-destructive cursor-pointer"
                                     >
                                         <X className="h-3.5 w-3.5" />
-                                    </button>
+                                    </div>
                                 )}
                             </div>
                         </div>

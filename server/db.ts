@@ -388,11 +388,19 @@ function normalizeDateColumn(d: any): string | null {
   return null;
 }
 
+function normalizeOptionalDateColumn(d: any): string | null | undefined {
+  if (d === undefined) return undefined;
+  return normalizeDateColumn(d);
+}
+
 function parseViagensRows(rows: any[]) {
   return rows.map((row: any) => ({
     ...row,
+    tipoViagem: row.tipoViagem ?? row.tipo_viagem ?? 'pacote',
+    tipoQuarto: row.tipoQuarto ?? row.tipo_quarto ?? null,
     dataIda: normalizeDateColumn(row.dataIda),
     dataVolta: normalizeDateColumn(row.dataVolta),
+    dataExpiracao: normalizeDateColumn(row.data_expiracao ?? row.dataExpiracao),
     valorTotal: row.valorTotal != null ? parseFloat(row.valorTotal) : 0,
     valorParcela: row.valorParcela != null ? parseFloat(row.valorParcela) : null,
     temJuros: !!row.temJuros,
@@ -473,15 +481,16 @@ export async function getViagemById(id: number) {
 
 export async function createViagem(data: any) {
   const result = await executeQuery<any>(`
-    INSERT INTO viagens (titulo, slug, descricao, origem, dataIda, dataVolta, quantidadePessoas, valorTotal, quantidadeParcelas, valorParcela, temJuros, xp, hospedagem, imagemUrl, ativo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO viagens (titulo, slug, descricao, tipo_viagem, origem, dataIda, dataVolta, quantidadePessoas, valorTotal, quantidadeParcelas, valorParcela, temJuros, xp, hospedagem, tipo_quarto, imagemUrl, data_expiracao, ativo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.titulo,
     data.slug,
     data.descricao,
+    data.tipoViagem || 'pacote',
     data.origem,
-    data.dataIda || null,
-    data.dataVolta || null,
+    normalizeDateColumn(data.dataIda),
+    normalizeDateColumn(data.dataVolta),
     data.quantidadePessoas ?? 1,
     data.valorTotal,
     data.quantidadeParcelas || null,
@@ -489,7 +498,9 @@ export async function createViagem(data: any) {
     data.temJuros ? 1 : 0,
     data.xp || 0,
     data.hospedagem || null,
+    data.tipoQuarto || null,
     data.imagemUrl,
+    normalizeDateColumn(data.dataExpiracao || data.data_expiracao || null),
     data.ativo !== false ? 1 : 0,
   ]);
   const viagemId = result.insertId;
@@ -516,9 +527,11 @@ export async function updateViagem(id: number, data: any) {
     titulo: data.titulo,
     slug: data.slug,
     descricao: data.descricao,
+    tipo_viagem: data.tipoViagem,
     origem: data.origem,
-    dataIda: data.dataIda,
-    dataVolta: data.dataVolta,
+    dataIda: normalizeOptionalDateColumn(data.dataIda),
+    dataVolta: normalizeOptionalDateColumn(data.dataVolta),
+    data_expiracao: normalizeOptionalDateColumn(data.dataExpiracao),
     quantidadePessoas: data.quantidadePessoas,
     valorTotal: data.valorTotal,
     quantidadeParcelas: data.quantidadeParcelas,
@@ -526,6 +539,7 @@ export async function updateViagem(id: number, data: any) {
     temJuros: data.temJuros !== undefined ? (data.temJuros ? 1 : 0) : undefined,
     xp: data.xp,
     hospedagem: data.hospedagem,
+    tipo_quarto: data.tipoQuarto,
     imagemUrl: data.imagemUrl,
     ativo: data.ativo !== undefined ? (data.ativo ? 1 : 0) : undefined,
   };
@@ -539,7 +553,8 @@ export async function updateViagem(id: number, data: any) {
 
   if (fields.length > 0) {
     params.push(id);
-    await executeQuery(`UPDATE viagens SET ${fields.join(', ')} WHERE id = ?`, params);
+    const sql = `UPDATE viagens SET ${fields.join(', ')} WHERE id = ?`;
+    await executeQuery(sql, params);
   }
 
   if (data.categoriaIds !== undefined) {

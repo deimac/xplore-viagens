@@ -53,7 +53,7 @@ export default function AdminDashboard() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [travelModalOpen, setTravelModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>();
-  const [selectedTravel, setSelectedTravel] = useState<Travel | undefined>();
+  const [selectedTravel, setSelectedTravel] = useState<any | undefined>();
   const [slideModalOpen, setSlideModalOpen] = useState(false);
   const [selectedSlide, setSelectedSlide] = useState<HeroSlide | undefined>();
   const [confirm, setConfirm] = useState<{
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
 
   // tRPC queries
   const categoriesQuery = trpc.categorias.list.useQuery(undefined);
-  const travelsQuery = trpc.viagens.list.useQuery(undefined);
+  const travelsQuery = trpc.viagens.listAdmin.useQuery(undefined);
   const slidesQuery = trpc.heroSlides.list.useQuery(undefined);
   const reviewsQuery = trpc.reviews.list.useQuery(undefined);
 
@@ -229,29 +229,52 @@ export default function AdminDashboard() {
     setConfirm({ open: true, type: "travel", id, title: "Deletar viagem" });
   };
 
-  const handleSaveTravel = (travel: Travel) => {
+  const handleSaveTravel = (travel: any) => {
     if (travel.id) {
-      updateTravelMutation.mutate({
+      const payload = {
         id: travel.id,
-        title: travel.title,
-        description: travel.description,
-        origin: travel.origin,
-        departureDate: travel.departureDate || "",
-        returnDate: travel.returnDate || "",
-        travelers: travel.travelers || "",
-        price: travel.price,
-        imageUrl: travel.imageUrl || "",
-      });
+        titulo: travel.titulo,
+        slug: travel.slug,
+        descricao: travel.descricao,
+        origem: travel.origem,
+        dataIda: travel.dataIda ?? null,
+        dataVolta: travel.dataVolta ?? null,
+        dataExpiracao: travel.dataExpiracao || "",
+        quantidadePessoas: travel.quantidadePessoas,
+        valorTotal: travel.valorTotal,
+        quantidadeParcelas: travel.quantidadeParcelas ?? null,
+        valorParcela: travel.valorParcela ?? null,
+        temJuros: travel.temJuros,
+        xp: travel.xp,
+        hospedagem: travel.hospedagem ?? null,
+        imagemUrl: travel.imagemUrl,
+        ativo: travel.ativo,
+        categoriaIds: travel.categoriaIds,
+        destaqueIds: travel.destaqueIds,
+        imagem: travel.imagem ?? undefined,
+      };
+      updateTravelMutation.mutate(payload);
     } else {
       createTravelMutation.mutate({
-        title: travel.title,
-        description: travel.description,
-        origin: travel.origin,
-        departureDate: travel.departureDate || "",
-        returnDate: travel.returnDate || "",
-        travelers: travel.travelers || "",
-        price: travel.price,
-        imageUrl: travel.imageUrl || "",
+        titulo: travel.titulo,
+        slug: travel.slug,
+        descricao: travel.descricao,
+        origem: travel.origem,
+        dataIda: travel.dataIda ?? null,
+        dataVolta: travel.dataVolta ?? null,
+        dataExpiracao: travel.dataExpiracao || "",
+        quantidadePessoas: travel.quantidadePessoas,
+        valorTotal: travel.valorTotal,
+        quantidadeParcelas: travel.quantidadeParcelas ?? null,
+        valorParcela: travel.valorParcela ?? null,
+        temJuros: travel.temJuros,
+        xp: travel.xp,
+        hospedagem: travel.hospedagem ?? null,
+        imagemUrl: travel.imagemUrl,
+        ativo: travel.ativo,
+        categoriaIds: travel.categoriaIds,
+        destaqueIds: travel.destaqueIds,
+        imagem: travel.imagem ?? undefined,
       });
     }
   };
@@ -305,7 +328,7 @@ export default function AdminDashboard() {
   };
 
   const categories: Category[] = (categoriesQuery.data as any)?.json || categoriesQuery.data || [];
-  const travels: Travel[] = (travelsQuery.data as any)?.json || travelsQuery.data || [];
+  const travels: any[] = (travelsQuery.data as any)?.json || travelsQuery.data || [];
   const slides = (slidesQuery.data as any)?.json || slidesQuery.data || [];
 
   return (
@@ -601,16 +624,16 @@ export default function AdminDashboard() {
                         className="border-b border-muted hover:bg-muted/10 transition-colors"
                       >
                         <td className="px-6 py-4 text-sm text-foreground font-medium">
-                          {travel.title}
+                          {travel.titulo}
                         </td>
                         <td className="px-6 py-4 text-sm text-accent/70">
-                          {travel.origin}
+                          {travel.origem}
                         </td>
                         <td className="px-6 py-4 text-sm text-accent/70">
-                          {travel.departureDate}
+                          {travel.dataIda}
                         </td>
                         <td className="px-6 py-4 text-sm text-accent font-medium">
-                          {travel.price}
+                          {travel.valorTotal != null ? Number(travel.valorTotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">

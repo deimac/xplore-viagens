@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BookingDatePicker } from "@/components/BookingDatePicker";
 import { ViagemImageUpload } from "@/components/ViagemImageUpload";
@@ -17,7 +18,8 @@ export interface ViagemFormData {
   titulo: string;
   slug: string;
   descricao: string;
-  origem: string;
+  tipoViagem: "pacote" | "hospedagem";
+  origem: string | null;
   dataIda: string | null;
   dataVolta: string | null;
   quantidadePessoas: number;
@@ -27,7 +29,9 @@ export interface ViagemFormData {
   temJuros: boolean;
   xp: number;
   hospedagem: string | null;
+  tipoQuarto: string | null;
   imagemUrl: string;
+  dataExpiracao: string | null;
   ativo: boolean;
   categoriaIds: number[];
   destaqueIds: number[];
@@ -114,7 +118,8 @@ const emptyForm: ViagemFormData = {
   titulo: "",
   slug: "",
   descricao: "",
-  origem: "",
+  tipoViagem: "pacote",
+  origem: null,
   dataIda: null,
   dataVolta: null,
   quantidadePessoas: 1,
@@ -124,7 +129,9 @@ const emptyForm: ViagemFormData = {
   temJuros: false,
   xp: 0,
   hospedagem: null,
+  tipoQuarto: null,
   imagemUrl: "",
+  dataExpiracao: null,
   ativo: true,
   categoriaIds: [],
   destaqueIds: [],
@@ -157,9 +164,11 @@ export default function TravelModal({
         titulo: initialData.titulo || "",
         slug: initialData.slug || "",
         descricao: initialData.descricao || "",
-        origem: initialData.origem || "",
+        tipoViagem: initialData.tipoViagem || initialData.tipo_viagem || "pacote",
+        origem: initialData.origem || null,
         dataIda: initialData.dataIda ? String(initialData.dataIda).slice(0, 10) : null,
         dataVolta: initialData.dataVolta ? String(initialData.dataVolta).slice(0, 10) : null,
+        dataExpiracao: initialData.dataExpiracao ? String(initialData.dataExpiracao).slice(0, 10) : null,
         quantidadePessoas: Number(initialData.quantidadePessoas) > 0 ? Number(initialData.quantidadePessoas) : 1,
         valorTotal: Number(initialData.valorTotal) || 0,
         quantidadeParcelas: initialData.quantidadeParcelas || null,
@@ -167,6 +176,7 @@ export default function TravelModal({
         temJuros: !!initialData.temJuros,
         xp: initialData.xp || 0,
         hospedagem: initialData.hospedagem || null,
+        tipoQuarto: initialData.tipoQuarto || initialData.tipo_quarto || null,
         imagemUrl: initialData.imagemUrl || "",
         ativo: initialData.ativo !== undefined ? !!initialData.ativo : true,
         categoriaIds: initialData.categorias?.map((c: any) => c.id) || [],
@@ -178,7 +188,10 @@ export default function TravelModal({
       setImageFile(null);
       setImagePreview(undefined);
     } else {
-      setFormData({ ...emptyForm });
+      const d = new Date();
+      d.setDate(d.getDate() + 30);
+      const defaultExpiracao = toDateStr(d);
+      setFormData({ ...emptyForm, dataExpiracao: defaultExpiracao });
       setValorTotalInput("");
       setValorParcelaInput("");
       setImageFile(null);
@@ -228,7 +241,7 @@ export default function TravelModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.titulo.trim() || !formData.descricao.trim() || !formData.origem.trim()) {
+    if (!formData.titulo.trim() || !formData.descricao.trim()) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -271,6 +284,14 @@ export default function TravelModal({
   const set = <K extends keyof ViagemFormData>(key: K, val: ViagemFormData[K]) =>
     setFormData((prev) => ({ ...prev, [key]: val }));
 
+  const handleTipoViagemChange = (value: "pacote" | "hospedagem") => {
+    setFormData((prev) => ({
+      ...prev,
+      tipoViagem: value,
+      tipoQuarto: value === "hospedagem" ? prev.tipoQuarto : null,
+    }));
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-2xl w-full my-8">
@@ -286,6 +307,20 @@ export default function TravelModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+
+          {/* === Tipo da viagem === */}
+          <div>
+            <Label className="text-accent">Tipo da viagem</Label>
+            <Select value={formData.tipoViagem} onValueChange={(v: "pacote" | "hospedagem") => handleTipoViagemChange(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pacote">Pacote</SelectItem>
+                <SelectItem value="hospedagem">Hospedagem</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* === Imagem === */}
           <div>
@@ -331,11 +366,12 @@ export default function TravelModal({
           {/* === Origem + Datas === */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-accent">Saindo de *</Label>
+              <Label className="text-accent">Saindo de</Label>
               <Input
-                value={formData.origem}
+                value={formData.origem || ""}
                 onChange={(e) => set("origem", e.target.value)}
                 placeholder="São Paulo"
+                disabled={formData.tipoViagem === "hospedagem"}
               />
             </div>
             <div>
@@ -344,6 +380,19 @@ export default function TravelModal({
                 value={dateRange}
                 onChange={handleDateChange}
                 mode="flight"
+              />
+            </div>
+          </div>
+
+          {/* === Expira em === */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-accent">Expira em:</Label>
+              <Input
+                type="date"
+                min={new Date().toISOString().slice(0, 10)}
+                value={formData.dataExpiracao || ""}
+                onChange={(e) => set("dataExpiracao", e.target.value || null)}
               />
             </div>
           </div>
@@ -441,6 +490,17 @@ export default function TravelModal({
               onChange={(e) => set("hospedagem", e.target.value || null)}
               placeholder="Detalhes da hospedagem..."
               rows={2}
+            />
+          </div>
+
+          {/* === Tipo de quarto === */}
+          <div>
+            <Label className="text-accent">Tipo de quarto</Label>
+            <Input
+              value={formData.tipoQuarto || ""}
+              onChange={(e) => set("tipoQuarto", e.target.value || null)}
+              placeholder="Ex: Suíte Master, Quarto Duplo"
+              disabled={formData.tipoViagem !== "hospedagem"}
             />
           </div>
 

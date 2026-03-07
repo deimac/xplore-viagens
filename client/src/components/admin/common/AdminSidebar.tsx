@@ -90,19 +90,19 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         const isActive = location === item.href;
 
                         return (
-                            <Link key={item.href} href={item.href}>
-                                <a
-                                    className={cn(
-                                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                                        isActive
-                                            ? "bg-primary text-white"
-                                            : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                                    )}
-                                    onClick={onClose}
-                                >
-                                    <Icon className="h-5 w-5" />
-                                    <span>{item.label}</span>
-                                </a>
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                                    isActive
+                                        ? "bg-primary text-white"
+                                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                                )}
+                                onClick={onClose}
+                            >
+                                <Icon className="h-5 w-5" />
+                                <span>{item.label}</span>
                             </Link>
                         );
                     })}
