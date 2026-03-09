@@ -20,6 +20,7 @@ interface PropertyData {
     bedrooms: number;
     beds: number;
     bathrooms: number;
+    xp?: number;
     active?: boolean;
 }
 

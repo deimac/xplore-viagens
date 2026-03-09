@@ -868,9 +868,9 @@ export async function createProperty(data: any) {
       name, slug, description_short, description_full, property_type_id,
       address_street, address_number, address_complement, neighborhood,
       city, state_region, country, postal_code,
-      latitude, longitude, max_guests, bedrooms, beds, bathrooms, area_m2, active, is_featured
+      latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2, active, is_featured
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.name,
     data.slug,
@@ -891,6 +891,7 @@ export async function createProperty(data: any) {
     data.bedrooms,
     data.beds,
     data.bathrooms,
+    data.xp ?? 0,
     data.area_m2 || null,
     data.active ?? true,
     data.is_featured ?? false
@@ -959,6 +960,7 @@ export async function updateProperty(id: number, data: any) {
   if (data.bedrooms !== undefined) { fields.push('bedrooms = ?'); values.push(data.bedrooms); }
   if (data.beds !== undefined) { fields.push('beds = ?'); values.push(data.beds); }
   if (data.bathrooms !== undefined) { fields.push('bathrooms = ?'); values.push(data.bathrooms); }
+  if (data.xp !== undefined) { fields.push('xp = ?'); values.push(data.xp); }
   if (data.area_m2 !== undefined) { fields.push('area_m2 = ?'); values.push(data.area_m2); }
   if (data.active !== undefined) { fields.push('active = ?'); values.push(data.active); }
   if (data.is_featured !== undefined) { fields.push('is_featured = ?'); values.push(data.is_featured); }
@@ -983,7 +985,7 @@ export async function getPropertyBySlug(slug: string) {
       id, name, slug, description_short, description_full, property_type_id,
       address_street, address_number, address_complement, neighborhood,
       city, state_region, country, postal_code,
-      latitude, longitude, max_guests, bedrooms, beds, bathrooms, area_m2,
+      latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2,
       active, is_featured, created_at, updated_at
     FROM properties 
     WHERE slug = ? 
@@ -999,7 +1001,7 @@ export async function getPropertyById(id: number) {
       id, name, slug, description_short, description_full, property_type_id,
       address_street, address_number, address_complement, neighborhood,
       city, state_region, country, postal_code,
-      latitude, longitude, max_guests, bedrooms, beds, bathrooms, area_m2,
+      latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2,
       active, is_featured, created_at, updated_at
     FROM properties 
     WHERE id = ? 
@@ -1144,6 +1146,7 @@ export async function getAllPropertiesAdmin() {
         p.bedrooms,
         p.beds,
         p.bathrooms,
+        p.xp,
         p.area_m2,
         p.active,
         p.is_featured,

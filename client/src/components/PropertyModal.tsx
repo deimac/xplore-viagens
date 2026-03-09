@@ -48,6 +48,7 @@ const initialFormData: PropertyFormData = {
     bedrooms: 1,
     beds: 1,
     bathrooms: 1,
+    xp: 0,
     area_m2: undefined,
     is_featured: false,
 };
@@ -146,6 +147,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                     bedrooms: property.bedrooms || 1,
                     beds: property.beds || 1,
                     bathrooms: property.bathrooms || 1,
+                    xp: property.xp ?? 0,
                     area_m2: property.area_m2 || undefined,
                     is_featured: property.is_featured || false,
                 });
@@ -255,6 +257,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
             // Limpar dados antes de enviar
             const cleanedData = {
                 ...formData,
+                xp: Number.isFinite(Number(formData.xp)) ? Math.max(0, Math.floor(Number(formData.xp))) : 0,
                 area_m2: formData.area_m2 && !isNaN(Number(formData.area_m2)) ? Number(formData.area_m2) : undefined,
             };
 
@@ -646,7 +649,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     </Label>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                                     <div>
                                         <Label htmlFor="max_guests" className="mb-2 block">
                                             <div className="flex items-center gap-2">
@@ -701,6 +704,26 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <p className="text-xs text-muted-foreground mt-1">
                                             Valor entre 0 e 9999.99 m²
                                         </p>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="xp" className="mb-2 block">
+                                            XP
+                                        </Label>
+                                        <Input
+                                            id="xp"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={formData.xp}
+                                            onChange={(e) => {
+                                                const parsed = Number(e.target.value);
+                                                setFormData({
+                                                    ...formData,
+                                                    xp: Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0,
+                                                });
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>

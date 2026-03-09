@@ -797,6 +797,7 @@ export const appRouter = router({
           bedrooms: z.number(),
           beds: z.number(),
           bathrooms: z.number(),
+          xp: z.number().optional(),
           area_m2: z.number().optional(),
           is_featured: z.boolean().optional(),
         })
@@ -825,6 +826,7 @@ export const appRouter = router({
           bedrooms: z.number().optional(),
           beds: z.number().optional(),
           bathrooms: z.number().optional(),
+          xp: z.number().optional(),
           area_m2: z.number().optional(),
           is_featured: z.boolean().optional(),
         })
