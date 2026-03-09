@@ -228,7 +228,7 @@ export default function SlidesHeroPage() {
 
             {/* Modals */}
             <HeroSlideModal
-                isOpen={slideModalOpen}
+                open={slideModalOpen}
                 onClose={() => setSlideModalOpen(false)}
                 slide={selectedSlide}
                 onSave={handleSaveSlide}
