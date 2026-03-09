@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { StandardContainer } from "@/components/StandardContainer";
@@ -26,8 +26,7 @@ import { HospedagensSection } from "@/components/HospedagensSection";
 import { AllHospedagensView } from "@/components/AllHospedagensView";
 import { PropertyView } from "@/components/PropertyView";
 import { AllPacotesView } from "@/components/AllPacotesView";
-
-
+import ClienteAuthInline from "@/components/ClienteAuthInline";
 
 import {
   Home as HomeIcon,
@@ -64,7 +63,12 @@ export default function Home() {
   const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
   const [navigationOrigin, setNavigationOrigin] = useState<'home' | 'list' | null>(null);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Verificar se o cliente está logado
+  const clienteMeQuery = trpc.cliente.me.useQuery(undefined, { retry: false });
+  const isClienteLogado = !!clienteMeQuery.data;
 
   // Garantir que ao abrir a lista de hospedagens, a seção fique visível instantaneamente
   // Ref para detectar transição de PropertyView para lista
@@ -146,15 +150,23 @@ export default function Home() {
   });
 
   // Se o modal de cotações está aberto, destaque o botão de cotações
+  // Se o modal de auth está aberto, remova destaque de qualquer seção
   if (isQuotationOpen) {
     activeSection = "quotation";
+  } else if (showAuth) {
+    activeSection = "";
   }
 
   const scrollToSection = (sectionId: string) => {
     setIsMobileMenuOpen(false);
 
     // Se algum modal está aberto, fechar e aguardar antes de fazer scroll
-    if (isQuotationOpen) {
+    if (showAuth) {
+      setShowAuth(false);
+      setTimeout(() => {
+        performScroll(sectionId);
+      }, 100);
+    } else if (isQuotationOpen) {
       setIsQuotationOpen(false);
       setTimeout(() => {
         performScroll(sectionId);
@@ -221,13 +233,21 @@ export default function Home() {
     }
   }, [isMobileMenuOpen]);
 
-  // Fazer scroll para o topo quando o modal de cotações abre
+  // Fazer scroll para o topo quando o modal de cotações ou auth abre
   useEffect(() => {
-    if (isQuotationOpen) {
-      // Fazer scroll para o topo da página inteira
+    if (isQuotationOpen || showAuth) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [isQuotationOpen]);
+  }, [isQuotationOpen, showAuth]);
+
+  const handleMinhaContaClick = () => {
+    setIsMobileMenuOpen(false);
+    if (isClienteLogado) {
+      navigate("/xp-club/dashboard");
+    } else {
+      setShowAuth(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -325,13 +345,13 @@ export default function Home() {
 
         {/* Minha Conta Button */}
         <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40 mt-3">
-          <Link href="/minha-conta/dashboard" className="w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40">
-            <UserCircle className="w-5 h-5 stroke-accent text-accent" strokeWidth={1.5} />
+          <button onClick={handleMinhaContaClick} className={`w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40 ${showAuth ? 'bg-accent text-accent-foreground' : ''}`}>
+            <UserCircle className={`w-5 h-5 ${showAuth ? 'stroke-accent-foreground text-accent-foreground' : 'stroke-accent text-accent'}`} strokeWidth={1.5} />
             <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
-              Minha Conta
+              {isClienteLogado ? 'Minha Conta' : 'Conta XP Club'}
             </div>
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -358,8 +378,9 @@ export default function Home() {
       <main className="lg:ml-40 lg:mr-40 flex-1 overflow-y-auto relative">
 
         {/* Top Bar Azul - Sempre Visível SOBRE o conteúdo */}
-        <header className="absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)' }}>
+        <header className="absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between" style={{ background: (showAuth || isQuotationOpen) ? 'rgb(26, 43, 76)' : 'linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)' }}>
           <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto" />
+          <span className="hidden md:block text-white font-bold text-lg">Entre você e seu destino</span>
 
           {/* Menu Hamburguer Mobile */}
           <div ref={menuRef} className="lg:hidden relative">
@@ -398,13 +419,13 @@ export default function Home() {
 
                 {/* Minha Conta - Mobile */}
                 <div className="mt-3 pt-3 border-t border-muted/30">
-                  <Link
-                    href="/minha-conta/dashboard"
+                  <button
+                    onClick={handleMinhaContaClick}
                     className="col-span-2 border-2 rounded-lg px-3 py-3 flex items-center gap-2 hover:opacity-90 transition-all font-medium text-xs border-accent/30 bg-accent/5 text-accent justify-center w-full"
                   >
                     <UserCircle className="w-5 h-5 flex-shrink-0 text-accent" strokeWidth={1.5} />
-                    <span>Minha Conta</span>
-                  </Link>
+                    <span>{isClienteLogado ? 'Minha Conta' : 'Conta XP Club'}</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -412,7 +433,9 @@ export default function Home() {
         </header>
 
         {/* Alternar entre Modal e Conteúdo da Home */}
-        {isQuotationOpen ? (
+        {showAuth ? (
+          <ClienteAuthInline onClose={() => setShowAuth(false)} />
+        ) : isQuotationOpen ? (
           <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4">
             <QuotationForm onClose={() => setIsQuotationOpen(false)} />
           </div>

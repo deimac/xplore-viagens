@@ -1,7 +1,7 @@
 /**
  * CustomerRoute – Guard de rotas da Minha Conta
- * - Sem sessão → /minha-conta/login
- * - Cadastro incompleto → /minha-conta/completar-cadastro
+ * - Sem sessão → /xp-club/login
+ * - Cadastro incompleto → /xp-club/completar-cadastro
  * - Tudo ok → renderiza o componente
  */
 import { trpc } from "@/lib/trpc";
@@ -26,12 +26,12 @@ export function CustomerRoute({ component: Component }: CustomerRouteProps) {
 
     // Sem sessão
     if (!cliente || error) {
-        return <Redirect to="/minha-conta/login" />;
+        return <Redirect to="/xp-club/login" />;
     }
 
     // Cadastro incompleto
     if (!cliente.cadastroCompleto) {
-        return <Redirect to="/minha-conta/completar-cadastro" />;
+        return <Redirect to="/xp-club/completar-cadastro" />;
     }
 
     return (
@@ -56,12 +56,12 @@ export function CustomerCadastroRoute({ component: Component }: CustomerRoutePro
     }
 
     if (!cliente || error) {
-        return <Redirect to="/minha-conta/login" />;
+        return <Redirect to="/xp-club/login" />;
     }
 
     // Se já completou o cadastro, manda pro dashboard
     if (cliente.cadastroCompleto) {
-        return <Redirect to="/minha-conta/dashboard" />;
+        return <Redirect to="/xp-club/dashboard" />;
     }
 
     return (

@@ -159,7 +159,7 @@ export default function ClienteDashboard() {
                         Últimas Movimentações
                     </CardTitle>
                     <Link
-                        href="/minha-conta/extrato"
+                        href="/xp-club/extrato"
                         className="text-sm text-accent underline hover:text-accent/80 transition-colors"
                     >
                         Ver extrato completo →

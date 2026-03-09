@@ -67,11 +67,11 @@ function Router() {
       <Route path={"/exclusao-de-dados"} component={ExclusaoDadosPage} />
 
       {/* Área do Cliente */}
-      <Route path={"/minha-conta/login"} component={ClienteLogin} />
-      <Route path={"/minha-conta/completar-cadastro"} component={() => <CustomerCadastroRoute component={CompletarCadastro} />} />
-      <Route path={"/minha-conta"} component={() => <Redirect to="/minha-conta/dashboard" />} />
-      <Route path={"/minha-conta/dashboard"} component={() => <CustomerRoute component={ClienteDashboard} />} />
-      <Route path={"/minha-conta/extrato"} component={() => <CustomerRoute component={ClienteExtrato} />} />
+      <Route path={"/xp-club/login"} component={ClienteLogin} />
+      <Route path={"/xp-club/completar-cadastro"} component={() => <CustomerCadastroRoute component={CompletarCadastro} />} />
+      <Route path={"/xp-club"} component={() => <Redirect to="/xp-club/dashboard" />} />
+      <Route path={"/xp-club/dashboard"} component={() => <CustomerRoute component={ClienteDashboard} />} />
+      <Route path={"/xp-club/extrato"} component={() => <CustomerRoute component={ClienteExtrato} />} />
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

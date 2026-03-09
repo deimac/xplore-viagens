@@ -161,17 +161,20 @@ export default function Quotation() {
     <div className="min-h-screen bg-gradient-to-b from-[#F7F7F7] to-white">
       {/* Header */}
       <header className="bg-[#1A2B4C] text-white py-6">
-        <div className="container mx-auto px-6">
-          <Button
-            variant="ghost"
-            className="text-white hover:bg-white/10 mb-4"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Voltar para Home
-          </Button>
-          <h1 className="text-4xl font-bold">Solicite seu Orçamento</h1>
-          <p className="text-lg text-white/80 mt-2">Preencha o formulário abaixo e nossa equipe entrará em contato</p>
+        <div className="container mx-auto px-6 flex items-center justify-between">
+          <div>
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/10 mb-4"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="mr-2 w-4 h-4" />
+              Voltar para Home
+            </Button>
+            <h1 className="text-4xl font-bold">Solicite seu Orçamento</h1>
+            <p className="text-lg text-white/80 mt-2">Preencha o formulário abaixo e nossa equipe entrará em contato</p>
+          </div>
+          <span className="text-white font-bold text-lg whitespace-nowrap ml-8">Entre você e seu destino</span>
         </div>
       </header>
 
@@ -182,7 +185,7 @@ export default function Quotation() {
           <div className="lg:col-span-2">
             <div className="bg-muted/30 border border-muted/40 rounded-xl p-6 md:p-8 shadow-sm">
               <form onSubmit={handleSubmit} className="space-y-6">
-                
+
                 {/* CATEGORIA 1: Dados Pessoais */}
                 <div className="space-y-3">
                   <h3 className="text-base font-semibold text-accent border-b border-muted pb-2">Dados Pessoais</h3>

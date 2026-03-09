@@ -36,7 +36,7 @@ export default function ClienteLogin() {
             await loginEmail.mutateAsync({ email, senha });
             await utils.cliente.me.invalidate();
             toast.success("Login realizado!");
-            navigate("/minha-conta/dashboard");
+            navigate("/xp-club/dashboard");
         } catch (err: any) {
             toast.error(err?.message || "Erro ao fazer login");
         } finally {
@@ -51,7 +51,7 @@ export default function ClienteLogin() {
             await registerEmail.mutateAsync({ nome, email, senha });
             await utils.cliente.me.invalidate();
             toast.success("Conta criada com sucesso!");
-            navigate("/minha-conta/dashboard");
+            navigate("/xp-club/dashboard");
         } catch (err: any) {
             toast.error(err?.message || "Erro ao criar conta");
         } finally {
@@ -105,7 +105,7 @@ export default function ClienteLogin() {
                     {mode === "choose" && (
                         <div className="space-y-5">
                             <ClienteGoogleButton
-                                onLoginDone={() => navigate("/minha-conta/dashboard")}
+                                onLoginDone={() => navigate("/xp-club/dashboard")}
                             />
                             <div className="flex items-center gap-4 max-w-[300px] mx-auto">
                                 <div className="flex-1 h-px bg-gray-200" />
@@ -113,7 +113,7 @@ export default function ClienteLogin() {
                                 <div className="flex-1 h-px bg-gray-200" />
                             </div>
                             <ClienteFacebookButton
-                                onLoginDone={() => navigate("/minha-conta/dashboard")}
+                                onLoginDone={() => navigate("/xp-club/dashboard")}
                             />
                             <div className="flex items-center gap-4 max-w-[300px] mx-auto">
                                 <div className="flex-1 h-px bg-gray-200" />

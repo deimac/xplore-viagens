@@ -45,7 +45,7 @@ export default function CompletarCadastro() {
             });
             toast.success("Cadastro completado!");
             await utils.cliente.me.invalidate();
-            navigate("/minha-conta/dashboard");
+            navigate("/xp-club/dashboard");
         } catch (err: any) {
             toast.error(err?.message || "Erro ao completar cadastro");
         }
