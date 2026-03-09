@@ -172,13 +172,20 @@ export default function XpClubPage() {
         onError: (err: any) => toast.error(err?.message || "Erro ao rodar expiração"),
     });
 
-    const clientes = (clientesQuery.data as any)?.items || [];
-    const movItems = (movQuery.data as any)?.items || [];
-    const parceiros = (parceirosQuery.data as any) || [];
-    const codigos = (codigosQuery.data as any) || [];
-    const configs = (configQuery.data as any) || [];
-    const expPreview = (expPreviewQuery.data as any) || { totalClientes: 0, totalXp: 0, clientes: [] };
-    const dashboard = (dashboardQuery.data as any) || {};
+    const clientesData = (clientesQuery.data as any)?.json || clientesQuery.data || {};
+    const movData = (movQuery.data as any)?.json || movQuery.data || {};
+    const parceirosData = (parceirosQuery.data as any)?.json || parceirosQuery.data || [];
+    const codigosData = (codigosQuery.data as any)?.json || codigosQuery.data || [];
+    const configData = (configQuery.data as any)?.json || configQuery.data || [];
+    const expPreviewData = (expPreviewQuery.data as any)?.json || expPreviewQuery.data || { totalClientes: 0, totalXp: 0, clientes: [] };
+    const dashboard = (dashboardQuery.data as any)?.json || dashboardQuery.data || {};
+
+    const clientes = (clientesData as any)?.items || [];
+    const movItems = (movData as any)?.items || [];
+    const parceiros = (parceirosData as any) || [];
+    const codigos = (codigosData as any) || [];
+    const configs = (configData as any) || [];
+    const expPreview = (expPreviewData as any) || { totalClientes: 0, totalXp: 0, clientes: [] };
 
     const clienteSelecionado = useMemo(() => {
         if (!compraClienteId) return null;
@@ -288,48 +295,42 @@ export default function XpClubPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Saldo líquido total</CardDescription>
-                            <CardTitle className="text-2xl flex items-center gap-2"><Coins className="h-5 w-5 text-blue-600" />{Number(dashboard.saldoLiquido || 0)} XP</CardTitle>
+                        <CardHeader className="py-3 px-4">
+                            <CardDescription className="text-xs">Saldo líquido</CardDescription>
+                            <CardTitle className="text-lg flex items-center gap-2"><Coins className="h-4 w-4 text-blue-600" />{Number(dashboard.saldoLiquido || 0)} XP</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Emissão total menos débitos registrados.</CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>XP para expirar</CardDescription>
-                            <CardTitle className="text-2xl flex items-center gap-2"><Clock3 className="h-5 w-5 text-amber-600" />{Number(dashboard.pontosExpirar || 0)} XP</CardTitle>
+                        <CardHeader className="py-3 px-4">
+                            <CardDescription className="text-xs">XP para expirar</CardDescription>
+                            <CardTitle className="text-lg flex items-center gap-2"><Clock3 className="h-4 w-4 text-amber-600" />{Number(dashboard.pontosExpirar || 0)} XP</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Créditos próximos do vencimento conforme configuração.</CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Clientes ativos</CardDescription>
-                            <CardTitle className="text-2xl flex items-center gap-2"><Users className="h-5 w-5 text-emerald-600" />{Number(dashboard.clientesAtivos || 0)}</CardTitle>
+                        <CardHeader className="py-3 px-4">
+                            <CardDescription className="text-xs">Clientes</CardDescription>
+                            <CardTitle className="text-lg flex items-center gap-2"><Users className="h-4 w-4 text-emerald-600" />{Number(dashboard.clientesAtivos || 0)}</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Clientes cadastrados na base.</CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Créditos no período</CardDescription>
-                            <CardTitle className="text-xl text-blue-600">{Number(dashboard.periodo?.totalCredito || 0)} XP</CardTitle>
+                        <CardHeader className="py-3 px-4">
+                            <CardDescription className="text-xs">Créditos período</CardDescription>
+                            <CardTitle className="text-lg text-blue-600">{Number(dashboard.periodo?.totalCredito || 0)} XP</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Últimos {Number(dashboard.periodo?.days || 30)} dias.</CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Débitos no período</CardDescription>
-                            <CardTitle className="text-xl text-red-600">{Number(dashboard.periodo?.totalDebito || 0)} XP</CardTitle>
+                        <CardHeader className="py-3 px-4">
+                            <CardDescription className="text-xs">Débitos período</CardDescription>
+                            <CardTitle className="text-lg text-red-600">{Number(dashboard.periodo?.totalDebito || 0)} XP</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Inclui expiração e demais débitos.</CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardDescription>Códigos ativos / usos</CardDescription>
-                            <CardTitle className="text-xl flex items-center gap-2"><Gift className="h-5 w-5 text-purple-600" />{Number(dashboard.codigosAtivos || 0)} / {Number(dashboard.usosCodigosPeriodo || 0)}</CardTitle>
+                        <CardHeader className="py-3 px-4">
+                            <CardDescription className="text-xs">Códigos ativos/usos</CardDescription>
+                            <CardTitle className="text-lg flex items-center gap-2"><Gift className="h-4 w-4 text-purple-600" />{Number(dashboard.codigosAtivos || 0)} / {Number(dashboard.usosCodigosPeriodo || 0)}</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Ativos agora / usos no período selecionado.</CardContent>
                     </Card>
                 </div>
 

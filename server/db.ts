@@ -2115,7 +2115,7 @@ export async function listXpAdminClientes(params: {
   if (params.search?.trim()) {
     const s = `%${params.search.trim()}%`;
     const cpfSearch = `%${params.search.trim().replace(/\D/g, '')}%`;
-    where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR c.cpf LIKE ?)`;
+    where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR CAST(c.cpf AS CHAR) LIKE ?)`;
     whereParams.push(s, s, cpfSearch);
   }
 
@@ -2125,13 +2125,13 @@ export async function listXpAdminClientes(params: {
   );
 
   const rows: any[] = await executeQuery(
-    `SELECT c.id, c.nome, c.email, c.cpf, c.telefone,
+    `SELECT c.id, c.nome, c.email, c.cpf,
             COALESCE(SUM(m.xp), 0) AS saldo_xp,
             MAX(m.data_movimentacao) AS ultima_movimentacao
      FROM clientes c
      LEFT JOIN xp_movimentacoes m ON m.id_cliente = c.id
      ${where}
-     GROUP BY c.id, c.nome, c.email, c.cpf, c.telefone
+     GROUP BY c.id, c.nome, c.email, c.cpf
      ORDER BY c.nome ASC
      LIMIT ? OFFSET ?`,
     [...whereParams, pageSize, offset]
@@ -2165,7 +2165,7 @@ export async function listXpAdminMovimentacoes(params: {
   if (params.search?.trim()) {
     const s = `%${params.search.trim()}%`;
     const cpfSearch = `%${params.search.trim().replace(/\D/g, '')}%`;
-    where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR c.cpf LIKE ? OR m.descricao LIKE ?)`;
+    where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR CAST(c.cpf AS CHAR) LIKE ? OR m.descricao LIKE ?)`;
     sqlParams.push(s, s, cpfSearch, s);
   }
   if (params.tipoOperacao) {
