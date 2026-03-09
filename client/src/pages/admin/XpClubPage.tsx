@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import SearchableSelect from "@/components/SearchableSelect";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,6 @@ export default function XpClubPage() {
     const [compraClienteId, setCompraClienteId] = useState<number | null>(null);
     const [compraValorInput, setCompraValorInput] = useState("");
     const [compraDescricao, setCompraDescricao] = useState("");
-    const [clienteComboboxOpen, setClienteComboboxOpen] = useState(false);
     const [parceiroComboboxOpen, setParceiroComboboxOpen] = useState(false);
 
     const [codigoForm, setCodigoForm] = useState({
@@ -451,53 +451,19 @@ export default function XpClubPage() {
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div>
                                         <Label>Cliente</Label>
-                                        <Popover open={clienteComboboxOpen} onOpenChange={setClienteComboboxOpen}>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    className="w-full justify-between"
-                                                    title="Selecionar cliente"
-                                                >
-                                                    <span className="truncate text-left">
-                                                        {clienteSelecionado ? `${clienteSelecionado.nome} (${clienteSelecionado.email})` : "Selecionar cliente"}
-                                                    </span>
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[420px] p-0">
-                                                <Command>
-                                                    <CommandInput
-                                                        placeholder="Buscar cliente por nome, email ou CPF..."
-                                                        value={clienteSearch}
-                                                        onValueChange={setClienteSearch}
-                                                    />
-                                                    <CommandList>
-                                                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                                                        <CommandGroup>
-                                                            {clientesLimitados.map((c: any) => (
-                                                                <CommandItem
-                                                                    key={c.id}
-                                                                    value={`${c.nome || ""} ${c.email || ""} ${c.cpf || ""}`}
-                                                                    onSelect={() => {
-                                                                        setCompraClienteId(Number(c.id));
-                                                                        setClienteComboboxOpen(false);
-                                                                    }}
-                                                                >
-                                                                    <div className="flex flex-col">
-                                                                        <span>{c.nome}</span>
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            {c.email || "sem email"} • CPF: {c.cpf || "-"} • Saldo: {Number(c.saldo_xp || 0)} XP
-                                                                        </span>
-                                                                    </div>
-                                                                    <Check className={Number(c.id) === compraClienteId ? "ml-auto h-4 w-4 opacity-100" : "ml-auto h-4 w-4 opacity-0"} />
-                                                                </CommandItem>
-                                                            ))}
-                                                        </CommandGroup>
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
+                                        <SearchableSelect
+                                            options={clientesLimitados.map((c: any) => ({
+                                                id: c.id,
+                                                nome: c.nome || "",
+                                                detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP`,
+                                            }))}
+                                            value={compraClienteId ? String(compraClienteId) : ""}
+                                            onChange={(id) => setCompraClienteId(Number(id))}
+                                            onSearchChange={setClienteSearch}
+                                            placeholder="Selecionar cliente"
+                                            searchPlaceholder="Buscar cliente por nome, email ou CPF..."
+                                            emptyMessage="Nenhum cliente encontrado."
+                                        />
                                     </div>
 
                                     <div className="space-y-3">
