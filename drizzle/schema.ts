@@ -434,17 +434,21 @@ export const clientes = mysqlTable("clientes", {
   nome: varchar("nome", { length: 150 }),
   email: varchar("email", { length: 150 }).unique(),
   passwordHash: varchar("password_hash", { length: 255 }),
+  senha: varchar("senha", { length: 255 }),
   cpf: varchar("cpf", { length: 14 }),
   telefone: varchar("telefone", { length: 20 }),
   cep: varchar("cep", { length: 10 }),
   endereco: varchar("endereco", { length: 255 }),
   numero: varchar("numero", { length: 20 }),
   complemento: varchar("complemento", { length: 100 }),
+  bairro: varchar("bairro", { length: 100 }),
   cidade: varchar("cidade", { length: 100 }),
   estado: varchar("estado", { length: 2 }),
+  googleId: varchar("google_id", { length: 255 }),
+  facebookId: varchar("facebook_id", { length: 255 }),
   cadastroCompleto: boolean("cadastro_completo").default(false),
   origemCadastro: varchar("origem_cadastro", { length: 50 }),
-  createdAt: timestamp("created_at").defaultNow(),
+  dataCriacao: timestamp("data_criacao").defaultNow(),
 });
 
 export type Cliente = typeof clientes.$inferSelect;
@@ -456,8 +460,8 @@ export type InsertCliente = typeof clientes.$inferInsert;
 export const xpContas = mysqlTable("xp_contas", {
   id: int("id").autoincrement().primaryKey(),
   idCliente: int("id_cliente").notNull().references(() => clientes.id),
-  saldoAtual: int("saldo_atual").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
+  saldoXp: int("saldo_xp").notNull().default(0),
+  dataAtualizacao: timestamp("data_atualizacao"),
 });
 
 export type XpConta = typeof xpContas.$inferSelect;
@@ -469,9 +473,10 @@ export type InsertXpConta = typeof xpContas.$inferInsert;
 export const xpParceiros = mysqlTable("xp_parceiros", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 150 }).notNull(),
-  descricao: varchar("descricao", { length: 255 }),
-  contato: varchar("contato", { length: 150 }),
-  createdAt: timestamp("created_at").defaultNow(),
+  email: varchar("email", { length: 150 }),
+  telefone: varchar("telefone", { length: 20 }),
+  observacoes: text("observacoes"),
+  dataCriacao: timestamp("data_criacao").defaultNow(),
 });
 
 export type XpParceiro = typeof xpParceiros.$inferSelect;
@@ -484,9 +489,9 @@ export const xpTiposMovimentacao = mysqlTable("xp_tipos_movimentacao", {
   nome: varchar("nome", { length: 50 }).notNull(),
   tipoOperacao: mysqlEnum("tipo_operacao", ["credito", "debito", "ajuste"]).notNull(),
   qualificavel: boolean("qualificavel").notNull().default(false),
-  diasExpiracao: int("dias_expiracao"),
   descricao: varchar("descricao", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
+  diasExpiracao: int("dias_expiracao"),
 });
 
 export type XpTipoMovimentacao = typeof xpTiposMovimentacao.$inferSelect;
@@ -496,15 +501,15 @@ export type XpTipoMovimentacao = typeof xpTiposMovimentacao.$inferSelect;
  */
 export const xpCodigos = mysqlTable("xp_codigos", {
   id: int("id").autoincrement().primaryKey(),
-  codigo: varchar("codigo", { length: 50 }).notNull().unique(),
-  xp: int("xp").notNull(),
   idParceiro: int("id_parceiro").references(() => xpParceiros.id),
-  limiteUso: int("limite_uso"),
-  totalUsos: int("total_usos").default(0),
-  dataValidade: date("data_validade"),
+  codigo: varchar("codigo", { length: 50 }).notNull().unique(),
+  xpBonus: int("xp_bonus").notNull(),
+  quantidadeMaxUso: int("quantidade_max_uso"),
+  quantidadeUsada: int("quantidade_usada").default(0),
+  dataExpiracao: timestamp("data_expiracao"),
+  ativo: boolean("ativo").default(true),
+  dataCriacao: timestamp("data_criacao").defaultNow(),
   diasExpiracao: int("dias_expiracao"),
-  descricao: varchar("descricao", { length: 255 }),
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export type XpCodigo = typeof xpCodigos.$inferSelect;
@@ -516,7 +521,7 @@ export const xpCodigosUsados = mysqlTable("xp_codigos_usados", {
   id: int("id").autoincrement().primaryKey(),
   idCodigo: int("id_codigo").notNull().references(() => xpCodigos.id),
   idCliente: int("id_cliente").notNull().references(() => clientes.id),
-  createdAt: timestamp("created_at").defaultNow(),
+  dataUso: timestamp("data_uso").defaultNow(),
 });
 
 export type XpCodigoUsado = typeof xpCodigosUsados.$inferSelect;
@@ -531,11 +536,10 @@ export const xpMovimentacoes = mysqlTable("xp_movimentacoes", {
   idCodigo: int("id_codigo").references(() => xpCodigos.id),
   idTipoMovimentacao: int("id_tipo_movimentacao").notNull().references(() => xpTiposMovimentacao.id),
   xp: int("xp").notNull(),
-  saldoApos: int("saldo_apos").notNull(),
-  valorReferencia: decimal("valor_referencia", { precision: 10, scale: 2 }),
+  saldoApos: int("saldo_apos"),
   descricao: varchar("descricao", { length: 255 }),
-  dataExpiracao: date("data_expiracao"),
-  createdAt: timestamp("created_at").defaultNow(),
+  valorReferencia: decimal("valor_referencia", { precision: 10, scale: 2 }),
+  dataMovimentacao: timestamp("data_movimentacao").defaultNow(),
 });
 
 export type XpMovimentacao = typeof xpMovimentacoes.$inferSelect;

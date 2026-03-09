@@ -207,7 +207,7 @@ export default function ClienteExtrato() {
                                     </thead>
                                     <tbody className="divide-y">
                                         {data.items.map((mov: any) => {
-                                            const isPositive = Number(mov.pontos) > 0;
+                                            const isPositive = Number(mov.xp) > 0;
                                             return (
                                                 <tr key={mov.id} className="hover:bg-muted/10 transition-colors">
                                                     <td className="py-3 px-4 whitespace-nowrap">
@@ -226,14 +226,14 @@ export default function ClienteExtrato() {
                                                             </div>
                                                             <span className="text-xs">
                                                                 {new Date(
-                                                                    mov.createdAt || mov.created_at
+                                                                    mov.data_movimentacao
                                                                 ).toLocaleDateString("pt-BR")}
                                                             </span>
                                                         </div>
                                                     </td>
                                                     <td className="py-3 px-4">
                                                         <Badge variant="outline" className="text-[11px] font-normal">
-                                                            {mov.tipoNome || "-"}
+                                                            {mov.tipo_nome || "-"}
                                                         </Badge>
                                                     </td>
                                                     <td className="py-3 px-4 text-muted-foreground truncate max-w-[200px] hidden sm:table-cell">
@@ -245,7 +245,7 @@ export default function ClienteExtrato() {
                                                                 }`}
                                                         >
                                                             {isPositive ? "+" : ""}
-                                                            {Number(mov.pontos).toLocaleString("pt-BR")}
+                                                            {Number(mov.xp).toLocaleString("pt-BR")}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-4 text-center hidden sm:table-cell">
@@ -258,8 +258,8 @@ export default function ClienteExtrato() {
                                                         )}
                                                     </td>
                                                     <td className="py-3 px-4 text-xs text-muted-foreground hidden md:table-cell">
-                                                        {mov.dataExpiracao
-                                                            ? new Date(mov.dataExpiracao).toLocaleDateString("pt-BR")
+                                                        {mov.data_expiracao
+                                                            ? new Date(mov.data_expiracao).toLocaleDateString("pt-BR")
                                                             : "-"}
                                                     </td>
                                                 </tr>

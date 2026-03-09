@@ -12,6 +12,7 @@ import { Loader2, UserCheck } from "lucide-react";
 
 export default function CompletarCadastro() {
     const [, navigate] = useLocation();
+    const utils = trpc.useUtils();
     const meQuery = trpc.cliente.me.useQuery();
     const completar = trpc.cliente.completarCadastro.useMutation();
 
@@ -43,6 +44,7 @@ export default function CompletarCadastro() {
                 estado: form.estado,
             });
             toast.success("Cadastro completado!");
+            await utils.cliente.me.invalidate();
             navigate("/minha-conta/dashboard");
         } catch (err: any) {
             toast.error(err?.message || "Erro ao completar cadastro");

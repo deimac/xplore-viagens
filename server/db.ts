@@ -1669,9 +1669,9 @@ export async function getOrCreateXpConta(clienteId: number) {
   );
   if (rows.length > 0) return rows[0];
   const result: any = await executeQuery(
-    `INSERT INTO xp_contas (id_cliente, saldo_atual) VALUES (?, 0)`, [clienteId]
+    `INSERT INTO xp_contas (id_cliente, saldo_xp) VALUES (?, 0)`, [clienteId]
   );
-  return { id: result.insertId, id_cliente: clienteId, saldo_atual: 0 };
+  return { id: result.insertId, id_cliente: clienteId, saldo_xp: 0 };
 }
 
 // ── XP Configurações ──────────────────────────────────────────────
@@ -1710,7 +1710,10 @@ export async function getXpDashboard(clienteId: number) {
      WHERE m.id_cliente = ?
        AND (
          t.tipo_operacao IN ('debito', 'ajuste')
-         OR (t.tipo_operacao = 'credito' AND (m.data_expiracao IS NULL OR m.data_expiracao >= ?))
+         OR (t.tipo_operacao = 'credito' AND (
+           t.dias_expiracao IS NULL
+           OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+         ))
        )`,
     [clienteId, hoje]
   );
@@ -1724,7 +1727,10 @@ export async function getXpDashboard(clienteId: number) {
      WHERE m.id_cliente = ?
        AND (
          t.tipo_operacao IN ('debito', 'ajuste')
-         OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (m.data_expiracao IS NULL OR m.data_expiracao >= ?))
+         OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (
+           t.dias_expiracao IS NULL
+           OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+         ))
        )`,
     [clienteId, hoje]
   );
@@ -1744,27 +1750,29 @@ export async function getXpDashboard(clienteId: number) {
   const limiteStr = limiteExpiracao.toISOString().slice(0, 10);
 
   const pontosExpirar: any[] = await executeQuery(
-    `SELECT m.id, m.xp, m.data_expiracao, m.descricao, t.nome AS tipo_nome
+    `SELECT m.id, m.xp, DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
+            m.descricao, t.nome AS tipo_nome
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
        AND t.tipo_operacao = 'credito'
-       AND m.data_expiracao IS NOT NULL
-       AND m.data_expiracao >= ?
-       AND m.data_expiracao <= ?
-     ORDER BY m.data_expiracao ASC
+       AND t.dias_expiracao IS NOT NULL
+       AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+       AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) <= ?
+     ORDER BY data_expiracao ASC
      LIMIT 10`,
     [clienteId, hoje, limiteStr]
   );
 
   // Últimas 5 movimentações
   const ultimas: any[] = await executeQuery(
-    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_expiracao, m.created_at,
+    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
+            DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
             t.nome AS tipo_nome, t.tipo_operacao
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
-     ORDER BY m.created_at DESC
+     ORDER BY m.data_movimentacao DESC
      LIMIT 5`,
     [clienteId]
   );
@@ -1803,11 +1811,11 @@ export async function getXpExtrato(
   const params: any[] = [clienteId];
 
   if (filtros.dataInicio) {
-    where += ` AND m.created_at >= ?`;
+    where += ` AND m.data_movimentacao >= ?`;
     params.push(filtros.dataInicio);
   }
   if (filtros.dataFim) {
-    where += ` AND m.created_at <= ?`;
+    where += ` AND m.data_movimentacao <= ?`;
     params.push(filtros.dataFim + ' 23:59:59');
   }
   if (filtros.tipoMovimentacaoId) {
@@ -1829,12 +1837,13 @@ export async function getXpExtrato(
 
   params.push(pageSize, offset);
   const rows: any[] = await executeQuery(
-    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_expiracao, m.created_at,
+    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
+            DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
             t.nome AS tipo_nome, t.tipo_operacao, t.qualificavel
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      ${where}
-     ORDER BY m.created_at DESC
+     ORDER BY m.data_movimentacao DESC
      LIMIT ? OFFSET ?`,
     params
   );
@@ -1896,31 +1905,36 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
           const codigo = codigos[0];
 
           // 2. Validade
-          if (codigo.data_validade) {
+          if (codigo.data_expiracao) {
             const hoje = new Date().toISOString().slice(0, 10);
-            if (codigo.data_validade < hoje) throw new Error("Este código já expirou.");
+            if (codigo.data_expiracao < hoje) throw new Error("Este código já expirou.");
           }
 
-          // 3. Limite de uso
-          if (codigo.limite_uso !== null && codigo.total_usos >= codigo.limite_uso) {
+          // 3. Ativo?
+          if (codigo.ativo === 0 || codigo.ativo === false) {
+            throw new Error("Este código não está ativo.");
+          }
+
+          // 4. Limite de uso
+          if (codigo.quantidade_max_uso !== null && (codigo.quantidade_usada || 0) >= codigo.quantidade_max_uso) {
             throw new Error("Este código atingiu o limite de uso.");
           }
 
-          // 4. Já utilizado pelo cliente?
+          // 5. Já utilizado pelo cliente?
           const usados: any[] = await query(
             `SELECT id FROM xp_codigos_usados WHERE id_codigo = ? AND id_cliente = ? LIMIT 1`,
             [codigo.id, clienteId]
           );
           if (usados.length > 0) throw new Error("Você já utilizou este código.");
 
-          // 5. Buscar tipo 'codigo_promocional'
+          // 6. Buscar tipo 'codigo_promocional'
           const tipos: any[] = await query(
             `SELECT * FROM xp_tipos_movimentacao WHERE nome = 'codigo_promocional' LIMIT 1`
           );
           if (tipos.length === 0) throw new Error("Tipo de movimentação 'codigo_promocional' não configurado.");
           const tipo = tipos[0];
 
-          // 6. Calcular expiração
+          // 7. Calcular expiração
           let dataExpiracao: string | null = null;
           const diasExp = codigo.dias_expiracao ?? tipo.dias_expiracao;
           if (diasExp) {
@@ -1929,41 +1943,41 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
             dataExpiracao = exp.toISOString().slice(0, 10);
           }
 
-          // 7. Calcular saldo_apos
+          // 8. Calcular saldo_apos
           const [saldoRow]: any[] = await query(
             `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes WHERE id_cliente = ?`,
             [clienteId]
           );
-          const saldoApos = Number(saldoRow.total) + codigo.xp;
+          const saldoApos = Number(saldoRow.total) + codigo.xp_bonus;
 
-          // 8. Inserir movimentação
+          // 9. Inserir movimentação
           await query(
             `INSERT INTO xp_movimentacoes
-               (id_cliente, id_codigo, id_tipo_movimentacao, xp, saldo_apos, descricao, data_expiracao)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [clienteId, codigo.id, tipo.id, codigo.xp, saldoApos,
-              codigo.descricao || `Código promocional: ${codigoStr.trim().toUpperCase()}`, dataExpiracao]
+               (id_cliente, id_codigo, id_tipo_movimentacao, xp, saldo_apos, descricao)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [clienteId, codigo.id, tipo.id, codigo.xp_bonus, saldoApos,
+              `Código promocional: ${codigoStr.trim().toUpperCase()}`]
           );
 
-          // 9. Registrar uso
+          // 10. Registrar uso
           await query(
             `INSERT INTO xp_codigos_usados (id_codigo, id_cliente) VALUES (?, ?)`,
             [codigo.id, clienteId]
           );
 
-          // 10. Incrementar total_usos
+          // 11. Incrementar quantidade_usada
           await query(
-            `UPDATE xp_codigos SET total_usos = total_usos + 1 WHERE id = ?`,
+            `UPDATE xp_codigos SET quantidade_usada = COALESCE(quantidade_usada, 0) + 1 WHERE id = ?`,
             [codigo.id]
           );
 
-          // 11. Atualizar cache saldo_atual em xp_contas
+          // 12. Atualizar cache saldo_xp em xp_contas
           await query(
-            `UPDATE xp_contas SET saldo_atual = ? WHERE id_cliente = ?`,
+            `UPDATE xp_contas SET saldo_xp = ?, data_atualizacao = NOW() WHERE id_cliente = ?`,
             [saldoApos, clienteId]
           );
 
-          return { xp: codigo.xp, descricao: codigo.descricao || codigoStr, saldoApos };
+          return { xp: codigo.xp_bonus, descricao: `Código promocional: ${codigoStr.trim().toUpperCase()}`, saldoApos };
         })()
           .then((result) => {
             connection.commit((commitErr) => {

@@ -23,6 +23,7 @@ export default function ClienteLogin() {
     const [nome, setNome] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const utils = trpc.useUtils();
     const loginEmail = trpc.clienteAuth.loginEmail.useMutation();
     const registerEmail = trpc.clienteAuth.registerEmail.useMutation();
     const loginGoogle = trpc.clienteAuth.loginGoogle.useMutation();
@@ -33,6 +34,7 @@ export default function ClienteLogin() {
         setLoading(true);
         try {
             await loginEmail.mutateAsync({ email, senha });
+            await utils.cliente.me.invalidate();
             toast.success("Login realizado!");
             navigate("/minha-conta/dashboard");
         } catch (err: any) {
@@ -47,6 +49,7 @@ export default function ClienteLogin() {
         setLoading(true);
         try {
             await registerEmail.mutateAsync({ nome, email, senha });
+            await utils.cliente.me.invalidate();
             toast.success("Conta criada com sucesso!");
             navigate("/minha-conta/dashboard");
         } catch (err: any) {
@@ -269,6 +272,7 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 
 function ClienteGoogleButton({ onLoginDone }: { onLoginDone: () => void }) {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const utils = trpc.useUtils();
     const loginGoogle = trpc.clienteAuth.loginGoogle.useMutation();
 
     if (!clientId) {
@@ -283,6 +287,7 @@ function ClienteGoogleButton({ onLoginDone }: { onLoginDone: () => void }) {
                         if (credentialResponse.credential) {
                             try {
                                 await loginGoogle.mutateAsync({ token: credentialResponse.credential });
+                                await utils.cliente.me.invalidate();
                                 toast.success("Login realizado!");
                                 onLoginDone();
                             } catch (err: any) {
@@ -303,6 +308,7 @@ function ClienteGoogleButton({ onLoginDone }: { onLoginDone: () => void }) {
 }
 
 function ClienteFacebookButton({ onLoginDone }: { onLoginDone: () => void }) {
+    const utils = trpc.useUtils();
     const loginFb = trpc.clienteAuth.loginFacebook.useMutation();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -318,6 +324,7 @@ function ClienteFacebookButton({ onLoginDone }: { onLoginDone: () => void }) {
                 if (response.status === "connected" && response.authResponse) {
                     try {
                         await loginFb.mutateAsync({ accessToken: response.authResponse.accessToken });
+                        await utils.cliente.me.invalidate();
                         toast.success("Login realizado!");
                         onLoginDone();
                     } catch (err: any) {

@@ -107,11 +107,11 @@ export default function ClienteDashboard() {
                                     className="flex items-center justify-between text-sm bg-white rounded px-3 py-2 border border-orange-100"
                                 >
                                     <span className="text-orange-800 font-medium">
-                                        {formatPontos(item.pontos)} pontos
+                                        {formatPontos(item.xp)} pontos
                                     </span>
                                     <span className="text-muted-foreground text-xs">
                                         Expiram em{" "}
-                                        {new Date(item.dataExpiracao).toLocaleDateString("pt-BR")}
+                                        {new Date(item.data_expiracao).toLocaleDateString("pt-BR")}
                                     </span>
                                 </div>
                             ))}
@@ -224,7 +224,7 @@ function SaldoCard({
 }
 
 function MovimentacaoRow({ mov }: { mov: any }) {
-    const isPositive = Number(mov.pontos) > 0;
+    const isPositive = Number(mov.xp) > 0;
     return (
         <div className="flex items-center justify-between py-3 gap-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -242,13 +242,13 @@ function MovimentacaoRow({ mov }: { mov: any }) {
                 </div>
                 <div className="min-w-0">
                     <p className="text-sm font-medium truncate">
-                        {mov.tipoNome || mov.descricao || "Movimentação"}
+                        {mov.tipo_nome || mov.descricao || "Movimentação"}
                     </p>
-                    {mov.descricao && mov.tipoNome && (
+                    {mov.descricao && mov.tipo_nome && (
                         <p className="text-xs text-muted-foreground truncate">{mov.descricao}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                        {new Date(mov.createdAt || mov.created_at).toLocaleDateString("pt-BR")}
+                        {new Date(mov.data_movimentacao).toLocaleDateString("pt-BR")}
                     </p>
                 </div>
             </div>
@@ -258,7 +258,7 @@ function MovimentacaoRow({ mov }: { mov: any }) {
                         }`}
                 >
                     {isPositive ? "+" : ""}
-                    {formatPontos(mov.pontos)}
+                    {formatPontos(mov.xp)}
                 </span>
                 {mov.qualificavel && (
                     <Badge variant="outline" className="ml-2 text-[10px]">

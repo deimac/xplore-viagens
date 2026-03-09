@@ -95,7 +95,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
-                    cadastroCompleto: !!cliente.cadastro_completo,
+                    cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
         }),
@@ -139,7 +139,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
-                    cadastroCompleto: !!cliente.cadastro_completo,
+                    cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
         }),
@@ -176,7 +176,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
-                    cadastroCompleto: !!cliente.cadastro_completo,
+                    cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
         }),
@@ -213,7 +213,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
-                    cadastroCompleto: !!cliente.cadastro_completo,
+                    cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
         }),
@@ -233,7 +233,7 @@ export const clienteAuthRouter = router({
 export const clienteRouter = router({
     me: publicProcedure.query(async ({ ctx }) => {
         if (!ctx.cliente) return null;
-        const c = ctx.cliente;
+        const c: any = ctx.cliente;
         return {
             id: c.id,
             nome: c.nome,
@@ -246,7 +246,7 @@ export const clienteRouter = router({
             complemento: c.complemento,
             cidade: c.cidade,
             estado: c.estado,
-            cadastroCompleto: !!c.cadastroCompleto,
+            cadastroCompleto: !!(c.cadastro_completo ?? c.cadastroCompleto),
         };
     }),
 
