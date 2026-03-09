@@ -1,4 +1,4 @@
-import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
+import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG, CLIENT_UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 // import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -48,3 +48,22 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+// --- Área do cliente ---
+
+const requireCliente = t.middleware(async opts => {
+  const { ctx, next } = opts;
+
+  if (!ctx.cliente) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: CLIENT_UNAUTHED_ERR_MSG });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      cliente: ctx.cliente,
+    },
+  });
+});
+
+export const clienteProtectedProcedure = t.procedure.use(requireCliente);

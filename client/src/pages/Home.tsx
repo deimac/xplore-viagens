@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { StandardContainer } from "@/components/StandardContainer";
@@ -55,6 +55,7 @@ import {
   Twitter,
   Crown,
   Building2,
+  UserCircle,
 } from "lucide-react";
 
 export default function Home() {
@@ -321,6 +322,17 @@ export default function Home() {
             </div>
           </button>
         </div>
+
+        {/* Minha Conta Button */}
+        <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40 mt-3">
+          <Link href="/minha-conta/dashboard" className="w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40">
+            <UserCircle className="w-5 h-5 stroke-accent text-accent" strokeWidth={1.5} />
+            <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
+              Minha Conta
+            </div>
+          </Link>
+        </div>
       </aside>
 
 
@@ -382,6 +394,17 @@ export default function Home() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Minha Conta - Mobile */}
+                <div className="mt-3 pt-3 border-t border-muted/30">
+                  <Link
+                    href="/minha-conta/dashboard"
+                    className="col-span-2 border-2 rounded-lg px-3 py-3 flex items-center gap-2 hover:opacity-90 transition-all font-medium text-xs border-accent/30 bg-accent/5 text-accent justify-center w-full"
+                  >
+                    <UserCircle className="w-5 h-5 flex-shrink-0 text-accent" strokeWidth={1.5} />
+                    <span>Minha Conta</span>
+                  </Link>
                 </div>
               </div>
             )}

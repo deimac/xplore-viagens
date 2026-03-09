@@ -29,6 +29,13 @@ import SlidesHeroPage from "./pages/admin/SlidesHeroPage";
 import AvaliacoesPage from "./pages/admin/AvaliacoesPage";
 import { Redirect } from "wouter";
 
+// Área do Cliente
+import ClienteLogin from "./pages/cliente/ClienteLogin";
+import CompletarCadastro from "./pages/cliente/CompletarCadastro";
+import ClienteDashboard from "./pages/cliente/ClienteDashboard";
+import ClienteExtrato from "./pages/cliente/ClienteExtrato";
+import { CustomerRoute, CustomerCadastroRoute } from "./components/CustomerRoute";
+
 function Router() {
   return (
     <Switch>
@@ -56,6 +63,14 @@ function Router() {
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/politica-de-privacidade"} component={PrivacidadePage} />
       <Route path={"/exclusao-de-dados"} component={ExclusaoDadosPage} />
+
+      {/* Área do Cliente */}
+      <Route path={"/minha-conta/login"} component={ClienteLogin} />
+      <Route path={"/minha-conta/completar-cadastro"} component={() => <CustomerCadastroRoute component={CompletarCadastro} />} />
+      <Route path={"/minha-conta"} component={() => <Redirect to="/minha-conta/dashboard" />} />
+      <Route path={"/minha-conta/dashboard"} component={() => <CustomerRoute component={ClienteDashboard} />} />
+      <Route path={"/minha-conta/extrato"} component={() => <CustomerRoute component={ClienteExtrato} />} />
+
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

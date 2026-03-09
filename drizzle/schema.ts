@@ -421,3 +421,162 @@ export const roomBedsRelations = relations(roomBeds, ({ one }) => ({
     references: [bedTypes.id],
   }),
 }));
+
+// ─────────────────────────────────────────────────────────────
+// ÁREA DO CLIENTE / FIDELIDADE XP
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Clientes table – perfil do cliente (independente de users admin)
+ */
+export const clientes = mysqlTable("clientes", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }),
+  email: varchar("email", { length: 150 }).unique(),
+  passwordHash: varchar("password_hash", { length: 255 }),
+  cpf: varchar("cpf", { length: 14 }),
+  telefone: varchar("telefone", { length: 20 }),
+  cep: varchar("cep", { length: 10 }),
+  endereco: varchar("endereco", { length: 255 }),
+  numero: varchar("numero", { length: 20 }),
+  complemento: varchar("complemento", { length: 100 }),
+  cidade: varchar("cidade", { length: 100 }),
+  estado: varchar("estado", { length: 2 }),
+  cadastroCompleto: boolean("cadastro_completo").default(false),
+  origemCadastro: varchar("origem_cadastro", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Cliente = typeof clientes.$inferSelect;
+export type InsertCliente = typeof clientes.$inferInsert;
+
+/**
+ * XP Contas – conta de pontos do cliente
+ */
+export const xpContas = mysqlTable("xp_contas", {
+  id: int("id").autoincrement().primaryKey(),
+  idCliente: int("id_cliente").notNull().references(() => clientes.id),
+  saldoAtual: int("saldo_atual").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type XpConta = typeof xpContas.$inferSelect;
+export type InsertXpConta = typeof xpContas.$inferInsert;
+
+/**
+ * XP Parceiros – parceiros de códigos promocionais
+ */
+export const xpParceiros = mysqlTable("xp_parceiros", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }).notNull(),
+  descricao: varchar("descricao", { length: 255 }),
+  contato: varchar("contato", { length: 150 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type XpParceiro = typeof xpParceiros.$inferSelect;
+
+/**
+ * XP Tipos de Movimentação
+ */
+export const xpTiposMovimentacao = mysqlTable("xp_tipos_movimentacao", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 50 }).notNull(),
+  tipoOperacao: mysqlEnum("tipo_operacao", ["credito", "debito", "ajuste"]).notNull(),
+  qualificavel: boolean("qualificavel").notNull().default(false),
+  diasExpiracao: int("dias_expiracao"),
+  descricao: varchar("descricao", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type XpTipoMovimentacao = typeof xpTiposMovimentacao.$inferSelect;
+
+/**
+ * XP Códigos promocionais
+ */
+export const xpCodigos = mysqlTable("xp_codigos", {
+  id: int("id").autoincrement().primaryKey(),
+  codigo: varchar("codigo", { length: 50 }).notNull().unique(),
+  xp: int("xp").notNull(),
+  idParceiro: int("id_parceiro").references(() => xpParceiros.id),
+  limiteUso: int("limite_uso"),
+  totalUsos: int("total_usos").default(0),
+  dataValidade: date("data_validade"),
+  diasExpiracao: int("dias_expiracao"),
+  descricao: varchar("descricao", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type XpCodigo = typeof xpCodigos.$inferSelect;
+
+/**
+ * XP Códigos Usados (registro de uso por cliente)
+ */
+export const xpCodigosUsados = mysqlTable("xp_codigos_usados", {
+  id: int("id").autoincrement().primaryKey(),
+  idCodigo: int("id_codigo").notNull().references(() => xpCodigos.id),
+  idCliente: int("id_cliente").notNull().references(() => clientes.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type XpCodigoUsado = typeof xpCodigosUsados.$inferSelect;
+
+/**
+ * XP Movimentações – ledger imutável de pontos
+ */
+export const xpMovimentacoes = mysqlTable("xp_movimentacoes", {
+  id: int("id").autoincrement().primaryKey(),
+  idCliente: int("id_cliente").notNull().references(() => clientes.id),
+  idUsers: int("id_users").references(() => users.id),
+  idCodigo: int("id_codigo").references(() => xpCodigos.id),
+  idTipoMovimentacao: int("id_tipo_movimentacao").notNull().references(() => xpTiposMovimentacao.id),
+  xp: int("xp").notNull(),
+  saldoApos: int("saldo_apos").notNull(),
+  valorReferencia: decimal("valor_referencia", { precision: 10, scale: 2 }),
+  descricao: varchar("descricao", { length: 255 }),
+  dataExpiracao: date("data_expiracao"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type XpMovimentacao = typeof xpMovimentacoes.$inferSelect;
+
+/**
+ * XP Configurações – chave/valor do sistema de fidelidade
+ */
+export const xpConfiguracoes = mysqlTable("xp_configuracoes", {
+  id: int("id").autoincrement().primaryKey(),
+  chave: varchar("chave", { length: 100 }).notNull().unique(),
+  valor: varchar("valor", { length: 255 }).notNull(),
+  descricao: varchar("descricao", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export type XpConfiguracao = typeof xpConfiguracoes.$inferSelect;
+
+// ─── Relations: clientes / XP ────────────────────────────────
+
+export const clientesRelations = relations(clientes, ({ one, many }) => ({
+  xpConta: one(xpContas, { fields: [clientes.id], references: [xpContas.idCliente] }),
+  xpMovimentacoes: many(xpMovimentacoes),
+  xpCodigosUsados: many(xpCodigosUsados),
+}));
+
+export const xpContasRelations = relations(xpContas, ({ one }) => ({
+  cliente: one(clientes, { fields: [xpContas.idCliente], references: [clientes.id] }),
+}));
+
+export const xpMovimentacoesRelations = relations(xpMovimentacoes, ({ one }) => ({
+  cliente: one(clientes, { fields: [xpMovimentacoes.idCliente], references: [clientes.id] }),
+  tipoMovimentacao: one(xpTiposMovimentacao, { fields: [xpMovimentacoes.idTipoMovimentacao], references: [xpTiposMovimentacao.id] }),
+  codigo: one(xpCodigos, { fields: [xpMovimentacoes.idCodigo], references: [xpCodigos.id] }),
+}));
+
+export const xpCodigosRelations = relations(xpCodigos, ({ one }) => ({
+  parceiro: one(xpParceiros, { fields: [xpCodigos.idParceiro], references: [xpParceiros.id] }),
+}));
+
+export const xpCodigosUsadosRelations = relations(xpCodigosUsados, ({ one }) => ({
+  codigo: one(xpCodigos, { fields: [xpCodigosUsados.idCodigo], references: [xpCodigos.id] }),
+  cliente: one(clientes, { fields: [xpCodigosUsados.idCliente], references: [clientes.id] }),
+}));

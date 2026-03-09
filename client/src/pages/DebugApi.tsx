@@ -124,12 +124,14 @@ export default function DebugApi() {
                         />
                         <input
                             type="date"
+                            title="Data Inicial"
                             value={dataInicial}
                             onChange={(e) => setDataInicial(e.target.value)}
                             className="px-3 py-2 border border-muted rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                         />
                         <input
                             type="date"
+                            title="Data Final"
                             value={dataFinal}
                             onChange={(e) => setDataFinal(e.target.value)}
                             className="px-3 py-2 border border-muted rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"

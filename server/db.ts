@@ -34,7 +34,7 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
 import { eq, desc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
-import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis } from "../drizzle/schema";
+import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
@@ -1601,5 +1601,385 @@ export async function updateRoomBed(id: number, data: { bedTypeId?: number; quan
 export async function deleteRoomBed(id: number) {
   await executeQuery(`DELETE FROM room_beds WHERE id = ?`, [id]);
   return { success: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ÁREA DO CLIENTE / FIDELIDADE XP
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Clientes ──────────────────────────────────────────────────────
+
+export async function getClienteById(id: number) {
+  const rows: any[] = await executeQuery(`SELECT * FROM clientes WHERE id = ? LIMIT 1`, [id]);
+  return rows.length > 0 ? rows[0] : undefined;
+}
+
+export async function getClienteByEmail(email: string) {
+  const rows: any[] = await executeQuery(`SELECT * FROM clientes WHERE email = ? LIMIT 1`, [email]);
+  return rows.length > 0 ? rows[0] : undefined;
+}
+
+export async function createCliente(data: {
+  nome?: string | null;
+  email: string;
+  passwordHash?: string | null;
+  origemCadastro?: string;
+}): Promise<{ id: number }> {
+  const result: any = await executeQuery(
+    `INSERT INTO clientes (nome, email, password_hash, origem_cadastro, cadastro_completo)
+     VALUES (?, ?, ?, ?, FALSE)`,
+    [data.nome || null, data.email, data.passwordHash || null, data.origemCadastro || null]
+  );
+  return { id: result.insertId };
+}
+
+export async function updateClienteCadastro(
+  id: number,
+  data: {
+    cpf: string;
+    telefone: string;
+    cep: string;
+    endereco: string;
+    numero: string;
+    complemento?: string | null;
+    cidade: string;
+    estado: string;
+  }
+) {
+  await executeQuery(
+    `UPDATE clientes SET
+       cpf = ?, telefone = ?, cep = ?, endereco = ?, numero = ?,
+       complemento = ?, cidade = ?, estado = ?, cadastro_completo = TRUE
+     WHERE id = ?`,
+    [data.cpf, data.telefone, data.cep, data.endereco, data.numero,
+    data.complemento || null, data.cidade, data.estado, id]
+  );
+  return { success: true };
+}
+
+export async function updateClientePasswordHash(id: number, passwordHash: string) {
+  await executeQuery(`UPDATE clientes SET password_hash = ? WHERE id = ?`, [passwordHash, id]);
+}
+
+// ── XP Contas ─────────────────────────────────────────────────────
+
+export async function getOrCreateXpConta(clienteId: number) {
+  const rows: any[] = await executeQuery(
+    `SELECT * FROM xp_contas WHERE id_cliente = ? LIMIT 1`, [clienteId]
+  );
+  if (rows.length > 0) return rows[0];
+  const result: any = await executeQuery(
+    `INSERT INTO xp_contas (id_cliente, saldo_atual) VALUES (?, 0)`, [clienteId]
+  );
+  return { id: result.insertId, id_cliente: clienteId, saldo_atual: 0 };
+}
+
+// ── XP Configurações ──────────────────────────────────────────────
+
+export async function getXpConfig(chave: string): Promise<string | null> {
+  const rows: any[] = await executeQuery(
+    `SELECT valor FROM xp_configuracoes WHERE chave = ? LIMIT 1`, [chave]
+  );
+  return rows.length > 0 ? rows[0].valor : null;
+}
+
+export async function getXpConfigNum(chave: string, fallback: number): Promise<number> {
+  const v = await getXpConfig(chave);
+  if (v === null) return fallback;
+  const n = parseFloat(v);
+  return isNaN(n) ? fallback : n;
+}
+
+// ── XP Dashboard ──────────────────────────────────────────────────
+
+export async function getXpDashboard(clienteId: number) {
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  // Saldo total: soma de TODAS movimentações
+  const [totalRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes WHERE id_cliente = ?`,
+    [clienteId]
+  );
+  const saldoTotal = Number(totalRow.total);
+
+  // Saldo disponível: créditos não expirados + todos os débitos/ajustes
+  const [dispRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(m.xp), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE m.id_cliente = ?
+       AND (
+         t.tipo_operacao IN ('debito', 'ajuste')
+         OR (t.tipo_operacao = 'credito' AND (m.data_expiracao IS NULL OR m.data_expiracao >= ?))
+       )`,
+    [clienteId, hoje]
+  );
+  const saldoDisponivel = Number(dispRow.total);
+
+  // Saldo qualificável: créditos não expirados E qualificáveis + todos débitos
+  const [qualRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(m.xp), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE m.id_cliente = ?
+       AND (
+         t.tipo_operacao IN ('debito', 'ajuste')
+         OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (m.data_expiracao IS NULL OR m.data_expiracao >= ?))
+       )`,
+    [clienteId, hoje]
+  );
+  const saldoQualificavel = Number(qualRow.total);
+
+  // Configs
+  const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
+  const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
+  const xpAlertaDias = await getXpConfigNum('xp_alerta_expiracao_dias', 30);
+
+  const valorEmReais = saldoDisponivel * xpValorReais;
+  const podeResgatar = saldoQualificavel >= xpMinimoResgate && xpMinimoResgate > 0;
+
+  // Pontos próximos a expirar
+  const limiteExpiracao = new Date();
+  limiteExpiracao.setDate(limiteExpiracao.getDate() + xpAlertaDias);
+  const limiteStr = limiteExpiracao.toISOString().slice(0, 10);
+
+  const pontosExpirar: any[] = await executeQuery(
+    `SELECT m.id, m.xp, m.data_expiracao, m.descricao, t.nome AS tipo_nome
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE m.id_cliente = ?
+       AND t.tipo_operacao = 'credito'
+       AND m.data_expiracao IS NOT NULL
+       AND m.data_expiracao >= ?
+       AND m.data_expiracao <= ?
+     ORDER BY m.data_expiracao ASC
+     LIMIT 10`,
+    [clienteId, hoje, limiteStr]
+  );
+
+  // Últimas 5 movimentações
+  const ultimas: any[] = await executeQuery(
+    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_expiracao, m.created_at,
+            t.nome AS tipo_nome, t.tipo_operacao
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE m.id_cliente = ?
+     ORDER BY m.created_at DESC
+     LIMIT 5`,
+    [clienteId]
+  );
+
+  return {
+    saldoTotal,
+    saldoDisponivel,
+    saldoQualificavel,
+    valorEmReais,
+    podeResgatar,
+    xpMinimoResgate,
+    xpValorReais,
+    pontosExpirar,
+    ultimasMovimentacoes: ultimas,
+  };
+}
+
+// ── XP Extrato ────────────────────────────────────────────────────
+
+export async function getXpExtrato(
+  clienteId: number,
+  filtros: {
+    dataInicio?: string;
+    dataFim?: string;
+    tipoMovimentacaoId?: number;
+    somenteQualificaveis?: boolean;
+    page?: number;
+    pageSize?: number;
+  }
+) {
+  const page = filtros.page || 1;
+  const pageSize = filtros.pageSize || 20;
+  const offset = (page - 1) * pageSize;
+
+  let where = `WHERE m.id_cliente = ?`;
+  const params: any[] = [clienteId];
+
+  if (filtros.dataInicio) {
+    where += ` AND m.created_at >= ?`;
+    params.push(filtros.dataInicio);
+  }
+  if (filtros.dataFim) {
+    where += ` AND m.created_at <= ?`;
+    params.push(filtros.dataFim + ' 23:59:59');
+  }
+  if (filtros.tipoMovimentacaoId) {
+    where += ` AND m.id_tipo_movimentacao = ?`;
+    params.push(filtros.tipoMovimentacaoId);
+  }
+  if (filtros.somenteQualificaveis) {
+    where += ` AND t.qualificavel = 1`;
+  }
+
+  const countParams = [...params];
+  const [countRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) as total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     ${where}`,
+    countParams
+  );
+
+  params.push(pageSize, offset);
+  const rows: any[] = await executeQuery(
+    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_expiracao, m.created_at,
+            t.nome AS tipo_nome, t.tipo_operacao, t.qualificavel
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     ${where}
+     ORDER BY m.created_at DESC
+     LIMIT ? OFFSET ?`,
+    params
+  );
+
+  return {
+    items: rows,
+    total: Number(countRow.total),
+    page,
+    pageSize,
+    totalPages: Math.ceil(Number(countRow.total) / pageSize),
+  };
+}
+
+// ── Tipos de movimentação (para filtro do extrato) ────────────────
+
+export async function listTiposMovimentacao() {
+  return await executeQuery(`SELECT id, nome, tipo_operacao, qualificavel FROM xp_tipos_movimentacao ORDER BY nome`);
+}
+
+export async function getTipoMovimentacaoPorNome(nome: string) {
+  const rows: any[] = await executeQuery(
+    `SELECT * FROM xp_tipos_movimentacao WHERE nome = ? LIMIT 1`, [nome]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+// ── Aplicar código promocional (transacional) ─────────────────────
+
+export async function aplicarCodigoPromocional(clienteId: number, codigoStr: string) {
+  // Get raw connection for transaction
+  if (!_pool) {
+    await getDb();
+    if (!_pool) throw new Error("Database not available");
+  }
+
+  return new Promise<{ xp: number; descricao: string; saldoApos: number }>((resolve, reject) => {
+    _pool!.getConnection((connErr, connection) => {
+      if (connErr || !connection) {
+        reject(connErr || new Error("Failed to get DB connection"));
+        return;
+      }
+
+      connection.beginTransaction((txErr) => {
+        if (txErr) { connection.release(); reject(txErr); return; }
+
+        const query = (sql: string, params: any[] = []): Promise<any> =>
+          new Promise((res, rej) => {
+            connection.execute(sql, params, (err, results) => {
+              if (err) rej(err); else res(results);
+            });
+          });
+
+        (async () => {
+          // 1. Buscar código
+          const codigos: any[] = await query(
+            `SELECT * FROM xp_codigos WHERE codigo = ? LIMIT 1`, [codigoStr.trim().toUpperCase()]
+          );
+          if (codigos.length === 0) throw new Error("Código não encontrado.");
+          const codigo = codigos[0];
+
+          // 2. Validade
+          if (codigo.data_validade) {
+            const hoje = new Date().toISOString().slice(0, 10);
+            if (codigo.data_validade < hoje) throw new Error("Este código já expirou.");
+          }
+
+          // 3. Limite de uso
+          if (codigo.limite_uso !== null && codigo.total_usos >= codigo.limite_uso) {
+            throw new Error("Este código atingiu o limite de uso.");
+          }
+
+          // 4. Já utilizado pelo cliente?
+          const usados: any[] = await query(
+            `SELECT id FROM xp_codigos_usados WHERE id_codigo = ? AND id_cliente = ? LIMIT 1`,
+            [codigo.id, clienteId]
+          );
+          if (usados.length > 0) throw new Error("Você já utilizou este código.");
+
+          // 5. Buscar tipo 'codigo_promocional'
+          const tipos: any[] = await query(
+            `SELECT * FROM xp_tipos_movimentacao WHERE nome = 'codigo_promocional' LIMIT 1`
+          );
+          if (tipos.length === 0) throw new Error("Tipo de movimentação 'codigo_promocional' não configurado.");
+          const tipo = tipos[0];
+
+          // 6. Calcular expiração
+          let dataExpiracao: string | null = null;
+          const diasExp = codigo.dias_expiracao ?? tipo.dias_expiracao;
+          if (diasExp) {
+            const exp = new Date();
+            exp.setDate(exp.getDate() + diasExp);
+            dataExpiracao = exp.toISOString().slice(0, 10);
+          }
+
+          // 7. Calcular saldo_apos
+          const [saldoRow]: any[] = await query(
+            `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes WHERE id_cliente = ?`,
+            [clienteId]
+          );
+          const saldoApos = Number(saldoRow.total) + codigo.xp;
+
+          // 8. Inserir movimentação
+          await query(
+            `INSERT INTO xp_movimentacoes
+               (id_cliente, id_codigo, id_tipo_movimentacao, xp, saldo_apos, descricao, data_expiracao)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [clienteId, codigo.id, tipo.id, codigo.xp, saldoApos,
+              codigo.descricao || `Código promocional: ${codigoStr.trim().toUpperCase()}`, dataExpiracao]
+          );
+
+          // 9. Registrar uso
+          await query(
+            `INSERT INTO xp_codigos_usados (id_codigo, id_cliente) VALUES (?, ?)`,
+            [codigo.id, clienteId]
+          );
+
+          // 10. Incrementar total_usos
+          await query(
+            `UPDATE xp_codigos SET total_usos = total_usos + 1 WHERE id = ?`,
+            [codigo.id]
+          );
+
+          // 11. Atualizar cache saldo_atual em xp_contas
+          await query(
+            `UPDATE xp_contas SET saldo_atual = ? WHERE id_cliente = ?`,
+            [saldoApos, clienteId]
+          );
+
+          return { xp: codigo.xp, descricao: codigo.descricao || codigoStr, saldoApos };
+        })()
+          .then((result) => {
+            connection.commit((commitErr) => {
+              connection.release();
+              if (commitErr) reject(commitErr);
+              else resolve(result);
+            });
+          })
+          .catch((err) => {
+            connection.rollback(() => {
+              connection.release();
+              reject(err);
+            });
+          });
+      });
+    });
+  });
 }
 

@@ -193,6 +193,7 @@ export default function ReviewPage() {
                     <button
                       key={star}
                       type="button"
+                      title={`Classificar com ${star} estrela${star > 1 ? 's' : ''}`}
                       onClick={() => setRating(star)}
                       onMouseEnter={() => setHoveredRating(star)}
                       onMouseLeave={() => setHoveredRating(0)}

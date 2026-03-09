@@ -16,6 +16,7 @@ import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPesso
 import { parsearOfertaVoo } from "./ofertasVoo";
 import * as properties from "./properties";
 import * as ofertasVooPremium from "./ofertasVooPremium";
+import { clienteAuthRouter, clienteRouter, xpRouter } from "./clienteRouters";
 
 
 export const appRouter = router({
@@ -1217,6 +1218,11 @@ export const appRouter = router({
         return await db.deleteRoomBed(input.id);
       }),
   }),
+
+  // Área do Cliente
+  clienteAuth: clienteAuthRouter,
+  cliente: clienteRouter,
+  xp: xpRouter,
 });
 
 export type AppRouter = typeof appRouter;
