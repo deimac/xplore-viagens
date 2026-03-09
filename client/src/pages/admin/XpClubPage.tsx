@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Gift, RefreshCw, Search, Users } from "lucide-react";
+import { Check, ChevronsUpDown, Coins, Clock3, Gift, RefreshCw, Search, Users } from "lucide-react";
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -47,6 +49,8 @@ export default function XpClubPage() {
     const [compraClienteId, setCompraClienteId] = useState<number | null>(null);
     const [compraValorInput, setCompraValorInput] = useState("");
     const [compraDescricao, setCompraDescricao] = useState("");
+    const [clienteComboboxOpen, setClienteComboboxOpen] = useState(false);
+    const [parceiroComboboxOpen, setParceiroComboboxOpen] = useState(false);
 
     const [codigoForm, setCodigoForm] = useState({
         idParceiro: "none",
@@ -181,11 +185,18 @@ export default function XpClubPage() {
     const dashboard = (dashboardQuery.data as any)?.json || dashboardQuery.data || {};
 
     const clientes = (clientesData as any)?.items || [];
+    const clientesLimitados = clientes.slice(0, 50);
     const movItems = (movData as any)?.items || [];
     const parceiros = (parceirosData as any) || [];
+    const parceirosLimitados = parceiros.slice(0, 50);
     const codigos = (codigosData as any) || [];
     const configs = (configData as any) || [];
     const expPreview = (expPreviewData as any) || { totalClientes: 0, totalXp: 0, clientes: [] };
+
+    const parceiroSelecionado =
+        codigoForm.idParceiro === "none"
+            ? null
+            : parceiros.find((partner: any) => String(partner.id) === String(codigoForm.idParceiro)) || null;
 
     const clienteSelecionado = useMemo(() => {
         if (!compraClienteId) return null;
@@ -337,7 +348,7 @@ export default function XpClubPage() {
                 <Tabs defaultValue="movimentacoes" className="space-y-4">
                     <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
-                        <TabsTrigger value="compras">Compra manual</TabsTrigger>
+                        <TabsTrigger value="compras">Lançar pontos</TabsTrigger>
                         <TabsTrigger value="codigos">Códigos</TabsTrigger>
                         <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
                         <TabsTrigger value="config">Config</TabsTrigger>
@@ -433,32 +444,60 @@ export default function XpClubPage() {
                     <TabsContent value="compras" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Registrar compra manual</CardTitle>
-                                <CardDescription>Formulário rápido com validação e máscara de moeda.</CardDescription>
+                                <CardTitle className="text-lg">Lançar pontos manualmente</CardTitle>
+                                <CardDescription>Selecione o cliente, informe o valor e lance os pontos com validação e máscara de moeda.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="clienteSearch">Buscar cliente</Label>
-                                        <Input id="clienteSearch" value={clienteSearch} onChange={(e) => setClienteSearch(e.target.value)} placeholder="Nome, email ou CPF" title="Buscar cliente" />
-                                        <div className="mt-2 border rounded-lg max-h-44 overflow-auto">
-                                            {clientes.length === 0 ? (
-                                                <p className="text-sm text-muted-foreground p-3">Nenhum cliente encontrado.</p>
-                                            ) : (
-                                                clientes.map((c: any) => (
-                                                    <button
-                                                        key={c.id}
-                                                        type="button"
-                                                        className={`w-full text-left px-3 py-2 border-b last:border-b-0 hover:bg-muted/50 ${Number(c.id) === compraClienteId ? "bg-blue-50" : ""}`}
-                                                        onClick={() => setCompraClienteId(Number(c.id))}
-                                                        title="Selecionar cliente"
-                                                    >
-                                                        <div className="font-medium">{c.nome}</div>
-                                                        <div className="text-xs text-muted-foreground">{c.email} • Saldo: {Number(c.saldo_xp || 0)} XP</div>
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
+                                        <Label>Cliente</Label>
+                                        <Popover open={clienteComboboxOpen} onOpenChange={setClienteComboboxOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full justify-between"
+                                                    title="Selecionar cliente"
+                                                >
+                                                    <span className="truncate text-left">
+                                                        {clienteSelecionado ? `${clienteSelecionado.nome} (${clienteSelecionado.email})` : "Selecionar cliente"}
+                                                    </span>
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[420px] p-0">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Buscar cliente por nome, email ou CPF..."
+                                                        value={clienteSearch}
+                                                        onValueChange={setClienteSearch}
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {clientesLimitados.map((c: any) => (
+                                                                <CommandItem
+                                                                    key={c.id}
+                                                                    value={`${c.nome || ""} ${c.email || ""} ${c.cpf || ""}`}
+                                                                    onSelect={() => {
+                                                                        setCompraClienteId(Number(c.id));
+                                                                        setClienteComboboxOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <div className="flex flex-col">
+                                                                        <span>{c.nome}</span>
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {c.email || "sem email"} • CPF: {c.cpf || "-"} • Saldo: {Number(c.saldo_xp || 0)} XP
+                                                                        </span>
+                                                                    </div>
+                                                                    <Check className={Number(c.id) === compraClienteId ? "ml-auto h-4 w-4 opacity-100" : "ml-auto h-4 w-4 opacity-0"} />
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
 
                                     <div className="space-y-3">
@@ -512,15 +551,57 @@ export default function XpClubPage() {
                                 </div>
                                 <div>
                                     <Label>Parceiro</Label>
-                                    <Select value={codigoForm.idParceiro} onValueChange={(v) => setCodigoForm((p) => ({ ...p, idParceiro: v }))}>
-                                        <SelectTrigger title="Selecionar parceiro"><SelectValue placeholder="Sem parceiro" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Sem parceiro</SelectItem>
-                                            {parceiros.map((p: any) => (
-                                                <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={parceiroComboboxOpen} onOpenChange={setParceiroComboboxOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full justify-between"
+                                                title="Selecionar parceiro"
+                                            >
+                                                <span className="truncate text-left">
+                                                    {parceiroSelecionado?.nome || "Sem parceiro"}
+                                                </span>
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[320px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Buscar parceiro..." />
+                                                <CommandList>
+                                                    <CommandEmpty>Nenhum parceiro encontrado.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        <CommandItem
+                                                            value="none-sem-parceiro"
+                                                            onSelect={() => {
+                                                                setCodigoForm((p) => ({ ...p, idParceiro: "none" }));
+                                                                setParceiroComboboxOpen(false);
+                                                            }}
+                                                        >
+                                                            Sem parceiro
+                                                            <Check className={codigoForm.idParceiro === "none" ? "ml-auto h-4 w-4 opacity-100" : "ml-auto h-4 w-4 opacity-0"} />
+                                                        </CommandItem>
+                                                        {parceirosLimitados.map((p: any) => (
+                                                            <CommandItem
+                                                                key={p.id}
+                                                                value={`${p.nome} ${p.email || ""}`}
+                                                                onSelect={() => {
+                                                                    setCodigoForm((prev) => ({ ...prev, idParceiro: String(p.id) }));
+                                                                    setParceiroComboboxOpen(false);
+                                                                }}
+                                                            >
+                                                                <div className="flex flex-col">
+                                                                    <span>{p.nome}</span>
+                                                                    {p.email ? <span className="text-xs text-muted-foreground">{p.email}</span> : null}
+                                                                </div>
+                                                                <Check className={String(codigoForm.idParceiro) === String(p.id) ? "ml-auto h-4 w-4 opacity-100" : "ml-auto h-4 w-4 opacity-0"} />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                                 <div>
                                     <Label>Uso máximo (opcional)</Label>
