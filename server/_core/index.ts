@@ -5,10 +5,11 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 // import { registerOAuthRoutes } from "./oauth"; // removido
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 import path from "path";
 import { ENV } from "./env";
+import { jwtVerify } from "jose";
+import * as db from "../db";
 
 const cookieSecret = process.env.COOKIE_SECRET;
 
@@ -55,8 +56,23 @@ async function startServer() {
           .map((s) => s.trim())
           .find((c) => c.startsWith("app_session_id="));
         const token = match ? match.split("=")[1] : undefined;
-        const session = await sdk.verifySession(token);
-        if (!session) {
+        let isValidAdmin = false;
+
+        if (token) {
+          try {
+            const secret = new TextEncoder().encode(ENV.cookieSecret);
+            const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
+            const userId = (payload as any).id as number | undefined;
+            if (userId) {
+              const user = await db.getUserById(userId);
+              isValidAdmin = !!user && user.role === "admin";
+            }
+          } catch {
+            isValidAdmin = false;
+          }
+        }
+
+        if (!isValidAdmin) {
           // if it's the login page itself, allow
           if (url === "/admin/login") return next();
           return res.redirect("/admin/login");

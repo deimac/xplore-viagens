@@ -15,6 +15,7 @@ import {
     Tag,
     Sparkles,
     List,
+    Coins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,11 @@ const menuItems: MenuItem[] = [
         icon: Settings,
         label: "Configurações",
         href: "/admin/configuracoes",
+    },
+    {
+        icon: Coins,
+        label: "XP Club",
+        href: "/admin/xp-club",
     },
 ];
 

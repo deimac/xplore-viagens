@@ -1219,6 +1219,186 @@ export const appRouter = router({
       }),
   }),
 
+  xpAdmin: router({
+    dashboard: adminProcedure
+      .input(z.object({ days: z.number().int().min(1).max(365).optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getXpAdminDashboard(input?.days || 30);
+      }),
+
+    clientes: router({
+      list: adminProcedure
+        .input(
+          z.object({
+            search: z.string().optional(),
+            page: z.number().int().min(1).optional(),
+            pageSize: z.number().int().min(1).max(100).optional(),
+          }).optional()
+        )
+        .query(async ({ input }) => {
+          return await db.listXpAdminClientes({
+            search: input?.search,
+            page: input?.page,
+            pageSize: input?.pageSize,
+          });
+        }),
+    }),
+
+    movimentacoes: router({
+      list: adminProcedure
+        .input(
+          z.object({
+            search: z.string().optional(),
+            tipoOperacao: z.enum(['credito', 'debito', 'ajuste']).optional(),
+            tipoMovimentacaoId: z.number().int().optional(),
+            dataInicio: z.string().optional(),
+            dataFim: z.string().optional(),
+            page: z.number().int().min(1).optional(),
+            pageSize: z.number().int().min(1).max(100).optional(),
+          }).optional()
+        )
+        .query(async ({ input }) => {
+          return await db.listXpAdminMovimentacoes({
+            search: input?.search,
+            tipoOperacao: input?.tipoOperacao,
+            tipoMovimentacaoId: input?.tipoMovimentacaoId,
+            dataInicio: input?.dataInicio,
+            dataFim: input?.dataFim,
+            page: input?.page,
+            pageSize: input?.pageSize,
+          });
+        }),
+    }),
+
+    compras: router({
+      registrarManual: adminProcedure
+        .input(
+          z.object({
+            clienteId: z.number().int(),
+            valorReais: z.number().positive(),
+            descricao: z.string().max(255).optional(),
+          })
+        )
+        .mutation(async ({ input, ctx }) => {
+          return await db.registrarXpCompraManual({
+            clienteId: input.clienteId,
+            userId: ctx.user.id,
+            valorReais: input.valorReais,
+            descricao: input.descricao,
+          });
+        }),
+    }),
+
+    parceiros: router({
+      list: adminProcedure.query(async () => {
+        return await db.listXpAdminParceiros();
+      }),
+      create: adminProcedure
+        .input(
+          z.object({
+            nome: z.string().min(2),
+            email: z.string().email().optional().nullable(),
+            telefone: z.string().optional().nullable(),
+            observacoes: z.string().optional().nullable(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.createXpAdminParceiro({
+            nome: input.nome,
+            email: input.email,
+            telefone: input.telefone,
+            observacoes: input.observacoes,
+          });
+        }),
+      update: adminProcedure
+        .input(
+          z.object({
+            id: z.number().int(),
+            nome: z.string().min(2).optional(),
+            email: z.string().email().optional().nullable(),
+            telefone: z.string().optional().nullable(),
+            observacoes: z.string().optional().nullable(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.updateXpAdminParceiro(input);
+        }),
+      delete: adminProcedure
+        .input(z.object({ id: z.number().int() }))
+        .mutation(async ({ input }) => {
+          return await db.deleteXpAdminParceiro(input.id);
+        }),
+    }),
+
+    codigos: router({
+      list: adminProcedure.query(async () => {
+        return await db.listXpAdminCodigos();
+      }),
+      create: adminProcedure
+        .input(
+          z.object({
+            idParceiro: z.number().int().optional().nullable(),
+            codigo: z.string().min(3),
+            xpBonus: z.number().int().positive(),
+            quantidadeMaxUso: z.number().int().positive().optional().nullable(),
+            dataExpiracao: z.string().optional().nullable(),
+            ativo: z.boolean().optional(),
+            diasExpiracao: z.number().int().positive().optional().nullable(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.createXpAdminCodigo(input);
+        }),
+      update: adminProcedure
+        .input(
+          z.object({
+            id: z.number().int(),
+            idParceiro: z.number().int().optional().nullable(),
+            codigo: z.string().min(3).optional(),
+            xpBonus: z.number().int().positive().optional(),
+            quantidadeMaxUso: z.number().int().positive().optional().nullable(),
+            dataExpiracao: z.string().optional().nullable(),
+            ativo: z.boolean().optional(),
+            diasExpiracao: z.number().int().positive().optional().nullable(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.updateXpAdminCodigo(input);
+        }),
+      toggle: adminProcedure
+        .input(z.object({ id: z.number().int(), ativo: z.boolean() }))
+        .mutation(async ({ input }) => {
+          return await db.toggleXpAdminCodigo(input.id, input.ativo);
+        }),
+    }),
+
+    config: router({
+      list: adminProcedure.query(async () => {
+        return await db.listXpAdminConfiguracoes();
+      }),
+      upsert: adminProcedure
+        .input(
+          z.object({
+            chave: z.string().min(2),
+            valor: z.string().min(1),
+            descricao: z.string().optional().nullable(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.upsertXpAdminConfiguracao(input);
+        }),
+    }),
+
+    expiracao: router({
+      preview: adminProcedure.query(async () => {
+        return await db.previewXpExpiracao();
+      }),
+      run: adminProcedure.mutation(async ({ ctx }) => {
+        return await db.runXpExpiracao(ctx.user.id);
+      }),
+    }),
+  }),
+
   // Área do Cliente
   clienteAuth: clienteAuthRouter,
   cliente: clienteRouter,

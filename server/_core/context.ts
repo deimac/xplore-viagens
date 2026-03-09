@@ -1,6 +1,5 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User, Cliente } from "../../drizzle/schema";
-import { sdk } from "./sdk";
 import { ENV } from "./env";
 import { jwtVerify } from "jose";
 import { CLIENT_COOKIE_NAME } from "@shared/const";
@@ -73,16 +72,7 @@ export async function createContext(
       }
     }
 
-    // No dev header token support anymore; rely on cookie or SDK fallback
-
-    // Fallback: existing Manus-based SDK authentication (if configured)
-    if (!user) {
-      try {
-        user = await sdk.authenticateRequest(opts.req);
-      } catch (err) {
-        user = null;
-      }
-    }
+    // No SDK fallback: admin auth is cookie JWT only.
   } catch (error) {
     // Authentication is optional for public procedures.
     user = null;

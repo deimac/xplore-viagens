@@ -27,6 +27,7 @@ import CategoriasViagensPage from "./pages/admin/CategoriasViagensPage";
 import DestaquesViagensPage from "./pages/admin/DestaquesViagensPage";
 import SlidesHeroPage from "./pages/admin/SlidesHeroPage";
 import AvaliacoesPage from "./pages/admin/AvaliacoesPage";
+import XpClubPage from "./pages/admin/XpClubPage";
 import { Redirect } from "wouter";
 
 // Área do Cliente
@@ -59,6 +60,7 @@ function Router() {
       <Route path={"/admin/tipos-quartos"} component={() => <AdminRoute component={RoomTypesManager} />} />
       <Route path={"/admin/tipos-camas"} component={() => <AdminRoute component={BedTypesManager} />} />
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
+      <Route path={"/admin/xp-club"} component={() => <AdminRoute component={XpClubPage} />} />
 
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/politica-de-privacidade"} component={PrivacidadePage} />

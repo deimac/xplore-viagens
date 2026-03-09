@@ -1997,3 +1997,527 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
   });
 }
 
+// ── XP Admin (XP Club) ───────────────────────────────────────────
+
+async function getSaldoClienteAtual(clienteId: number): Promise<number> {
+  const [row]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes WHERE id_cliente = ?`,
+    [clienteId]
+  );
+  return Number(row?.total || 0);
+}
+
+async function ensureTipoMovimentacao(
+  nome: string,
+  tipoOperacao: 'credito' | 'debito' | 'ajuste',
+  qualificavel: boolean,
+  descricao: string,
+  diasExpiracao: number | null = null
+): Promise<number> {
+  const rows: any[] = await executeQuery(
+    `SELECT id FROM xp_tipos_movimentacao WHERE nome = ? LIMIT 1`,
+    [nome]
+  );
+
+  if (rows.length > 0) return Number(rows[0].id);
+
+  const result: any = await executeQuery(
+    `INSERT INTO xp_tipos_movimentacao
+      (nome, tipo_operacao, qualificavel, descricao, dias_expiracao)
+     VALUES (?, ?, ?, ?, ?)`,
+    [nome, tipoOperacao, qualificavel ? 1 : 0, descricao, diasExpiracao]
+  );
+  return Number(result.insertId);
+}
+
+export async function getXpAdminDashboard(days: number = 30) {
+  const from = new Date();
+  from.setDate(from.getDate() - Math.max(1, days));
+  const fromStr = from.toISOString().slice(0, 10);
+
+  const [saldoRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes`
+  );
+
+  const [periodoRow]: any[] = await executeQuery(
+    `SELECT
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' THEN m.xp ELSE 0 END), 0) AS total_credito,
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'debito' THEN ABS(m.xp) ELSE 0 END), 0) AS total_debito,
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'ajuste' THEN m.xp ELSE 0 END), 0) AS total_ajuste
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE DATE(m.data_movimentacao) >= ?`,
+    [fromStr]
+  );
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  const alertaDias = await getXpConfigNum('xp_alerta_expiracao_dias', 30);
+  const limite = new Date();
+  limite.setDate(limite.getDate() + alertaDias);
+  const limiteStr = limite.toISOString().slice(0, 10);
+
+  const [expirarRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(m.xp), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE t.tipo_operacao = 'credito'
+       AND t.dias_expiracao IS NOT NULL
+       AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+       AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) <= ?`,
+    [hoje, limiteStr]
+  );
+
+  const [clientesAtivosRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total
+     FROM (
+       SELECT id_cliente
+       FROM xp_movimentacoes
+       GROUP BY id_cliente
+       HAVING COALESCE(SUM(xp), 0) > 0
+     ) s`
+  );
+
+  const [codigosAtivosRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total
+     FROM xp_codigos
+     WHERE ativo = 1
+       AND (data_expiracao IS NULL OR DATE(data_expiracao) >= CURDATE())`
+  );
+
+  const [usosRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total
+     FROM xp_codigos_usados
+     WHERE DATE(data_uso) >= ?`,
+    [fromStr]
+  );
+
+  return {
+    saldoLiquido: Number(saldoRow?.total || 0),
+    periodo: {
+      days,
+      totalCredito: Number(periodoRow?.total_credito || 0),
+      totalDebito: Number(periodoRow?.total_debito || 0),
+      totalAjuste: Number(periodoRow?.total_ajuste || 0),
+    },
+    pontosExpirar: Number(expirarRow?.total || 0),
+    clientesAtivos: Number(clientesAtivosRow?.total || 0),
+    codigosAtivos: Number(codigosAtivosRow?.total || 0),
+    usosCodigosPeriodo: Number(usosRow?.total || 0),
+  };
+}
+
+export async function listXpAdminClientes(params: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 20;
+  const offset = (page - 1) * pageSize;
+
+  let where = `WHERE 1=1`;
+  const whereParams: any[] = [];
+
+  if (params.search?.trim()) {
+    const s = `%${params.search.trim()}%`;
+    where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR c.cpf LIKE ?)`;
+    whereParams.push(s, s, s.replace(/\D/g, ''));
+  }
+
+  const [countRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total FROM clientes c ${where}`,
+    whereParams
+  );
+
+  const rows: any[] = await executeQuery(
+    `SELECT c.id, c.nome, c.email, c.cpf, c.telefone,
+            COALESCE(SUM(m.xp), 0) AS saldo_xp,
+            MAX(m.data_movimentacao) AS ultima_movimentacao
+     FROM clientes c
+     LEFT JOIN xp_movimentacoes m ON m.id_cliente = c.id
+     ${where}
+     GROUP BY c.id, c.nome, c.email, c.cpf, c.telefone
+     ORDER BY c.nome ASC
+     LIMIT ? OFFSET ?`,
+    [...whereParams, pageSize, offset]
+  );
+
+  return {
+    items: rows,
+    total: Number(countRow?.total || 0),
+    page,
+    pageSize,
+    totalPages: Math.ceil(Number(countRow?.total || 0) / pageSize),
+  };
+}
+
+export async function listXpAdminMovimentacoes(params: {
+  search?: string;
+  tipoOperacao?: 'credito' | 'debito' | 'ajuste';
+  tipoMovimentacaoId?: number;
+  dataInicio?: string;
+  dataFim?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 20;
+  const offset = (page - 1) * pageSize;
+
+  let where = `WHERE 1=1`;
+  const sqlParams: any[] = [];
+
+  if (params.search?.trim()) {
+    const s = `%${params.search.trim()}%`;
+    where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR c.cpf LIKE ? OR m.descricao LIKE ?)`;
+    sqlParams.push(s, s, s.replace(/\D/g, ''), s);
+  }
+  if (params.tipoOperacao) {
+    where += ` AND t.tipo_operacao = ?`;
+    sqlParams.push(params.tipoOperacao);
+  }
+  if (params.tipoMovimentacaoId) {
+    where += ` AND m.id_tipo_movimentacao = ?`;
+    sqlParams.push(params.tipoMovimentacaoId);
+  }
+  if (params.dataInicio) {
+    where += ` AND m.data_movimentacao >= ?`;
+    sqlParams.push(params.dataInicio);
+  }
+  if (params.dataFim) {
+    where += ` AND m.data_movimentacao <= ?`;
+    sqlParams.push(`${params.dataFim} 23:59:59`);
+  }
+
+  const [countRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total
+     FROM xp_movimentacoes m
+     JOIN clientes c ON c.id = m.id_cliente
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     ${where}`,
+    sqlParams
+  );
+
+  const rows: any[] = await executeQuery(
+    `SELECT m.id, m.id_cliente, c.nome AS cliente_nome, c.email AS cliente_email,
+            m.id_users, u.name AS admin_nome,
+            m.id_codigo, cd.codigo,
+            m.id_tipo_movimentacao, t.nome AS tipo_nome, t.tipo_operacao,
+            m.xp, m.saldo_apos, m.descricao, m.valor_referencia, m.data_movimentacao,
+            DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao
+     FROM xp_movimentacoes m
+     JOIN clientes c ON c.id = m.id_cliente
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     LEFT JOIN users u ON u.id = m.id_users
+     LEFT JOIN xp_codigos cd ON cd.id = m.id_codigo
+     ${where}
+     ORDER BY m.data_movimentacao DESC
+     LIMIT ? OFFSET ?`,
+    [...sqlParams, pageSize, offset]
+  );
+
+  return {
+    items: rows,
+    total: Number(countRow?.total || 0),
+    page,
+    pageSize,
+    totalPages: Math.ceil(Number(countRow?.total || 0) / pageSize),
+  };
+}
+
+export async function registrarXpCompraManual(input: {
+  clienteId: number;
+  userId: number;
+  valorReais: number;
+  descricao?: string;
+}) {
+  await getOrCreateXpConta(input.clienteId);
+
+  const xpPorReal = await getXpConfigNum('xp_por_real_compra', 1);
+  const xpGerado = Math.round(input.valorReais * xpPorReal);
+  if (!Number.isFinite(xpGerado) || xpGerado <= 0) {
+    throw new Error('Valor inválido para gerar XP.');
+  }
+
+  const tipoId = await ensureTipoMovimentacao(
+    'compra_manual',
+    'credito',
+    true,
+    'Crédito de XP por compra manual cadastrada no admin.'
+  );
+
+  const saldoAtual = await getSaldoClienteAtual(input.clienteId);
+  const saldoApos = saldoAtual + xpGerado;
+
+  await executeQuery(
+    `INSERT INTO xp_movimentacoes
+      (id_cliente, id_users, id_tipo_movimentacao, xp, saldo_apos, descricao, valor_referencia)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      input.clienteId,
+      input.userId,
+      tipoId,
+      xpGerado,
+      saldoApos,
+      input.descricao?.trim() || 'Compra manual registrada no admin',
+      input.valorReais,
+    ]
+  );
+
+  await executeQuery(
+    `UPDATE xp_contas SET saldo_xp = ?, data_atualizacao = NOW() WHERE id_cliente = ?`,
+    [saldoApos, input.clienteId]
+  );
+
+  return { xpGerado, saldoApos, xpPorReal };
+}
+
+export async function listXpAdminCodigos() {
+  return await executeQuery(
+    `SELECT c.id, c.id_parceiro, p.nome AS parceiro_nome,
+            c.codigo, c.xp_bonus, c.quantidade_max_uso, c.quantidade_usada,
+            c.data_expiracao, c.ativo, c.data_criacao, c.dias_expiracao
+     FROM xp_codigos c
+     LEFT JOIN xp_parceiros p ON p.id = c.id_parceiro
+     ORDER BY c.data_criacao DESC`
+  );
+}
+
+export async function createXpAdminCodigo(input: {
+  idParceiro?: number | null;
+  codigo: string;
+  xpBonus: number;
+  quantidadeMaxUso?: number | null;
+  dataExpiracao?: string | null;
+  ativo?: boolean;
+  diasExpiracao?: number | null;
+}) {
+  const result: any = await executeQuery(
+    `INSERT INTO xp_codigos
+      (id_parceiro, codigo, xp_bonus, quantidade_max_uso, quantidade_usada, data_expiracao, ativo, dias_expiracao)
+     VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+    [
+      input.idParceiro ?? null,
+      input.codigo.trim().toUpperCase(),
+      input.xpBonus,
+      input.quantidadeMaxUso ?? null,
+      input.dataExpiracao ?? null,
+      input.ativo === false ? 0 : 1,
+      input.diasExpiracao ?? null,
+    ]
+  );
+  return { insertId: Number(result.insertId) };
+}
+
+export async function updateXpAdminCodigo(input: {
+  id: number;
+  idParceiro?: number | null;
+  codigo?: string;
+  xpBonus?: number;
+  quantidadeMaxUso?: number | null;
+  dataExpiracao?: string | null;
+  ativo?: boolean;
+  diasExpiracao?: number | null;
+}) {
+  const sets: string[] = [];
+  const values: any[] = [];
+
+  if (input.idParceiro !== undefined) { sets.push(`id_parceiro = ?`); values.push(input.idParceiro); }
+  if (input.codigo !== undefined) { sets.push(`codigo = ?`); values.push(input.codigo.trim().toUpperCase()); }
+  if (input.xpBonus !== undefined) { sets.push(`xp_bonus = ?`); values.push(input.xpBonus); }
+  if (input.quantidadeMaxUso !== undefined) { sets.push(`quantidade_max_uso = ?`); values.push(input.quantidadeMaxUso); }
+  if (input.dataExpiracao !== undefined) { sets.push(`data_expiracao = ?`); values.push(input.dataExpiracao); }
+  if (input.ativo !== undefined) { sets.push(`ativo = ?`); values.push(input.ativo ? 1 : 0); }
+  if (input.diasExpiracao !== undefined) { sets.push(`dias_expiracao = ?`); values.push(input.diasExpiracao); }
+
+  if (sets.length === 0) return { success: true };
+
+  values.push(input.id);
+  await executeQuery(`UPDATE xp_codigos SET ${sets.join(', ')} WHERE id = ?`, values);
+  return { success: true };
+}
+
+export async function toggleXpAdminCodigo(id: number, ativo: boolean) {
+  await executeQuery(`UPDATE xp_codigos SET ativo = ? WHERE id = ?`, [ativo ? 1 : 0, id]);
+  return { success: true };
+}
+
+export async function listXpAdminParceiros() {
+  return await executeQuery(
+    `SELECT id, nome, email, telefone, observacoes, data_criacao
+     FROM xp_parceiros
+     ORDER BY nome ASC`
+  );
+}
+
+export async function createXpAdminParceiro(input: {
+  nome: string;
+  email?: string | null;
+  telefone?: string | null;
+  observacoes?: string | null;
+}) {
+  const result: any = await executeQuery(
+    `INSERT INTO xp_parceiros (nome, email, telefone, observacoes)
+     VALUES (?, ?, ?, ?)`,
+    [input.nome.trim(), input.email ?? null, input.telefone ?? null, input.observacoes ?? null]
+  );
+  return { insertId: Number(result.insertId) };
+}
+
+export async function updateXpAdminParceiro(input: {
+  id: number;
+  nome?: string;
+  email?: string | null;
+  telefone?: string | null;
+  observacoes?: string | null;
+}) {
+  const sets: string[] = [];
+  const values: any[] = [];
+
+  if (input.nome !== undefined) { sets.push(`nome = ?`); values.push(input.nome.trim()); }
+  if (input.email !== undefined) { sets.push(`email = ?`); values.push(input.email); }
+  if (input.telefone !== undefined) { sets.push(`telefone = ?`); values.push(input.telefone); }
+  if (input.observacoes !== undefined) { sets.push(`observacoes = ?`); values.push(input.observacoes); }
+
+  if (sets.length === 0) return { success: true };
+
+  values.push(input.id);
+  await executeQuery(`UPDATE xp_parceiros SET ${sets.join(', ')} WHERE id = ?`, values);
+  return { success: true };
+}
+
+export async function deleteXpAdminParceiro(id: number) {
+  await executeQuery(`DELETE FROM xp_parceiros WHERE id = ?`, [id]);
+  return { success: true };
+}
+
+export async function listXpAdminConfiguracoes() {
+  return await executeQuery(
+    `SELECT id, chave, valor, descricao, created_at, updated_at
+     FROM xp_configuracoes
+     ORDER BY chave ASC`
+  );
+}
+
+export async function upsertXpAdminConfiguracao(input: {
+  chave: string;
+  valor: string;
+  descricao?: string | null;
+}) {
+  await executeQuery(
+    `INSERT INTO xp_configuracoes (chave, valor, descricao)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       valor = VALUES(valor),
+       descricao = VALUES(descricao),
+       updated_at = NOW()`,
+    [input.chave.trim(), input.valor.trim(), input.descricao ?? null]
+  );
+  return { success: true };
+}
+
+export async function previewXpExpiracao() {
+  const rows: any[] = await executeQuery(
+    `SELECT p.id_cliente,
+            c.nome AS cliente_nome,
+            c.email AS cliente_email,
+            p.expirado_total,
+            p.debitado_total,
+            p.pendente
+     FROM (
+       SELECT ec.id_cliente,
+              ec.expirado_total,
+              COALESCE(ed.debitado_total, 0) AS debitado_total,
+              GREATEST(ec.expirado_total - COALESCE(ed.debitado_total, 0), 0) AS pendente
+       FROM (
+         SELECT m.id_cliente, COALESCE(SUM(m.xp), 0) AS expirado_total
+         FROM xp_movimentacoes m
+         JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+         WHERE t.tipo_operacao = 'credito'
+           AND t.dias_expiracao IS NOT NULL
+           AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) < CURDATE()
+         GROUP BY m.id_cliente
+       ) ec
+       LEFT JOIN (
+         SELECT m.id_cliente, COALESCE(ABS(SUM(m.xp)), 0) AS debitado_total
+         FROM xp_movimentacoes m
+         JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+         WHERE t.nome = 'expiracao'
+         GROUP BY m.id_cliente
+       ) ed ON ed.id_cliente = ec.id_cliente
+     ) p
+     JOIN clientes c ON c.id = p.id_cliente
+     WHERE p.pendente > 0
+     ORDER BY p.pendente DESC`
+  );
+
+  const totalXp = rows.reduce((sum: number, row: any) => sum + Number(row.pendente || 0), 0);
+  return {
+    clientes: rows,
+    totalClientes: rows.length,
+    totalXp,
+  };
+}
+
+export async function runXpExpiracao(adminUserId: number) {
+  const preview = await previewXpExpiracao();
+  if (preview.totalClientes === 0) {
+    return {
+      totalClientes: 0,
+      totalXpDebitado: 0,
+      itens: [] as any[],
+    };
+  }
+
+  const tipoExpiracaoId = await ensureTipoMovimentacao(
+    'expiracao',
+    'debito',
+    false,
+    'Débito automático de XP expirado.'
+  );
+
+  const itens: any[] = [];
+  let totalXpDebitado = 0;
+
+  for (const row of preview.clientes) {
+    const xpDebitar = Number(row.pendente || 0);
+    if (xpDebitar <= 0) continue;
+
+    const saldoAtual = await getSaldoClienteAtual(Number(row.id_cliente));
+    const saldoApos = saldoAtual - xpDebitar;
+
+    await executeQuery(
+      `INSERT INTO xp_movimentacoes
+        (id_cliente, id_users, id_tipo_movimentacao, xp, saldo_apos, descricao)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        Number(row.id_cliente),
+        adminUserId,
+        tipoExpiracaoId,
+        -xpDebitar,
+        saldoApos,
+        'Expiração automática de XP',
+      ]
+    );
+
+    await executeQuery(
+      `UPDATE xp_contas SET saldo_xp = ?, data_atualizacao = NOW() WHERE id_cliente = ?`,
+      [saldoApos, Number(row.id_cliente)]
+    );
+
+    itens.push({
+      id_cliente: Number(row.id_cliente),
+      cliente_nome: row.cliente_nome,
+      xp_debitado: xpDebitar,
+      saldo_apos: saldoApos,
+    });
+    totalXpDebitado += xpDebitar;
+  }
+
+  return {
+    totalClientes: itens.length,
+    totalXpDebitado,
+    itens,
+  };
+}
+
