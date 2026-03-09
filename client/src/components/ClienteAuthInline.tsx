@@ -34,8 +34,27 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
         navigate("/xp-club/dashboard");
     };
 
+    const validateLogin = (): boolean => {
+        if (!email.trim()) { toast.error("Informe seu email"); return false; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email inválido"); return false; }
+        if (!senha) { toast.error("Informe sua senha"); return false; }
+        if (senha.length < 6) { toast.error("A senha deve ter pelo menos 6 caracteres"); return false; }
+        return true;
+    };
+
+    const validateRegister = (): boolean => {
+        if (!nome.trim()) { toast.error("Informe seu nome"); return false; }
+        if (nome.trim().length < 2) { toast.error("O nome deve ter pelo menos 2 caracteres"); return false; }
+        if (!email.trim()) { toast.error("Informe seu email"); return false; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email inválido"); return false; }
+        if (!senha) { toast.error("Informe sua senha"); return false; }
+        if (senha.length < 6) { toast.error("A senha deve ter pelo menos 6 caracteres"); return false; }
+        return true;
+    };
+
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateLogin()) return;
         setLoading(true);
         try {
             await loginEmail.mutateAsync({ email, senha });
@@ -51,6 +70,7 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
 
     const handleEmailRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateRegister()) return;
         setLoading(true);
         try {
             await registerEmail.mutateAsync({ nome, email, senha });
@@ -67,7 +87,7 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
     return (
         <div className="w-full mb-12">
             <div className="max-w-7xl mx-auto px-0 md:px-2 py-8">
-                <div className="relative mt-40 md:mt-48 mb-2 md:mb-4">
+                <div className="relative mt-32 mb-2 md:mb-4">
                     {/* Botão de fechar alinhado com o container */}
                     <div className="flex justify-end mx-8 md:mx-16">
                         <button
@@ -137,7 +157,7 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
 
                             {/* Email Login form */}
                             {mode === "login" && (
-                                <form onSubmit={handleEmailLogin} className="space-y-4">
+                                <form onSubmit={handleEmailLogin} className="space-y-4" noValidate>
                                     <div>
                                         <Label htmlFor="inline-login-email">Email</Label>
                                         <Input
@@ -145,7 +165,6 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            required
                                             placeholder="seu@email.com"
                                         />
                                     </div>
@@ -156,8 +175,6 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
                                             type="password"
                                             value={senha}
                                             onChange={(e) => setSenha(e.target.value)}
-                                            required
-                                            minLength={6}
                                             placeholder="••••••"
                                         />
                                     </div>
@@ -186,15 +203,13 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
 
                             {/* Email Register form */}
                             {mode === "register" && (
-                                <form onSubmit={handleEmailRegister} className="space-y-4">
+                                <form onSubmit={handleEmailRegister} className="space-y-4" noValidate>
                                     <div>
                                         <Label htmlFor="inline-reg-nome">Nome</Label>
                                         <Input
                                             id="inline-reg-nome"
                                             value={nome}
                                             onChange={(e) => setNome(e.target.value)}
-                                            required
-                                            minLength={2}
                                             placeholder="Seu nome"
                                         />
                                     </div>
@@ -205,7 +220,6 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            required
                                             placeholder="seu@email.com"
                                         />
                                     </div>
@@ -216,8 +230,6 @@ export default function ClienteAuthInline({ onClose }: ClienteAuthInlineProps) {
                                             type="password"
                                             value={senha}
                                             onChange={(e) => setSenha(e.target.value)}
-                                            required
-                                            minLength={6}
                                             placeholder="Mínimo 6 caracteres"
                                         />
                                     </div>

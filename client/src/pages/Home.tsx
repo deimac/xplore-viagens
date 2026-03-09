@@ -245,6 +245,7 @@ export default function Home() {
     if (isClienteLogado) {
       navigate("/xp-club/dashboard");
     } else {
+      setIsQuotationOpen(false);
       setShowAuth(true);
     }
   };
@@ -311,7 +312,13 @@ export default function Home() {
       <aside className="hidden lg:flex fixed right-0 top-0 h-screen w-40 bg-background border-l border-muted flex-col items-start justify-center py-8 px-6 z-50">
         {/* WhatsApp Button */}
         <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40 mb-3">
-          <button className="w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40">
+          <button onClick={() => {
+            setShowAuth(false);
+            if (companySettings?.whatsapp) {
+              const phoneNumber = companySettings.whatsapp.replace(/\D/g, "");
+              window.open(`https://wa.me/55${phoneNumber}`, "_blank");
+            }
+          }} className="w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40">
             <MessageCircle className="w-5 h-5 stroke-accent text-accent" strokeWidth={1.5} />
             {/* Destaque cinza ao passar o mouse */}
             <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
@@ -325,7 +332,7 @@ export default function Home() {
 
         {/* Cotações Button */}
         <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40">
-          <button onClick={() => setIsQuotationOpen(true)} className={`w-10 h-10 rounded-md flex items-center justify-center transition-all duration-300 relative group ${activeSection === "quotation"
+          <button onClick={() => { setShowAuth(false); setIsQuotationOpen(true); }} className={`w-10 h-10 rounded-md flex items-center justify-center transition-all duration-300 relative group ${activeSection === "quotation"
             ? "bg-accent text-accent-foreground"
             : "text-accent hover:bg-muted/40"
             }`}>
