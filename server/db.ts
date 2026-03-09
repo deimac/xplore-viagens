@@ -2068,13 +2068,7 @@ export async function getXpAdminDashboard(days: number = 30) {
   );
 
   const [clientesAtivosRow]: any[] = await executeQuery(
-    `SELECT COUNT(*) AS total
-     FROM (
-       SELECT id_cliente
-       FROM xp_movimentacoes
-       GROUP BY id_cliente
-       HAVING COALESCE(SUM(xp), 0) > 0
-     ) s`
+    `SELECT COUNT(*) AS total FROM clientes`
   );
 
   const [codigosAtivosRow]: any[] = await executeQuery(
@@ -2120,8 +2114,9 @@ export async function listXpAdminClientes(params: {
 
   if (params.search?.trim()) {
     const s = `%${params.search.trim()}%`;
+    const cpfSearch = `%${params.search.trim().replace(/\D/g, '')}%`;
     where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR c.cpf LIKE ?)`;
-    whereParams.push(s, s, s.replace(/\D/g, ''));
+    whereParams.push(s, s, cpfSearch);
   }
 
   const [countRow]: any[] = await executeQuery(
@@ -2169,8 +2164,9 @@ export async function listXpAdminMovimentacoes(params: {
 
   if (params.search?.trim()) {
     const s = `%${params.search.trim()}%`;
+    const cpfSearch = `%${params.search.trim().replace(/\D/g, '')}%`;
     where += ` AND (c.nome LIKE ? OR c.email LIKE ? OR c.cpf LIKE ? OR m.descricao LIKE ?)`;
-    sqlParams.push(s, s, s.replace(/\D/g, ''), s);
+    sqlParams.push(s, s, cpfSearch, s);
   }
   if (params.tipoOperacao) {
     where += ` AND t.tipo_operacao = ?`;

@@ -78,7 +78,7 @@ export default function XpClubPage() {
     const clientesQuery = trpc.xpAdmin.clientes.list.useQuery({
         search: clienteSearch,
         page: 1,
-        pageSize: 20,
+        pageSize: 100,
     });
 
     const movQuery = trpc.xpAdmin.movimentacoes.list.useQuery({
@@ -308,7 +308,7 @@ export default function XpClubPage() {
                             <CardDescription>Clientes ativos</CardDescription>
                             <CardTitle className="text-2xl flex items-center gap-2"><Users className="h-5 w-5 text-emerald-600" />{Number(dashboard.clientesAtivos || 0)}</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground">Clientes com saldo de XP acima de zero.</CardContent>
+                        <CardContent className="text-sm text-muted-foreground">Clientes cadastrados na base.</CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-2">
@@ -444,7 +444,7 @@ export default function XpClubPage() {
                                             {clientes.length === 0 ? (
                                                 <p className="text-sm text-muted-foreground p-3">Nenhum cliente encontrado.</p>
                                             ) : (
-                                                clientes.slice(0, 10).map((c: any) => (
+                                                clientes.map((c: any) => (
                                                     <button
                                                         key={c.id}
                                                         type="button"
