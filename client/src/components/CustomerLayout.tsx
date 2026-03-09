@@ -1,7 +1,7 @@
 /**
  * CustomerLayout – Layout 3 colunas da Minha Conta
  * Espelha a Home: sidebar esquerda (menu), conteúdo central, sidebar direita (resumo/atalhos)
- * Header azul gradiente idêntico ao da Home, com mensagem de boas-vindas.
+ * Header azul gradiente idêntico ao da Home, com mensagem de boas-vindas..
  */
 import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
@@ -20,7 +20,6 @@ import {
     Menu,
     X,
     Home as HomeIcon,
-    UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -188,13 +187,10 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
             {/* ── Conteúdo Central ── */}
             <main className="lg:ml-40 lg:mr-40 flex-1 overflow-y-auto relative">
 
-                {/* ── Top Bar Azul (Desktop) – idêntica à Home ── */}
+                {/* ── Top Bar Azul (Desktop) ── */}
                 <header
                     className="hidden lg:flex absolute top-0 left-0 right-0 z-40 px-6 md:px-16 py-4 items-center justify-between"
-                    style={{
-                        background:
-                            "linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)",
-                    }}
+                    style={{ background: "rgb(26, 43, 76)" }}
                 >
                     <Link href="/">
                         <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto cursor-pointer" />
@@ -202,17 +198,9 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
 
                     {/* Boas-vindas + Nome */}
                     {clienteNome && (
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className="text-white/60 text-xs leading-none mb-0.5">Bem-vindo(a)</p>
-                                <p className="text-white font-medium text-sm truncate max-w-[200px]">
-                                    {clienteNome}
-                                </p>
-                            </div>
-                            <div className="w-9 h-9 rounded-full bg-white/15 border border-white/25 flex items-center justify-center">
-                                <UserCircle className="w-5 h-5 text-white/80" strokeWidth={1.5} />
-                            </div>
-                        </div>
+                        <p className="text-white font-medium text-sm">
+                            Bem-vindo, <span className="font-semibold">{clienteNome}</span>
+                        </p>
                     )}
                 </header>
 
