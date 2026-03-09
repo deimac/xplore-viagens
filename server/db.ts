@@ -1835,7 +1835,7 @@ export async function getXpExtrato(
     countParams
   );
 
-  params.push(pageSize, offset);
+  params.push(String(pageSize), String(offset));
   const rows: any[] = await executeQuery(
     `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
@@ -2134,7 +2134,7 @@ export async function listXpAdminClientes(params: {
      GROUP BY c.id, c.nome, c.email, c.cpf
      ORDER BY c.nome ASC
      LIMIT ? OFFSET ?`,
-    [...whereParams, pageSize, offset]
+    [...whereParams, String(pageSize), String(offset)]
   );
 
   return {
@@ -2209,7 +2209,7 @@ export async function listXpAdminMovimentacoes(params: {
      ${where}
      ORDER BY m.data_movimentacao DESC
      LIMIT ? OFFSET ?`,
-    [...sqlParams, pageSize, offset]
+    [...sqlParams, String(pageSize), String(offset)]
   );
 
   return {
