@@ -9,11 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Check, ChevronsUpDown, Coins, Clock3, Gift, RefreshCw, Search, Users } from "lucide-react";
+import { Coins, Clock3, Gift, RefreshCw, Search, Users } from "lucide-react";
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -50,7 +49,6 @@ export default function XpClubPage() {
     const [compraClienteId, setCompraClienteId] = useState<number | null>(null);
     const [compraValorInput, setCompraValorInput] = useState("");
     const [compraDescricao, setCompraDescricao] = useState("");
-    const [parceiroComboboxOpen, setParceiroComboboxOpen] = useState(false);
 
     const [codigoForm, setCodigoForm] = useState({
         idParceiro: "none",
@@ -517,57 +515,21 @@ export default function XpClubPage() {
                                 </div>
                                 <div>
                                     <Label>Parceiro</Label>
-                                    <Popover open={parceiroComboboxOpen} onOpenChange={setParceiroComboboxOpen}>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className="w-full justify-between"
-                                                title="Selecionar parceiro"
-                                            >
-                                                <span className="truncate text-left">
-                                                    {parceiroSelecionado?.nome || "Sem parceiro"}
-                                                </span>
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[320px] p-0">
-                                            <Command>
-                                                <CommandInput placeholder="Buscar parceiro..." />
-                                                <CommandList>
-                                                    <CommandEmpty>Nenhum parceiro encontrado.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        <CommandItem
-                                                            value="none-sem-parceiro"
-                                                            onSelect={() => {
-                                                                setCodigoForm((p) => ({ ...p, idParceiro: "none" }));
-                                                                setParceiroComboboxOpen(false);
-                                                            }}
-                                                        >
-                                                            Sem parceiro
-                                                            <Check className={codigoForm.idParceiro === "none" ? "ml-auto h-4 w-4 opacity-100" : "ml-auto h-4 w-4 opacity-0"} />
-                                                        </CommandItem>
-                                                        {parceirosLimitados.map((p: any) => (
-                                                            <CommandItem
-                                                                key={p.id}
-                                                                value={`${p.nome} ${p.email || ""}`}
-                                                                onSelect={() => {
-                                                                    setCodigoForm((prev) => ({ ...prev, idParceiro: String(p.id) }));
-                                                                    setParceiroComboboxOpen(false);
-                                                                }}
-                                                            >
-                                                                <div className="flex flex-col">
-                                                                    <span>{p.nome}</span>
-                                                                    {p.email ? <span className="text-xs text-muted-foreground">{p.email}</span> : null}
-                                                                </div>
-                                                                <Check className={String(codigoForm.idParceiro) === String(p.id) ? "ml-auto h-4 w-4 opacity-100" : "ml-auto h-4 w-4 opacity-0"} />
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
+                                    <SearchableSelect
+                                        options={[
+                                            { id: "none", nome: "Sem parceiro" },
+                                            ...parceirosLimitados.map((p: any) => ({
+                                                id: p.id,
+                                                nome: p.nome || "",
+                                                detail: p.email || undefined,
+                                            })),
+                                        ]}
+                                        value={codigoForm.idParceiro}
+                                        onChange={(id) => setCodigoForm((prev) => ({ ...prev, idParceiro: id }))}
+                                        placeholder="Sem parceiro"
+                                        searchPlaceholder="Buscar parceiro..."
+                                        emptyMessage="Nenhum parceiro encontrado."
+                                    />
                                 </div>
                                 <div>
                                     <Label>Uso máximo (opcional)</Label>
