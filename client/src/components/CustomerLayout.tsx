@@ -50,6 +50,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
     };
 
     const menuItems = [
+        { id: "home", icon: HomeIcon, label: "Home", href: "/" },
         { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/minha-conta/dashboard" },
         { id: "extrato", icon: Receipt, label: "Extrato", href: "/minha-conta/extrato" },
     ];
@@ -112,17 +113,6 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
 
                 {/* Ações inferiores */}
                 <div className="flex flex-col gap-2 w-fit">
-                    <div className="bg-muted/15 rounded-lg p-2 border border-muted/40">
-                        <Link href="/">
-                            <button className="w-10 h-10 rounded-md flex items-center justify-center text-accent hover:bg-muted/40 transition-all duration-300 relative group">
-                                <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
-                                <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
-                                    Voltar ao Site
-                                </div>
-                            </button>
-                        </Link>
-                    </div>
                     <div className="bg-muted/15 rounded-lg p-2 border border-muted/40">
                         <button
                             onClick={handleLogout}
