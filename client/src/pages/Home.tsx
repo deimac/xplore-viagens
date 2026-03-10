@@ -259,12 +259,17 @@ export default function Home() {
   }, [isQuotationOpen, showAuth]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsTopbarSolid(window.scrollY > 24);
+    const updateTopbarSolid = () => {
+      const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+      setIsTopbarSolid(isMobile && window.scrollY > 24);
     };
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    updateTopbarSolid();
+    window.addEventListener("scroll", updateTopbarSolid, { passive: true });
+    window.addEventListener("resize", updateTopbarSolid);
+    return () => {
+      window.removeEventListener("scroll", updateTopbarSolid);
+      window.removeEventListener("resize", updateTopbarSolid);
+    };
   }, []);
 
   const handleMinhaContaClick = () => {
@@ -413,7 +418,7 @@ export default function Home() {
 
         {/* Top Bar Azul - Sempre Visível SOBRE o conteúdo */}
         <header
-          className="fixed top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between"
+          className="fixed lg:absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between"
           style={{
             background: (showAuth || isQuotationOpen || isTopbarSolid)
               ? "rgb(26, 43, 76)"
