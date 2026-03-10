@@ -2,12 +2,12 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Evita origin_mismatch no OAuth quando o usuário abre o domínio sem www.
+// Redireciona todos os domínios alternativos para o canônico (www.xploreviagens.com.br)
 if (typeof window !== "undefined") {
     const { hostname, protocol, pathname, search, hash } = window.location;
-    if (hostname === "xploreviagens.com.br") {
-        const target = `${protocol}//www.xploreviagens.com.br${pathname}${search}${hash}`;
-        window.location.replace(target);
+    const canonicalHost = "www.xploreviagens.com.br";
+    if (hostname !== canonicalHost && ["xploreviagens.com.br", "xploreviagens.com", "www.xploreviagens.com"].includes(hostname)) {
+        window.location.replace(`${protocol}//${canonicalHost}${pathname}${search}${hash}`);
     }
 }
 

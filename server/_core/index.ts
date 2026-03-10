@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-// import { registerOAuthRoutes } from "./oauth"; // removido
+import { registerOAuthRedirectRoutes } from "./oauthRedirect";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -30,8 +30,8 @@ async function startServer() {
   app.use(`/${ENV.uploadsDir}`, express.static(uploadsPath));
   console.log(`📁 Serving static files from /${ENV.uploadsDir} -> ${uploadsPath}`);
 
-  // OAuth (removido)
-  // registerOAuthRoutes(app);
+  // OAuth redirect flows (Facebook + Google) – must come before tRPC/Vite
+  registerOAuthRedirectRoutes(app);
 
   // tRPC
   app.use(
