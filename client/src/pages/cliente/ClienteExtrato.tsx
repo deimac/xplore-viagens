@@ -71,7 +71,9 @@ export default function ClienteExtrato() {
                     highlight="Extrato"
                     subtitle="Histórico completo de movimentações XP"
                     align="left"
-                    className="mb-0"
+                    className="mb-2 sm:mb-4"
+                    titleClassName="text-2xl sm:text-3xl"
+                    subtitleClassName="text-sm sm:text-base"
                 />
                 <Button
                     variant={showFilters ? "default" : "outline"}
@@ -92,14 +94,14 @@ export default function ClienteExtrato() {
             {/* Filtros */}
             {showFilters && (
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2 text-accent">
+                    <CardHeader className="pb-1 sm:pb-2">
+                        <CardTitle className="text-xs sm:text-sm flex items-center gap-2 text-accent">
                             <Filter className="w-4 h-4" />
                             Filtros
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             <div>
                                 <Label className="text-xs">Data início</Label>
                                 <Input

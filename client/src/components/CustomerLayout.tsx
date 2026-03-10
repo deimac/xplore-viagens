@@ -20,6 +20,13 @@ import {
     Menu,
     X,
     Home as HomeIcon,
+    Mail,
+    Phone,
+    MessageCircle,
+    Instagram,
+    Facebook,
+    Linkedin,
+    Twitter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +45,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
     const dashboardQuery = trpc.xp.dashboard.useQuery(undefined, {
         enabled: !!clienteQuery.data?.cadastroCompleto,
     });
+    const { data: companySettings } = trpc.companySettings.get.useQuery();
 
     const handleLogout = async () => {
         try {
@@ -290,18 +298,9 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                                         </Link>
                                     );
                                 })}
-                                <Link href="/">
-                                    <button
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="border-2 border-muted/40 bg-muted/15 text-accent rounded-lg px-3 py-3 flex items-center gap-2 font-medium text-xs w-full"
-                                    >
-                                        <HomeIcon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
-                                        <span>Voltar ao Site</span>
-                                    </button>
-                                </Link>
                                 <button
                                     onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
-                                    className="border-2 border-destructive/40 bg-destructive/5 text-destructive rounded-lg px-3 py-3 flex items-center gap-2 font-medium text-xs w-full"
+                                    className="border-2 border-destructive/40 bg-destructive/5 text-destructive rounded-lg px-3 py-3 flex items-center gap-2 font-medium text-xs w-full col-span-2"
                                 >
                                     <LogOut className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
                                     <span>Sair</span>
@@ -315,6 +314,92 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 pt-24 lg:pt-32">
                     {children}
                 </div>
+
+                <footer className="bg-accent text-accent-foreground py-12 px-6 md:px-16 w-full">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="flex flex-col md:flex-row gap-8 mb-8">
+                            <div className="flex-1">
+                                <h4 className="text-lg font-semibold mb-4">Xplore Milhas e Viagens Ltda</h4>
+                                <p className="text-sm opacity-80">Cnpj: 57.874.236/0001-74</p>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-lg font-semibold mb-4">Onde estamos localizados</h4>
+                                <div className="text-sm opacity-80 space-y-1">
+                                    <p>Ironberg Bodybuilder Training Center</p>
+                                    <p>Av. Colombo, 3234 - Zona 7, Maringa - PR</p>
+                                </div>
+                            </div>
+                            <div className="md:ml-auto">
+                                <h4 className="text-lg font-semibold mb-4">Contato</h4>
+                                <div className="text-sm space-y-1 opacity-80">
+                                    {companySettings?.email && (
+                                        <p className="flex items-center gap-2">
+                                            <Mail className="w-4 h-4 flex-shrink-0" />
+                                            <a href={`mailto:${companySettings.email}`} className="hover:opacity-100 transition-opacity">
+                                                {companySettings.email}
+                                            </a>
+                                        </p>
+                                    )}
+                                    {companySettings?.phone && (
+                                        <p className="flex items-center gap-2">
+                                            <Phone className="w-4 h-4 flex-shrink-0" />
+                                            <a href={`tel:${companySettings.phone.replace(/\D/g, "")}`} className="hover:opacity-100 transition-opacity">
+                                                {companySettings.phone}
+                                            </a>
+                                        </p>
+                                    )}
+                                    {companySettings?.whatsapp && (
+                                        <p className="flex items-center gap-2">
+                                            <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                                            <a
+                                                href={`https://wa.me/${companySettings.whatsapp.replace(/\D/g, "")}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hover:opacity-100 transition-opacity"
+                                            >
+                                                WhatsApp: {companySettings.whatsapp}
+                                            </a>
+                                        </p>
+                                    )}
+                                    {companySettings?.instagram && (
+                                        <p className="flex items-center gap-2">
+                                            <Instagram className="w-4 h-4 flex-shrink-0" />
+                                            <a
+                                                href={companySettings.instagram}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hover:opacity-100 transition-opacity"
+                                            >
+                                                @xploreviagens
+                                            </a>
+                                        </p>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        {companySettings?.facebook && (
+                                            <a href={companySettings.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                                                <Facebook className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                        {companySettings?.linkedin && (
+                                            <a href={companySettings.linkedin} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                                                <Linkedin className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                        {companySettings?.twitter && (
+                                            <a href={companySettings.twitter} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
+                                                <Twitter className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border-t border-accent-foreground/20 pt-8 text-center text-sm opacity-80">
+                            <p>&copy; {new Date().getFullYear()} {companySettings?.companyName || "Xplore Viagens"}. Todos os direitos reservados.</p>
+                        </div>
+                    </div>
+                </footer>
             </main>
         </div>
     );

@@ -60,30 +60,32 @@ export default function ClienteDashboard() {
                 highlight="Painel XP"
                 subtitle="Acompanhe seus pontos e benefícios"
                 align="left"
-                className="mb-0"
+                className="mb-4 sm:mb-6"
+                titleClassName="text-2xl sm:text-3xl"
+                subtitleClassName="text-sm sm:text-base"
             />
 
             {/* Saldo cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <SaldoCard
-                    icon={<Star className="w-5 h-5" />}
+                    icon={<Star className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Saldo Total"
                     value={formatPontos(data.saldoTotal)}
                     accent
                 />
                 <SaldoCard
-                    icon={<Wallet className="w-5 h-5" />}
+                    icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Disponível"
                     value={formatPontos(data.saldoDisponivel)}
                     sub={`≈ R$ ${Number(data.valorEmReais).toFixed(2)}`}
                 />
                 <SaldoCard
-                    icon={<Gift className="w-5 h-5" />}
+                    icon={<Gift className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Qualificável"
                     value={formatPontos(data.saldoQualificavel)}
                 />
                 <SaldoCard
-                    icon={<Clock className="w-5 h-5" />}
+                    icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Status Resgate"
                     value={data.podeResgatar ? "Liberado" : "Bloqueado"}
                     badge={data.podeResgatar}
@@ -93,9 +95,9 @@ export default function ClienteDashboard() {
             {/* Pontos expirando */}
             {data.pontosExpirar && data.pontosExpirar.length > 0 && (
                 <Card className="border-orange-200 bg-orange-50/50">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2 text-orange-700">
-                            <AlertTriangle className="w-4 h-4" />
+                    <CardHeader className="pb-1 sm:pb-2">
+                        <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-orange-700">
+                            <AlertTriangle className="w-4 h-4 sm:w-4 sm:h-4" />
                             Pontos próximos a expirar
                         </CardTitle>
                     </CardHeader>
@@ -104,12 +106,12 @@ export default function ClienteDashboard() {
                             {data.pontosExpirar.map((item: any, i: number) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between text-sm bg-white rounded px-3 py-2 border border-orange-100"
+                                    className="flex items-center justify-between text-xs sm:text-sm bg-white rounded px-2.5 sm:px-3 py-1.5 sm:py-2 border border-orange-100"
                                 >
                                     <span className="text-orange-800 font-medium">
                                         {formatPontos(item.xp)} pontos
                                     </span>
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-muted-foreground text-[10px] sm:text-xs">
                                         Expiram em{" "}
                                         {new Date(item.data_expiracao).toLocaleDateString("pt-BR")}
                                     </span>
@@ -122,8 +124,8 @@ export default function ClienteDashboard() {
 
             {/* Aplicar código */}
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2 text-accent">
+                <CardHeader className="pb-1 sm:pb-2">
+                    <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-accent">
                         <TicketCheck className="w-4 h-4" />
                         Aplicar Código Promocional
                     </CardTitle>
@@ -131,7 +133,7 @@ export default function ClienteDashboard() {
                 <CardContent>
                     <form
                         onSubmit={handleAplicarCodigo}
-                        className="flex items-end gap-3"
+                        className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3"
                     >
                         <div className="flex-1">
                             <Input
@@ -154,13 +156,13 @@ export default function ClienteDashboard() {
 
             {/* Últimas movimentações */}
             <Card>
-                <CardHeader className="pb-2 flex flex-row justify-between items-center">
-                    <CardTitle className="text-base text-accent">
+                <CardHeader className="pb-1 sm:pb-2 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <CardTitle className="text-sm sm:text-base text-accent">
                         Últimas Movimentações
                     </CardTitle>
                     <Link
                         href="/xp-club/extrato"
-                        className="text-sm text-accent underline hover:text-accent/80 transition-colors"
+                        className="text-xs sm:text-sm text-accent underline hover:text-accent/80 transition-colors"
                     >
                         Ver extrato completo →
                     </Link>
@@ -173,7 +175,7 @@ export default function ClienteDashboard() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground py-6 text-center">
+                        <p className="text-xs sm:text-sm text-muted-foreground py-6 text-center">
                             Nenhuma movimentação encontrada
                         </p>
                     )}
@@ -202,13 +204,16 @@ function SaldoCard({
 }) {
     return (
         <Card className={accent ? "border-accent/30 bg-accent/5" : ""}>
-            <CardContent className="pt-5 pb-4">
-                <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-                    {icon}
-                    <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
+            <CardContent className="pt-3 pb-3 sm:pt-5 sm:pb-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        {icon}
+                        <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wide">{label}</span>
+                    </div>
+                    {sub && <span className="text-[11px] sm:text-xs text-muted-foreground mt-1 block">{sub}</span>}
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className={`text-2xl font-bold ${accent ? "text-accent" : "text-foreground"}`}>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-xl sm:text-2xl font-bold ${accent ? "text-accent" : "text-foreground"}`}>
                         {value}
                     </span>
                     {badge !== undefined && (
@@ -217,7 +222,6 @@ function SaldoCard({
                         </Badge>
                     )}
                 </div>
-                {sub && <span className="text-xs text-muted-foreground mt-1 block">{sub}</span>}
             </CardContent>
         </Card>
     );
@@ -226,35 +230,35 @@ function SaldoCard({
 function MovimentacaoRow({ mov }: { mov: any }) {
     const isPositive = Number(mov.xp) > 0;
     return (
-        <div className="flex items-center justify-between py-3 gap-4">
+        <div className="flex items-center justify-between py-2 sm:py-3 gap-4">
             <div className="flex items-center gap-3 min-w-0">
                 <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isPositive
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isPositive
                         ? "bg-green-100 text-green-600"
                         : "bg-red-100 text-red-500"
                         }`}
                 >
                     {isPositive ? (
-                        <ArrowUpRight className="w-4 h-4" />
+                        <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4" />
                     ) : (
-                        <ArrowDownRight className="w-4 h-4" />
+                        <ArrowDownRight className="w-3 h-3 sm:w-4 sm:h-4" />
                     )}
                 </div>
                 <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-xs sm:text-sm font-medium truncate">
                         {mov.tipo_nome || mov.descricao || "Movimentação"}
                     </p>
                     {mov.descricao && mov.tipo_nome && (
-                        <p className="text-xs text-muted-foreground truncate">{mov.descricao}</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{mov.descricao}</p>
                     )}
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                         {new Date(mov.data_movimentacao).toLocaleDateString("pt-BR")}
                     </p>
                 </div>
             </div>
             <div className="text-right flex-shrink-0">
                 <span
-                    className={`text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-500"
+                    className={`text-xs sm:text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-500"
                         }`}
                 >
                     {isPositive ? "+" : ""}

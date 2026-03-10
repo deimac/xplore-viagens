@@ -31,6 +31,11 @@ interface SectionTitleProps {
   subtitleClassName?: string;
 
   /**
+   * Classe customizada para o titulo
+   */
+  titleClassName?: string;
+
+  /**
    * Subtítulo alternativo apenas para versão mobile
    */
   subtitleMobile?: string | React.ReactNode;
@@ -77,6 +82,7 @@ export function SectionTitle({
   align = "center",
   className,
   subtitleClassName,
+  titleClassName,
 }: SectionTitleProps) {
   const alignClass = {
     left: "text-left",
@@ -87,7 +93,7 @@ export function SectionTitle({
   return (
     <div className={cn(alignClass, "mb-12 md:mb-16", className)}>
       {/* Título Principal */}
-      <h2 className="text-4xl font-light text-accent mb-2">
+      <h2 className={cn("text-4xl font-light text-accent mb-2", titleClassName)}>
         {fullTitle ? (
           // Título completo sem destaque
           fullTitle
