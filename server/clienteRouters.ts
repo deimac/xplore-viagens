@@ -36,7 +36,8 @@ async function emitClienteSessionCookie(
 async function findOrCreateCliente(
     email: string,
     nome: string | null,
-    origem: string
+    origem: string,
+    avatarUrl: string | null = null
 ) {
     let cliente = await db.getClienteByEmail(email);
     if (!cliente) {
@@ -44,10 +45,14 @@ async function findOrCreateCliente(
             nome,
             email,
             origemCadastro: origem,
+            avatarUrl,
         });
         cliente = await db.getClienteById(id);
         // Garantir xp_contas existente
         await db.getOrCreateXpConta(id);
+    } else if (avatarUrl && cliente.avatar_url !== avatarUrl) {
+        await db.updateClienteAvatar(cliente.id, avatarUrl);
+        cliente = await db.getClienteById(cliente.id);
     }
     return cliente;
 }
@@ -95,6 +100,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
+                    avatarUrl: cliente.avatar_url ?? null,
                     cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
@@ -139,6 +145,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
+                    avatarUrl: cliente.avatar_url ?? null,
                     cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
@@ -165,7 +172,8 @@ export const clienteAuthRouter = router({
             const cliente = await findOrCreateCliente(
                 userInfo.email,
                 userInfo.name || null,
-                "google"
+                "google",
+                userInfo.picture || null
             );
 
             await emitClienteSessionCookie(ctx, cliente.id, cliente.nome || "");
@@ -176,6 +184,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
+                    avatarUrl: cliente.avatar_url ?? null,
                     cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
@@ -202,7 +211,8 @@ export const clienteAuthRouter = router({
             const cliente = await findOrCreateCliente(
                 userInfo.email,
                 userInfo.name || null,
-                "facebook"
+                "facebook",
+                userInfo.picture || null
             );
 
             await emitClienteSessionCookie(ctx, cliente.id, cliente.nome || "");
@@ -213,6 +223,7 @@ export const clienteAuthRouter = router({
                     id: cliente.id,
                     nome: cliente.nome,
                     email: cliente.email,
+                    avatarUrl: cliente.avatar_url ?? null,
                     cadastroCompleto: !!(cliente.cadastro_completo ?? cliente.cadastroCompleto),
                 },
             };
@@ -238,6 +249,7 @@ export const clienteRouter = router({
             id: c.id,
             nome: c.nome,
             email: c.email,
+            avatarUrl: c.avatar_url ?? null,
             cpf: c.cpf,
             telefone: c.telefone,
             cep: c.cep,

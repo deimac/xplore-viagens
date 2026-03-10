@@ -433,6 +433,7 @@ export const clientes = mysqlTable("clientes", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 150 }),
   email: varchar("email", { length: 150 }).unique(),
+  avatarUrl: text("avatar_url"),
   passwordHash: varchar("password_hash", { length: 255 }),
   senha: varchar("senha", { length: 255 }),
   cpf: varchar("cpf", { length: 14 }),

@@ -1624,13 +1624,19 @@ export async function createCliente(data: {
   email: string;
   passwordHash?: string | null;
   origemCadastro?: string;
+  avatarUrl?: string | null;
 }): Promise<{ id: number }> {
   const result: any = await executeQuery(
-    `INSERT INTO clientes (nome, email, password_hash, origem_cadastro, cadastro_completo)
-     VALUES (?, ?, ?, ?, FALSE)`,
-    [data.nome || null, data.email, data.passwordHash || null, data.origemCadastro || null]
+    `INSERT INTO clientes (nome, email, avatar_url, password_hash, origem_cadastro, cadastro_completo)
+     VALUES (?, ?, ?, ?, ?, FALSE)`,
+    [data.nome || null, data.email, data.avatarUrl || null, data.passwordHash || null, data.origemCadastro || null]
   );
   return { id: result.insertId };
+}
+
+export async function updateClienteAvatar(id: number, avatarUrl: string | null) {
+  await executeQuery(`UPDATE clientes SET avatar_url = ? WHERE id = ?`, [avatarUrl, id]);
+  return { success: true };
 }
 
 export async function updateClienteCadastro(

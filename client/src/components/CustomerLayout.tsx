@@ -22,6 +22,7 @@ import {
     Home as HomeIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface CustomerLayoutProps {
     children: ReactNode;
@@ -74,6 +75,21 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
 
     // Nome de exibição do cliente
     const clienteNome = (cliente as any)?.nome || (cliente as any)?.email || "";
+    const clienteEmail = (cliente as any)?.email || "";
+
+    const getInitials = (name?: string | null, email?: string | null) => {
+        if (name?.trim()) {
+            const parts = name.trim().split(" ").filter(Boolean);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return name.substring(0, 2).toUpperCase();
+        }
+        if (email?.trim()) {
+            return email.substring(0, 2).toUpperCase();
+        }
+        return "CL";
+    };
 
     return (
         <div className="min-h-screen bg-background text-foreground flex">
@@ -196,11 +212,22 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                         <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto cursor-pointer" />
                     </Link>
 
-                    {/* Boas-vindas + Nome */}
+                    {/* Perfil do cliente */}
                     {clienteNome && (
-                        <p className="text-white font-medium text-sm">
-                            Bem-vindo, <span className="font-semibold">{clienteNome}</span>
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10 border border-white/30">
+                                {(cliente as any)?.avatarUrl ? (
+                                    <AvatarImage src={(cliente as any).avatarUrl} alt={clienteNome} className="object-cover" />
+                                ) : null}
+                                <AvatarFallback className="bg-white/20 text-white text-xs font-semibold">
+                                    {getInitials((cliente as any)?.nome, (cliente as any)?.email)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="text-right">
+                                <p className="text-white text-sm font-semibold leading-none">{clienteNome}</p>
+                                <p className="text-white/80 text-xs leading-none mt-1">{clienteEmail}</p>
+                            </div>
+                        </div>
                     )}
                 </header>
 
@@ -216,11 +243,19 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
 
                     <div className="flex items-center gap-2">
                         {clienteNome && (
-                            <div className="text-right mr-1">
-                                <p className="text-white/50 text-[10px] leading-none mb-0.5">Olá</p>
-                                <p className="text-white text-xs font-medium truncate max-w-[100px]">
-                                    {clienteNome.split(" ")[0]}
-                                </p>
+                            <div className="flex items-center gap-2 mr-1">
+                                <Avatar className="h-9 w-9 border border-white/30">
+                                    {(cliente as any)?.avatarUrl ? (
+                                        <AvatarImage src={(cliente as any).avatarUrl} alt={clienteNome} className="object-cover" />
+                                    ) : null}
+                                    <AvatarFallback className="bg-white/20 text-white text-xs font-semibold">
+                                        {getInitials((cliente as any)?.nome, (cliente as any)?.email)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="text-right max-w-[110px]">
+                                    <p className="text-white text-xs font-semibold truncate leading-none">{clienteNome}</p>
+                                    <p className="text-white/70 text-[10px] truncate leading-none mt-1">{clienteEmail}</p>
+                                </div>
                             </div>
                         )}
                         <button

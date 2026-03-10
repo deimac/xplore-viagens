@@ -27,6 +27,7 @@ import { AllHospedagensView } from "@/components/AllHospedagensView";
 import { PropertyView } from "@/components/PropertyView";
 import { AllPacotesView } from "@/components/AllPacotesView";
 import ClienteAuthInline from "@/components/ClienteAuthInline";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
   Home as HomeIcon,
@@ -69,6 +70,22 @@ export default function Home() {
   // Verificar se o cliente está logado
   const clienteMeQuery = trpc.cliente.me.useQuery(undefined, { retry: false });
   const isClienteLogado = !!clienteMeQuery.data;
+  const clienteNome = clienteMeQuery.data?.nome || "Cliente";
+  const clienteEmail = clienteMeQuery.data?.email || "";
+
+  const getInitials = (name?: string | null, email?: string | null) => {
+    if (name?.trim()) {
+      const parts = name.trim().split(" ").filter(Boolean);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+    if (email?.trim()) {
+      return email.substring(0, 2).toUpperCase();
+    }
+    return "CL";
+  };
 
   // Garantir que ao abrir a lista de hospedagens, a seção fique visível instantaneamente
   // Ref para detectar transição de PropertyView para lista
@@ -387,16 +404,53 @@ export default function Home() {
         {/* Top Bar Azul - Sempre Visível SOBRE o conteúdo */}
         <header className="absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between" style={{ background: (showAuth || isQuotationOpen) ? 'rgb(26, 43, 76)' : 'linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)' }}>
           <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto" />
-          <span className="hidden md:block text-white font-bold text-lg">Entre você e seu destino</span>
+
+          {isClienteLogado ? (
+            <div className="hidden md:flex items-center gap-3">
+              <Avatar className="h-10 w-10 border border-white/30">
+                {clienteMeQuery.data?.avatarUrl ? (
+                  <AvatarImage src={clienteMeQuery.data.avatarUrl} alt={clienteNome} className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-white/20 text-white text-xs font-semibold">
+                  {getInitials(clienteMeQuery.data?.nome, clienteMeQuery.data?.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-right">
+                <p className="text-white text-sm font-semibold leading-none">{clienteNome}</p>
+                <p className="text-white/80 text-xs leading-none mt-1">{clienteEmail}</p>
+              </div>
+            </div>
+          ) : (
+            <span className="hidden md:block text-white font-bold text-lg">Entre você e seu destino</span>
+          )}
 
           {/* Menu Hamburguer Mobile */}
           <div ref={menuRef} className="lg:hidden relative">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="w-12 h-12 rounded-lg border-2 border-muted bg-card text-accent flex items-center justify-center hover:opacity-90 transition-all"
-            >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="flex items-center gap-2">
+              {isClienteLogado && (
+                <div className="flex items-center gap-2 pr-1">
+                  <Avatar className="h-9 w-9 border border-white/30">
+                    {clienteMeQuery.data?.avatarUrl ? (
+                      <AvatarImage src={clienteMeQuery.data.avatarUrl} alt={clienteNome} className="object-cover" />
+                    ) : null}
+                    <AvatarFallback className="bg-white/20 text-white text-xs font-semibold">
+                      {getInitials(clienteMeQuery.data?.nome, clienteMeQuery.data?.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-right max-w-[110px]">
+                    <p className="text-white text-xs font-semibold truncate leading-none">{clienteNome}</p>
+                    <p className="text-white/70 text-[10px] truncate leading-none mt-1">{clienteEmail}</p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="w-12 h-12 rounded-lg border-2 border-muted bg-card text-accent flex items-center justify-center hover:opacity-90 transition-all"
+              >
+                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
 
             {/* Dropdown Menu - Grid 2 Colunas */}
             {isMobileMenuOpen && (
