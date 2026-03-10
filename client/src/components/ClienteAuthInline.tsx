@@ -394,8 +394,18 @@ function InlineFacebookButton({ onLoginDone }: { onLoginDone: () => void }) {
             return;
         }
 
+        let finished = false;
+        const watchdog = window.setTimeout(() => {
+            if (!finished) {
+                setIsLoading(false);
+                toast.error("O Facebook não respondeu. Tente novamente ou abra no Safari/Chrome.");
+            }
+        }, 15000);
+
         (window as any).FB.login(
             async (response: any) => {
+                finished = true;
+                window.clearTimeout(watchdog);
                 if (response.status === "connected" && response.authResponse) {
                     try {
                         await loginFb.mutateAsync({ accessToken: response.authResponse.accessToken });
@@ -405,6 +415,8 @@ function InlineFacebookButton({ onLoginDone }: { onLoginDone: () => void }) {
                     } catch (err: any) {
                         toast.error(err?.message || "Falha ao fazer login com Facebook");
                     }
+                } else {
+                    toast.error("Login com Facebook cancelado ou bloqueado.");
                 }
                 setIsLoading(false);
             },
