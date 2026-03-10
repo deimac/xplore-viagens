@@ -15,12 +15,12 @@ import { ENV } from "./env";
 import { verifyGoogleToken } from "./googleAuth";
 import * as db from "../db";
 
-const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "2368392583585442";
-const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
+const FACEBOOK_APP_ID = ENV.facebookAppId;
+const FACEBOOK_APP_SECRET = ENV.facebookAppSecret;
 const GRAPH_API_VERSION = "v18.0";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CLIENT_ID = ENV.googleClientId;
+const GOOGLE_CLIENT_SECRET = ENV.googleClientSecret;
 
 // ── Helpers ─────────────────────────────────────────────────────
 
@@ -190,6 +190,12 @@ export function registerOAuthRedirectRoutes(app: Express) {
     // ════════════════════════════════════════════════════════════════
 
     app.get("/api/auth/google", (req: Request, res: Response) => {
+        console.log("[Google OAuth] client_id =", GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : "EMPTY!");
+        if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "dummy") {
+            console.error("[Google OAuth] GOOGLE_CLIENT_ID not configured!");
+            return res.redirect("/xp-club/login?error=google_not_configured");
+        }
+
         const state = crypto.randomBytes(16).toString("hex");
         const baseUrl = getBaseUrl(req);
         const redirectUri = `${baseUrl}/api/auth/google/callback`;

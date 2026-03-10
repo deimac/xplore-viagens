@@ -1,6 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '';
+const client = new OAuth2Client(googleClientId);
 
 export interface GoogleUserInfo {
   providerId: string;
@@ -18,7 +19,7 @@ export async function verifyGoogleToken(token: string): Promise<GoogleUserInfo> 
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: googleClientId,
     });
 
     const payload = ticket.getPayload();

@@ -12,9 +12,9 @@ export const ENV = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
 
-  // GOOGLE OAUTH dummy
-  googleClientId: process.env.GOOGLE_CLIENT_ID || 'dummy',
-  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy',
+  // GOOGLE OAUTH
+  googleClientId: process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET || '',
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || `http://localhost:${process.env.PORT}/api/oauth/callback`,
   oauthServerUrl: process.env.OAUTH_SERVER_URL || 'http://localhost:4000',
 
