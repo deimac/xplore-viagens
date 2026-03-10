@@ -74,8 +74,8 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
     }, [mobileMenuOpen]);
 
     // Nome de exibição do cliente
-    const clienteNome = (cliente as any)?.nome || (cliente as any)?.email || "";
-    const clienteEmail = (cliente as any)?.email || "";
+    const clienteNome = (cliente as any)?.nome || (cliente as any)?.email || "Cliente";
+    const clienteEmail = (cliente as any)?.email || "Sem email";
 
     const getInitials = (name?: string | null, email?: string | null) => {
         if (name?.trim()) {
@@ -213,7 +213,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                     </Link>
 
                     {/* Perfil do cliente */}
-                    {clienteNome && (
+                    {cliente && (
                         <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10 border border-white/30">
                                 {(cliente as any)?.avatarUrl ? (
@@ -242,7 +242,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                     </Link>
 
                     <div className="flex items-center gap-2">
-                        {clienteNome && (
+                        {cliente && (
                             <div className="flex items-center gap-2 mr-1">
                                 <Avatar className="h-9 w-9 border border-white/30">
                                     {(cliente as any)?.avatarUrl ? (
