@@ -66,6 +66,7 @@ export default function Home() {
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTopbarSolid, setIsTopbarSolid] = useState(false);
 
   // Verificar se o cliente está logado
   const clienteMeQuery = trpc.cliente.me.useQuery(undefined, { retry: false });
@@ -257,6 +258,15 @@ export default function Home() {
     }
   }, [isQuotationOpen, showAuth]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsTopbarSolid(window.scrollY > 24);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const handleMinhaContaClick = () => {
     setIsMobileMenuOpen(false);
     if (isClienteLogado) {
@@ -402,7 +412,16 @@ export default function Home() {
       <main className="lg:ml-40 lg:mr-40 flex-1 overflow-y-auto relative">
 
         {/* Top Bar Azul - Sempre Visível SOBRE o conteúdo */}
-        <header className="absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between" style={{ background: (showAuth || isQuotationOpen) ? 'rgb(26, 43, 76)' : 'linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)' }}>
+        <header
+          className="fixed top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between"
+          style={{
+            background: (showAuth || isQuotationOpen || isTopbarSolid)
+              ? "rgb(26, 43, 76)"
+              : "linear-gradient(to right, rgba(26, 43, 76, 1) 0%, rgba(26, 43, 76, 0.95) 15%, rgba(26, 43, 76, 0.7) 25%, rgba(26, 43, 76, 0.4) 40%, rgba(26, 43, 76, 0.2) 55%, transparent 70%)",
+            transition: "background 200ms ease, box-shadow 200ms ease",
+            boxShadow: isTopbarSolid ? "0 6px 20px rgba(0, 0, 0, 0.15)" : "none",
+          }}
+        >
           <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto" />
 
           {isClienteLogado ? (

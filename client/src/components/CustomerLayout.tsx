@@ -242,11 +242,11 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 {/* ── Mobile Header – mesmo estilo da Home ── */}
                 <header
                     ref={menuRef}
-                    className="lg:hidden fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between"
+                    className="lg:hidden absolute top-0 left-0 right-0 z-50 px-6 md:px-16 py-4 flex items-center justify-between"
                     style={{ background: "rgba(26, 43, 76, 1)" }}
                 >
                     <Link href="/">
-                        <img src={APP_LOGO} alt={APP_TITLE} className="h-12 w-auto" />
+                        <img src={APP_LOGO} alt={APP_TITLE} className="h-16 md:h-20 w-auto" />
                     </Link>
 
                     <div className="flex items-center gap-2">
