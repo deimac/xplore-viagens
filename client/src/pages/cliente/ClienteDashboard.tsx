@@ -59,7 +59,7 @@ export default function ClienteDashboard() {
                 title="Meu"
                 highlight="Painel XP"
                 subtitle="Acompanhe seus pontos e benefícios"
-                align="left"
+                align="center"
                 className="mb-4 sm:mb-6"
                 titleClassName="text-2xl sm:text-3xl"
                 subtitleClassName="text-sm sm:text-base"

@@ -70,7 +70,7 @@ export default function ClienteExtrato() {
                     title="Meu"
                     highlight="Extrato"
                     subtitle="Histórico completo de movimentações XP"
-                    align="left"
+                    align="center"
                     className="mb-2 sm:mb-4"
                     titleClassName="text-2xl sm:text-3xl"
                     subtitleClassName="text-sm sm:text-base"

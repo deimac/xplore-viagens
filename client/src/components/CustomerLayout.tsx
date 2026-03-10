@@ -300,7 +300,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                                 })}
                                 <button
                                     onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
-                                    className="border-2 border-destructive/40 bg-destructive/5 text-destructive rounded-lg px-3 py-3 flex items-center gap-2 font-medium text-xs w-full col-span-2"
+                                    className="border-2 border-destructive/40 bg-destructive/5 text-destructive rounded-lg px-3 py-3 flex items-center gap-2 font-medium text-xs w-full"
                                 >
                                     <LogOut className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
                                     <span>Sair</span>
@@ -311,7 +311,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 </header>
 
                 {/* Conteúdo com padding para o header */}
-                <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 pt-24 lg:pt-32">
+                <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 pt-32 lg:pt-36">
                     {children}
                 </div>
 
