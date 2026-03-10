@@ -20,6 +20,7 @@ import {
     TicketCheck,
 } from "lucide-react";
 import { Link } from "wouter";
+import { SectionTitle } from "@/components/SectionTitle";
 
 export default function ClienteDashboard() {
     const dashboard = trpc.xp.dashboard.useQuery();
@@ -54,14 +55,13 @@ export default function ClienteDashboard() {
     return (
         <div className="space-y-6">
             {/* Title */}
-            <div>
-                <h1 className="text-2xl font-light text-accent">
-                    Meu <span className="font-semibold">Painel XP</span>
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Acompanhe seus pontos e benefícios
-                </p>
-            </div>
+            <SectionTitle
+                title="Meu"
+                highlight="Painel XP"
+                subtitle="Acompanhe seus pontos e benefícios"
+                align="left"
+                className="mb-0"
+            />
 
             {/* Saldo cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

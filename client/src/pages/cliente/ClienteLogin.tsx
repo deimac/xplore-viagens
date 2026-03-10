@@ -270,6 +270,12 @@ export default function ClienteLogin() {
 
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 
+function isInAppBrowser() {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    return /FBAN|FBAV|Instagram|Line\//i.test(ua) || /; wv\)|\bwv\b|WebView/i.test(ua);
+}
+
 function ClienteGoogleButton({ onLoginDone }: { onLoginDone: () => void }) {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const utils = trpc.useUtils();
@@ -296,6 +302,10 @@ function ClienteGoogleButton({ onLoginDone }: { onLoginDone: () => void }) {
                         }
                     }}
                     onError={() => {
+                        if (isInAppBrowser()) {
+                            toast.error("Google bloqueia login no navegador interno. Abra este link no Safari/Chrome e tente novamente.");
+                            return;
+                        }
                         toast.error("Falha ao fazer login com Google");
                     }}
                     theme="outline"
@@ -303,6 +313,11 @@ function ClienteGoogleButton({ onLoginDone }: { onLoginDone: () => void }) {
                     text="continue_with"
                 />
             </div>
+            {isInAppBrowser() && (
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Se estiver no Instagram/Facebook, use "Abrir no navegador" para entrar com Google.
+                </p>
+            )}
         </GoogleOAuthProvider>
     );
 }
@@ -311,14 +326,66 @@ function ClienteFacebookButton({ onLoginDone }: { onLoginDone: () => void }) {
     const utils = trpc.useUtils();
     const loginFb = trpc.clienteAuth.loginFacebook.useMutation();
     const [isLoading, setIsLoading] = useState(false);
+    const fbAppId = import.meta.env.VITE_FACEBOOK_APP_ID || "2368392583585442";
 
-    const handleClick = () => {
-        if (!window.FB) {
-            toast.error("Facebook SDK não carregado");
+    const ensureFacebookSdk = async () => {
+        if (typeof window === "undefined") return false;
+        if ((window as any).FB) return true;
+
+        await new Promise<void>((resolve, reject) => {
+            const existing = document.getElementById("facebook-jssdk") as HTMLScriptElement | null;
+
+            (window as any).fbAsyncInit = () => {
+                try {
+                    (window as any).FB.init({
+                        appId: fbAppId,
+                        cookie: true,
+                        xfbml: false,
+                        version: "v18.0",
+                    });
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            };
+
+            if (!existing) {
+                const script = document.createElement("script");
+                script.id = "facebook-jssdk";
+                script.src = "https://connect.facebook.net/pt_BR/sdk.js";
+                script.async = true;
+                script.defer = true;
+                script.onerror = () => reject(new Error("failed-to-load-facebook-sdk"));
+                document.head.appendChild(script);
+            }
+
+            let attempts = 0;
+            const wait = setInterval(() => {
+                if ((window as any).FB) {
+                    clearInterval(wait);
+                    resolve();
+                    return;
+                }
+                attempts += 1;
+                if (attempts >= 80) {
+                    clearInterval(wait);
+                    reject(new Error("facebook-sdk-timeout"));
+                }
+            }, 100);
+        }).catch(() => false);
+
+        return !!(window as any).FB;
+    };
+
+    const handleClick = async () => {
+        setIsLoading(true);
+        const sdkReady = await ensureFacebookSdk();
+        if (!sdkReady) {
+            setIsLoading(false);
+            toast.error("Não foi possível carregar o Facebook. Tente novamente ou abra no Safari/Chrome.");
             return;
         }
 
-        setIsLoading(true);
         window.FB.login(
             async (response: any) => {
                 if (response.status === "connected" && response.authResponse) {

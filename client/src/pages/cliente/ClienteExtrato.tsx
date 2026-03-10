@@ -23,8 +23,8 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     ListFilter,
-    X,
 } from "lucide-react";
+import { SectionTitle } from "@/components/SectionTitle";
 
 const PAGE_SIZES = [20, 50] as const;
 type PageSize = typeof PAGE_SIZES[number];
@@ -34,7 +34,7 @@ export default function ClienteExtrato() {
     const [pageSize, setPageSize] = useState<PageSize>(20);
     const [dataInicio, setDataInicio] = useState("");
     const [dataFim, setDataFim] = useState("");
-    const [tipoId, setTipoId] = useState<string>("");
+    const [tipoId, setTipoId] = useState<string>("all");
     const [somenteQualificaveis, setSomenteQualificaveis] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
@@ -45,7 +45,7 @@ export default function ClienteExtrato() {
         pageSize,
         dataInicio: dataInicio || undefined,
         dataFim: dataFim || undefined,
-        tipoMovimentacaoId: tipoId ? Number(tipoId) : undefined,
+        tipoMovimentacaoId: tipoId !== "all" ? Number(tipoId) : undefined,
         somenteQualificaveis: somenteQualificaveis || undefined,
     });
 
@@ -55,25 +55,24 @@ export default function ClienteExtrato() {
     const clearFilters = () => {
         setDataInicio("");
         setDataFim("");
-        setTipoId("");
+        setTipoId("all");
         setSomenteQualificaveis(false);
         setPage(1);
     };
 
-    const hasFilters = !!dataInicio || !!dataFim || !!tipoId || somenteQualificaveis;
+    const hasFilters = !!dataInicio || !!dataFim || tipoId !== "all" || somenteQualificaveis;
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-light text-accent">
-                        Meu <span className="font-semibold">Extrato</span>
-                    </h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Histórico completo de movimentações XP
-                    </p>
-                </div>
+                <SectionTitle
+                    title="Meu"
+                    highlight="Extrato"
+                    subtitle="Histórico completo de movimentações XP"
+                    align="left"
+                    className="mb-0"
+                />
                 <Button
                     variant={showFilters ? "default" : "outline"}
                     size="sm"
@@ -136,7 +135,7 @@ export default function ClienteExtrato() {
                                         <SelectValue placeholder="Todos" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">Todos</SelectItem>
+                                        <SelectItem value="all">Todos</SelectItem>
                                         {tipos.data?.map((t: any) => (
                                             <SelectItem key={t.id} value={String(t.id)}>
                                                 {t.nome}
@@ -163,7 +162,6 @@ export default function ClienteExtrato() {
                         {hasFilters && (
                             <div className="mt-3">
                                 <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-xs">
-                                    <X className="w-3 h-3" />
                                     Limpar filtros
                                 </Button>
                             </div>

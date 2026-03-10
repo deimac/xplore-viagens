@@ -312,7 +312,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 </header>
 
                 {/* Conteúdo com padding para o header */}
-                <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 pt-20 lg:pt-28">
+                <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 md:py-12 pt-24 lg:pt-32">
                     {children}
                 </div>
             </main>
