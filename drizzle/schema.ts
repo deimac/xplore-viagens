@@ -541,6 +541,8 @@ export const xpMovimentacoes = mysqlTable("xp_movimentacoes", {
   saldoApos: int("saldo_apos"),
   descricao: varchar("descricao", { length: 255 }),
   valorReferencia: decimal("valor_referencia", { precision: 10, scale: 2 }),
+  dataCompra: date("data_compra"),
+  codigoRef: varchar("codigo_ref", { length: 30 }),
   dataMovimentacao: timestamp("data_movimentacao").defaultNow(),
 });
 

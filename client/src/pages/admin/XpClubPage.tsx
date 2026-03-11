@@ -51,6 +51,8 @@ export default function XpClubPage() {
     const [compraTipoMovimentacaoId, setCompraTipoMovimentacaoId] = useState("none");
     const [compraXpInput, setCompraXpInput] = useState("");
     const [compraValorInput, setCompraValorInput] = useState("");
+    const [compraDataCompra, setCompraDataCompra] = useState("");
+    const [compraCodigoRef, setCompraCodigoRef] = useState("");
     const [compraDescricao, setCompraDescricao] = useState("");
 
     const [codigoForm, setCodigoForm] = useState({
@@ -245,12 +247,18 @@ export default function XpClubPage() {
             toast.error("XP informado excede o saldo qualificável do cliente");
             return;
         }
+        if (compraCodigoRef.trim().length > 30) {
+            toast.error("Código de referência deve ter no máximo 30 caracteres");
+            return;
+        }
 
         compraMutation.mutate({
             clienteId: compraClienteId,
             tipoMovimentacaoId: Number(compraTipoMovimentacaoId),
             xpManual,
             valorReais: valor || undefined,
+            dataCompra: compraDataCompra || undefined,
+            codigoRef: compraCodigoRef.trim() || undefined,
             descricao: compraDescricao.trim() || undefined,
         });
     };
@@ -580,6 +588,27 @@ export default function XpClubPage() {
                                             />
                                         </div>
                                         <div>
+                                            <Label htmlFor="dataCompra">Data da compra (opcional)</Label>
+                                            <Input
+                                                id="dataCompra"
+                                                type="date"
+                                                value={compraDataCompra}
+                                                onChange={(e) => setCompraDataCompra(e.target.value)}
+                                                title="Data da compra"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="codigoRef">Código de referência (opcional)</Label>
+                                            <Input
+                                                id="codigoRef"
+                                                value={compraCodigoRef}
+                                                onChange={(e) => setCompraCodigoRef(e.target.value)}
+                                                placeholder="Ex: CRM-12345"
+                                                maxLength={30}
+                                                title="Código de referência"
+                                            />
+                                        </div>
+                                        <div>
                                             <Label htmlFor="descricaoCompra">Descrição (opcional)</Label>
                                             <Textarea
                                                 id="descricaoCompra"
@@ -594,6 +623,8 @@ export default function XpClubPage() {
                                             <p><span className="text-muted-foreground">Tipo:</span> {compraTipoMovimentacaoId === "none" ? "-" : tiposMovimentacao.find((t: any) => String(t.id) === compraTipoMovimentacaoId)?.nome || "-"}</p>
                                             <p><span className="text-muted-foreground">XP:</span> {compraXpInput || "0"}</p>
                                             <p><span className="text-muted-foreground">Valor:</span> {compraValorInput || "R$ 0,00"}</p>
+                                            <p><span className="text-muted-foreground">Data compra:</span> {compraDataCompra || "-"}</p>
+                                            <p><span className="text-muted-foreground">Código ref:</span> {compraCodigoRef || "-"}</p>
                                         </div>
                                         <Button onClick={handleRegistrarCompra} disabled={compraMutation.isPending} className="w-full" title="Registrar compra manual">
                                             {compraMutation.isPending ? "Registrando..." : "Registrar compra e creditar XP"}

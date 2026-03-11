@@ -1297,6 +1297,8 @@ export const appRouter = router({
             tipoMovimentacaoId: z.number().int(),
             xpManual: z.number().int().positive(),
             valorReais: z.number().positive().optional(),
+            dataCompra: z.string().optional(),
+            codigoRef: z.string().max(30).optional(),
             descricao: z.string().max(255).optional(),
           })
         )
@@ -1307,6 +1309,8 @@ export const appRouter = router({
             tipoMovimentacaoId: input.tipoMovimentacaoId,
             xpManual: input.xpManual,
             valorReais: input.valorReais,
+            dataCompra: input.dataCompra,
+            codigoRef: input.codigoRef,
             descricao: input.descricao,
           });
         }),

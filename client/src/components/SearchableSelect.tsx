@@ -254,7 +254,11 @@ export default function SearchableSelect({
                                         <div className="flex flex-col min-w-0">
                                             <span className="truncate">{option.nome}</span>
                                             {option.detail && (
-                                                <span className="truncate text-xs text-muted-foreground">{option.detail}</span>
+                                                <span
+                                                    className={`truncate text-xs ${isHighlighted ? "text-accent-foreground" : "text-muted-foreground"}`}
+                                                >
+                                                    {option.detail}
+                                                </span>
                                             )}
                                         </div>
                                         {isSelected && (

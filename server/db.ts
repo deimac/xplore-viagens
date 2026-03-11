@@ -2277,6 +2277,8 @@ export async function registrarXpCompraManual(input: {
   tipoMovimentacaoId: number;
   xpManual: number;
   valorReais?: number;
+  dataCompra?: string;
+  codigoRef?: string;
   descricao?: string;
 }) {
   await getOrCreateXpConta(input.clienteId);
@@ -2312,8 +2314,8 @@ export async function registrarXpCompraManual(input: {
 
   await executeQuery(
     `INSERT INTO xp_movimentacoes
-      (id_cliente, id_users, id_tipo_movimentacao, xp, saldo_apos, descricao, valor_referencia)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (id_cliente, id_users, id_tipo_movimentacao, xp, saldo_apos, descricao, valor_referencia, data_compra, codigo_ref)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.clienteId,
       input.userId,
@@ -2322,6 +2324,8 @@ export async function registrarXpCompraManual(input: {
       saldoApos,
       input.descricao?.trim() || 'Lançamento manual registrado no admin',
       input.valorReais ?? null,
+      input.dataCompra || null,
+      input.codigoRef?.trim() || null,
     ]
   );
 
