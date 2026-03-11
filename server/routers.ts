@@ -1274,6 +1274,55 @@ export const appRouter = router({
       list: adminProcedure.query(async () => {
         return await db.listTiposMovimentacao();
       }),
+      create: adminProcedure
+        .input(
+          z.object({
+            nome: z.string().min(1).max(50),
+            tipoOperacao: z.enum(["credito", "debito", "ajuste"]),
+            qualificavel: z.boolean(),
+            exibirNoLancamentoManual: z.boolean(),
+            descricao: z.string().max(255).nullish(),
+            diasExpiracao: z.number().int().positive().nullish(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.createTipoMovimentacao({
+            nome: input.nome,
+            tipoOperacao: input.tipoOperacao,
+            qualificavel: input.qualificavel,
+            exibirNoLancamentoManual: input.exibirNoLancamentoManual,
+            descricao: input.descricao ?? null,
+            diasExpiracao: input.diasExpiracao ?? null,
+          });
+        }),
+      update: adminProcedure
+        .input(
+          z.object({
+            id: z.number().int(),
+            nome: z.string().min(1).max(50),
+            tipoOperacao: z.enum(["credito", "debito", "ajuste"]),
+            qualificavel: z.boolean(),
+            exibirNoLancamentoManual: z.boolean(),
+            descricao: z.string().max(255).nullish(),
+            diasExpiracao: z.number().int().positive().nullish(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.updateTipoMovimentacao({
+            id: input.id,
+            nome: input.nome,
+            tipoOperacao: input.tipoOperacao,
+            qualificavel: input.qualificavel,
+            exibirNoLancamentoManual: input.exibirNoLancamentoManual,
+            descricao: input.descricao ?? null,
+            diasExpiracao: input.diasExpiracao ?? null,
+          });
+        }),
+      delete: adminProcedure
+        .input(z.object({ id: z.number().int() }))
+        .mutation(async ({ input }) => {
+          return await db.deleteTipoMovimentacao(input.id);
+        }),
       updateExibicao: adminProcedure
         .input(
           z.object({

@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Gift, RefreshCw, Search, Users } from "lucide-react";
+import { Coins, Clock3, Gift, RefreshCw, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -77,6 +78,18 @@ export default function XpClubPage() {
         descricao: "",
     });
 
+    const [tipoModalOpen, setTipoModalOpen] = useState(false);
+    const [tipoEditando, setTipoEditando] = useState<any | null>(null);
+    const [tipoDeleteId, setTipoDeleteId] = useState<number | null>(null);
+    const [tipoForm, setTipoForm] = useState({
+        nome: "",
+        tipoOperacao: "credito" as "credito" | "debito" | "ajuste",
+        qualificavel: false,
+        exibirNoLancamentoManual: true,
+        descricao: "",
+        diasExpiracao: "",
+    });
+
     const movTipoOperacaoParam: "credito" | "debito" | "ajuste" | undefined =
         movTipoOperacao === "all" ? undefined : movTipoOperacao;
 
@@ -110,6 +123,35 @@ export default function XpClubPage() {
             void tiposMovQuery.refetch();
         },
         onError: (err: any) => toast.error(err?.message || "Erro ao atualizar tipo"),
+    });
+
+    const tipoCreateMutation = trpc.xpAdmin.tiposMovimentacao.create.useMutation({
+        onSuccess: () => {
+            toast.success("Tipo criado com sucesso");
+            setTipoModalOpen(false);
+            resetTipoForm();
+            void tiposMovQuery.refetch();
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao criar tipo"),
+    });
+
+    const tipoUpdateMutation = trpc.xpAdmin.tiposMovimentacao.update.useMutation({
+        onSuccess: () => {
+            toast.success("Tipo atualizado com sucesso");
+            setTipoModalOpen(false);
+            resetTipoForm();
+            void tiposMovQuery.refetch();
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao atualizar tipo"),
+    });
+
+    const tipoDeleteMutation = trpc.xpAdmin.tiposMovimentacao.delete.useMutation({
+        onSuccess: () => {
+            toast.success("Tipo removido com sucesso");
+            setTipoDeleteId(null);
+            void tiposMovQuery.refetch();
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao remover tipo"),
     });
 
     const expPreviewQuery = trpc.xpAdmin.expiracao.preview.useQuery();
@@ -327,6 +369,60 @@ export default function XpClubPage() {
         });
     };
 
+    const resetTipoForm = () => {
+        setTipoEditando(null);
+        setTipoForm({
+            nome: "",
+            tipoOperacao: "credito",
+            qualificavel: false,
+            exibirNoLancamentoManual: true,
+            descricao: "",
+            diasExpiracao: "",
+        });
+    };
+
+    const openTipoModal = (tipo?: any) => {
+        if (tipo) {
+            setTipoEditando(tipo);
+            setTipoForm({
+                nome: tipo.nome || "",
+                tipoOperacao: tipo.tipo_operacao || "credito",
+                qualificavel: !!(tipo.qualificavel),
+                exibirNoLancamentoManual: !!(tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual),
+                descricao: tipo.descricao || "",
+                diasExpiracao: tipo.dias_expiracao ? String(tipo.dias_expiracao) : "",
+            });
+        } else {
+            resetTipoForm();
+        }
+        setTipoModalOpen(true);
+    };
+
+    const handleSalvarTipo = () => {
+        if (!tipoForm.nome.trim()) {
+            toast.error("Informe o nome do tipo");
+            return;
+        }
+        const diasExp = tipoForm.diasExpiracao ? Number(tipoForm.diasExpiracao) : null;
+        if (diasExp !== null && (!Number.isFinite(diasExp) || diasExp <= 0)) {
+            toast.error("Dias de expiração inválido");
+            return;
+        }
+        const payload = {
+            nome: tipoForm.nome.trim(),
+            tipoOperacao: tipoForm.tipoOperacao,
+            qualificavel: tipoForm.qualificavel,
+            exibirNoLancamentoManual: tipoForm.exibirNoLancamentoManual,
+            descricao: tipoForm.descricao.trim() || null,
+            diasExpiracao: diasExp,
+        };
+        if (tipoEditando) {
+            tipoUpdateMutation.mutate({ id: Number(tipoEditando.id), ...payload });
+        } else {
+            tipoCreateMutation.mutate(payload);
+        }
+    };
+
     return (
         <AdminLayout>
             <div className="space-y-6">
@@ -387,9 +483,10 @@ export default function XpClubPage() {
                 </div>
 
                 <Tabs defaultValue="movimentacoes" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-6">
+                    <TabsList className="grid w-full grid-cols-7">
                         <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
                         <TabsTrigger value="compras">Lançar pontos</TabsTrigger>
+                        <TabsTrigger value="tipos">Tipos</TabsTrigger>
                         <TabsTrigger value="codigos">Códigos</TabsTrigger>
                         <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
                         <TabsTrigger value="config">Config</TabsTrigger>
@@ -635,6 +732,226 @@ export default function XpClubPage() {
                         </Card>
                     </TabsContent>
 
+                    {/* ── Tipos de Movimentação ── */}
+                    <TabsContent value="tipos" className="space-y-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                                <div>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Tag className="h-5 w-5 text-blue-600" />
+                                        Tipos de Movimentação
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">Gerencie os tipos disponíveis para lançamento de XP.</CardDescription>
+                                </div>
+                                <Button onClick={() => openTipoModal()} size="sm" title="Novo tipo">
+                                    <Plus className="h-4 w-4 mr-1" /> Novo tipo
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {tiposMovimentacao.length === 0 ? (
+                                    <div className="text-center py-10 text-muted-foreground">
+                                        <Tag className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                        <p>Nenhum tipo de movimentação cadastrado.</p>
+                                        <Button variant="outline" className="mt-3" onClick={() => openTipoModal()} title="Criar primeiro tipo">
+                                            <Plus className="h-4 w-4 mr-1" /> Criar primeiro tipo
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="border rounded-lg overflow-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-muted/40">
+                                                <tr>
+                                                    <th className="text-left px-3 py-2">Nome</th>
+                                                    <th className="text-left px-3 py-2">Operação</th>
+                                                    <th className="text-center px-3 py-2">Qualificável</th>
+                                                    <th className="text-center px-3 py-2">Manual</th>
+                                                    <th className="text-center px-3 py-2">Dias exp.</th>
+                                                    <th className="text-left px-3 py-2">Descrição</th>
+                                                    <th className="text-right px-3 py-2">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {tiposMovimentacao.map((tipo: any) => (
+                                                    <tr key={tipo.id} className="border-t hover:bg-muted/20 transition-colors">
+                                                        <td className="px-3 py-2 font-medium">{tipo.nome}</td>
+                                                        <td className="px-3 py-2">
+                                                            <Badge variant={
+                                                                tipo.tipo_operacao === "credito" ? "default" :
+                                                                    tipo.tipo_operacao === "debito" ? "destructive" : "secondary"
+                                                            } className="text-xs">
+                                                                {tipo.tipo_operacao === "credito" ? "Crédito" :
+                                                                    tipo.tipo_operacao === "debito" ? "Débito" : "Ajuste"}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-center">
+                                                            {tipo.qualificavel ? (
+                                                                <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" />
+                                                            ) : (
+                                                                <XCircle className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                                                            )}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-center">
+                                                            <Switch
+                                                                checked={!!(tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual)}
+                                                                onCheckedChange={(checked) =>
+                                                                    tipoExibicaoMutation.mutate({
+                                                                        id: Number(tipo.id),
+                                                                        exibirNoLancamentoManual: checked,
+                                                                    })
+                                                                }
+                                                            />
+                                                        </td>
+                                                        <td className="px-3 py-2 text-center text-muted-foreground">
+                                                            {tipo.dias_expiracao ?? "-"}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">
+                                                            {tipo.descricao || "-"}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right">
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button variant="ghost" size="sm" onClick={() => openTipoModal(tipo)} title="Editar tipo">
+                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setTipoDeleteId(Number(tipo.id))} title="Remover tipo">
+                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Modal criar/editar tipo */}
+                        <Dialog open={tipoModalOpen} onOpenChange={(open) => { if (!open) { setTipoModalOpen(false); resetTipoForm(); } }}>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2">
+                                        <Tag className="h-5 w-5 text-blue-600" />
+                                        {tipoEditando ? "Editar tipo" : "Novo tipo de movimentação"}
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        {tipoEditando ? "Altere as informações do tipo de movimentação." : "Preencha os dados para criar um novo tipo."}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-2">
+                                    <div>
+                                        <Label htmlFor="tipoNome">Nome *</Label>
+                                        <Input
+                                            id="tipoNome"
+                                            value={tipoForm.nome}
+                                            onChange={(e) => setTipoForm((f) => ({ ...f, nome: e.target.value }))}
+                                            placeholder="Ex: Compra de viagem"
+                                            maxLength={50}
+                                            title="Nome do tipo"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Operação *</Label>
+                                        <Select
+                                            value={tipoForm.tipoOperacao}
+                                            onValueChange={(v) => setTipoForm((f) => ({ ...f, tipoOperacao: v as any }))}
+                                        >
+                                            <SelectTrigger title="Tipo de operação">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="credito">Crédito</SelectItem>
+                                                <SelectItem value="debito">Débito</SelectItem>
+                                                <SelectItem value="ajuste">Ajuste</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="tipoDescricao">Descrição</Label>
+                                        <Input
+                                            id="tipoDescricao"
+                                            value={tipoForm.descricao}
+                                            onChange={(e) => setTipoForm((f) => ({ ...f, descricao: e.target.value }))}
+                                            placeholder="Descrição opcional do tipo"
+                                            maxLength={255}
+                                            title="Descrição"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="tipoDiasExp">Dias para expiração</Label>
+                                        <Input
+                                            id="tipoDiasExp"
+                                            value={tipoForm.diasExpiracao}
+                                            onChange={(e) => setTipoForm((f) => ({ ...f, diasExpiracao: e.target.value.replace(/\D/g, "") }))}
+                                            placeholder="Ex: 365 (vazio = não expira)"
+                                            title="Dias para expiração"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                        <div>
+                                            <p className="text-sm font-medium">Qualificável</p>
+                                            <p className="text-xs text-muted-foreground">XP conta para o saldo qualificável do cliente</p>
+                                        </div>
+                                        <Switch
+                                            checked={tipoForm.qualificavel}
+                                            onCheckedChange={(v) => setTipoForm((f) => ({ ...f, qualificavel: v }))}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                        <div>
+                                            <p className="text-sm font-medium">Exibir no lançamento manual</p>
+                                            <p className="text-xs text-muted-foreground">Aparece na lista ao lançar XP manualmente</p>
+                                        </div>
+                                        <Switch
+                                            checked={tipoForm.exibirNoLancamentoManual}
+                                            onCheckedChange={(v) => setTipoForm((f) => ({ ...f, exibirNoLancamentoManual: v }))}
+                                        />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="ghost" onClick={() => { setTipoModalOpen(false); resetTipoForm(); }} title="Cancelar">
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        onClick={handleSalvarTipo}
+                                        disabled={tipoCreateMutation.isPending || tipoUpdateMutation.isPending}
+                                        title="Salvar tipo"
+                                    >
+                                        {(tipoCreateMutation.isPending || tipoUpdateMutation.isPending) ? "Salvando..." : tipoEditando ? "Salvar alterações" : "Criar tipo"}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+
+                        {/* Dialog confirmar exclusão */}
+                        <Dialog open={tipoDeleteId !== null} onOpenChange={(open) => { if (!open) setTipoDeleteId(null); }}>
+                            <DialogContent className="sm:max-w-sm">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2 text-red-600">
+                                        <Trash2 className="h-5 w-5" />
+                                        Remover tipo
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        Tem certeza que deseja remover o tipo <strong>"{tiposMovimentacao.find((t: any) => Number(t.id) === tipoDeleteId)?.nome}"</strong>? Esta ação não pode ser desfeita.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                    <Button variant="ghost" onClick={() => setTipoDeleteId(null)} title="Cancelar">
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => tipoDeleteId && tipoDeleteMutation.mutate({ id: tipoDeleteId })}
+                                        disabled={tipoDeleteMutation.isPending}
+                                        title="Confirmar exclusão"
+                                    >
+                                        {tipoDeleteMutation.isPending ? "Removendo..." : "Remover"}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </TabsContent>
+
                     <TabsContent value="codigos" className="space-y-4">
                         <Card>
                             <CardHeader>
@@ -857,48 +1174,6 @@ export default function XpClubPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Tipos de movimentação</CardTitle>
-                                <CardDescription>Defina quais tipos aparecem no lançamento manual de XP.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="border rounded-lg overflow-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-muted/40">
-                                            <tr>
-                                                <th className="text-left px-3 py-2">Tipo</th>
-                                                <th className="text-left px-3 py-2">Operação</th>
-                                                <th className="text-left px-3 py-2">Qualificável</th>
-                                                <th className="text-right px-3 py-2">Exibir no manual</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {tiposMovimentacao.map((tipo: any) => (
-                                                <tr key={tipo.id} className="border-t">
-                                                    <td className="px-3 py-2 font-medium">{tipo.nome}</td>
-                                                    <td className="px-3 py-2">{tipo.tipo_operacao}</td>
-                                                    <td className="px-3 py-2">{tipo.qualificavel ? "Sim" : "Nao"}</td>
-                                                    <td className="px-3 py-2 text-right">
-                                                        <div className="flex justify-end">
-                                                            <Switch
-                                                                checked={!!(tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual)}
-                                                                onCheckedChange={(checked) =>
-                                                                    tipoExibicaoMutation.mutate({
-                                                                        id: Number(tipo.id),
-                                                                        exibirNoLancamentoManual: checked,
-                                                                    })
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </TabsContent>
 
                     <TabsContent value="expiracao" className="space-y-4">

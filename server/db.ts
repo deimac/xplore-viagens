@@ -1867,7 +1867,7 @@ export async function getXpExtrato(
 
 export async function listTiposMovimentacao() {
   return await executeQuery(
-    `SELECT id, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual
+    `SELECT id, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao, dias_expiracao, created_at
      FROM xp_tipos_movimentacao
      ORDER BY nome`
   );
@@ -1878,6 +1878,68 @@ export async function updateTipoMovimentacaoExibicao(input: { id: number; exibir
     `UPDATE xp_tipos_movimentacao SET exibir_no_lancamento_manual = ? WHERE id = ?`,
     [input.exibirNoLancamentoManual ? 1 : 0, input.id]
   );
+  return { ok: true };
+}
+
+export async function createTipoMovimentacao(input: {
+  nome: string;
+  tipoOperacao: string;
+  qualificavel: boolean;
+  exibirNoLancamentoManual: boolean;
+  descricao?: string | null;
+  diasExpiracao?: number | null;
+}) {
+  const result: any = await executeQuery(
+    `INSERT INTO xp_tipos_movimentacao (nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao, dias_expiracao)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      input.nome,
+      input.tipoOperacao,
+      input.qualificavel ? 1 : 0,
+      input.exibirNoLancamentoManual ? 1 : 0,
+      input.descricao || null,
+      input.diasExpiracao || null,
+    ]
+  );
+  return { id: result.insertId };
+}
+
+export async function updateTipoMovimentacao(input: {
+  id: number;
+  nome: string;
+  tipoOperacao: string;
+  qualificavel: boolean;
+  exibirNoLancamentoManual: boolean;
+  descricao?: string | null;
+  diasExpiracao?: number | null;
+}) {
+  await executeQuery(
+    `UPDATE xp_tipos_movimentacao
+     SET nome = ?, tipo_operacao = ?, qualificavel = ?, exibir_no_lancamento_manual = ?, descricao = ?, dias_expiracao = ?
+     WHERE id = ?`,
+    [
+      input.nome,
+      input.tipoOperacao,
+      input.qualificavel ? 1 : 0,
+      input.exibirNoLancamentoManual ? 1 : 0,
+      input.descricao || null,
+      input.diasExpiracao || null,
+      input.id,
+    ]
+  );
+  return { ok: true };
+}
+
+export async function deleteTipoMovimentacao(id: number) {
+  // Check if type is referenced in movimentacoes
+  const refs: any[] = await executeQuery(
+    `SELECT COUNT(*) as total FROM xp_movimentacoes WHERE id_tipo_movimentacao = ?`,
+    [id]
+  );
+  if (refs[0]?.total > 0) {
+    throw new Error("Este tipo está sendo usado em movimentações e não pode ser removido.");
+  }
+  await executeQuery(`DELETE FROM xp_tipos_movimentacao WHERE id = ?`, [id]);
   return { ok: true };
 }
 
