@@ -1429,6 +1429,14 @@ export const appRouter = router({
             dataExpiracao: z.string().optional().nullable(),
             ativo: z.boolean().optional(),
             diasExpiracao: z.number().int().positive().optional().nullable(),
+          }).superRefine((data, ctx) => {
+            if (data.dataExpiracao && data.diasExpiracao !== null && data.diasExpiracao !== undefined) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Informe apenas uma regra de vencimento: data de validade OU dias de vencimento.',
+                path: ['diasExpiracao'],
+              });
+            }
           })
         )
         .mutation(async ({ input }) => {
@@ -1445,6 +1453,14 @@ export const appRouter = router({
             dataExpiracao: z.string().optional().nullable(),
             ativo: z.boolean().optional(),
             diasExpiracao: z.number().int().positive().optional().nullable(),
+          }).superRefine((data, ctx) => {
+            if (data.dataExpiracao && data.diasExpiracao !== null && data.diasExpiracao !== undefined) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Informe apenas uma regra de vencimento: data de validade OU dias de vencimento.',
+                path: ['diasExpiracao'],
+              });
+            }
           })
         )
         .mutation(async ({ input }) => {

@@ -342,6 +342,11 @@ export default function XpClubPage() {
             return;
         }
 
+        if (codigoForm.dataExpiracao && diasExpiracao !== null) {
+            toast.error("Informe apenas uma regra: validade do codigo OU dias de vencimento do XP");
+            return;
+        }
+
         codigoCreateMutation.mutate({
             idParceiro: codigoForm.idParceiro === "none" ? null : Number(codigoForm.idParceiro),
             codigo: codigoForm.codigo.trim().toUpperCase(),
@@ -1020,8 +1025,8 @@ export default function XpClubPage() {
                                     <Input value={codigoForm.quantidadeMaxUso} onChange={(e) => setCodigoForm((p) => ({ ...p, quantidadeMaxUso: e.target.value.replace(/\D/g, "") }))} placeholder="Ex: 500" title="Quantidade máxima de uso" />
                                 </div>
                                 <div>
-                                    <Label>Data vencimento (opcional)</Label>
-                                    <Input type="date" value={codigoForm.dataExpiracao} onChange={(e) => setCodigoForm((p) => ({ ...p, dataExpiracao: e.target.value }))} title="Data de vencimento" />
+                                    <Label>Validade do codigo (opcional)</Label>
+                                    <Input type="date" value={codigoForm.dataExpiracao} onChange={(e) => setCodigoForm((p) => ({ ...p, dataExpiracao: e.target.value }))} title="Data limite para uso do codigo" />
                                 </div>
                                 <div>
                                     <Label>Dias vencimento XP (opcional)</Label>

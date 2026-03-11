@@ -2456,6 +2456,14 @@ export async function listXpAdminCodigos() {
   );
 }
 
+function validarRegraVencimentoCodigo(dataExpiracao?: string | null, diasExpiracao?: number | null) {
+  const hasData = !!dataExpiracao;
+  const hasDias = diasExpiracao !== null && diasExpiracao !== undefined;
+  if (hasData && hasDias) {
+    throw new Error('Informe apenas uma regra de vencimento: Data de validade do codigo OU Dias de vencimento do XP.');
+  }
+}
+
 export async function createXpAdminCodigo(input: {
   idParceiro?: number | null;
   codigo: string;
@@ -2465,6 +2473,8 @@ export async function createXpAdminCodigo(input: {
   ativo?: boolean;
   diasExpiracao?: number | null;
 }) {
+  validarRegraVencimentoCodigo(input.dataExpiracao ?? null, input.diasExpiracao ?? null);
+
   const result: any = await executeQuery(
     `INSERT INTO xp_codigos
       (id_parceiro, codigo, xp_bonus, quantidade_max_uso, quantidade_usada, data_expiracao, ativo, dias_expiracao)
@@ -2492,6 +2502,19 @@ export async function updateXpAdminCodigo(input: {
   ativo?: boolean;
   diasExpiracao?: number | null;
 }) {
+  // Merge partial updates with current row before validating exclusivity.
+  const rows: any[] = await executeQuery(
+    `SELECT data_expiracao, dias_expiracao FROM xp_codigos WHERE id = ? LIMIT 1`,
+    [input.id]
+  );
+  if (rows.length === 0) {
+    throw new Error('Codigo promocional nao encontrado.');
+  }
+  const current = rows[0];
+  const nextDataExpiracao = input.dataExpiracao !== undefined ? input.dataExpiracao : (current.data_expiracao ?? null);
+  const nextDiasExpiracao = input.diasExpiracao !== undefined ? input.diasExpiracao : (current.dias_expiracao ?? null);
+  validarRegraVencimentoCodigo(nextDataExpiracao, nextDiasExpiracao);
+
   const sets: string[] = [];
   const values: any[] = [];
 
@@ -2641,10 +2664,14 @@ export async function reconciliarVencimentoXpCliente(clienteId: number): Promise
             `SELECT COALESCE(SUM(m.xp), 0) AS expirado_total
              FROM xp_movimentacoes m
              JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+             LEFT JOIN xp_codigos c ON c.id = m.id_codigo
              WHERE m.id_cliente = ?
                AND t.tipo_operacao = 'credito'
-               AND t.dias_expiracao IS NOT NULL
-               AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) < CURDATE()`,
+               AND (
+                 (c.dias_expiracao IS NOT NULL AND DATE_ADD(m.data_movimentacao, INTERVAL c.dias_expiracao DAY) < CURDATE())
+                 OR (c.dias_expiracao IS NULL AND t.dias_expiracao IS NOT NULL AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) < CURDATE())
+                 OR (c.data_expiracao IS NOT NULL AND DATE(c.data_expiracao) < CURDATE())
+               )`,
             [clienteId]
           );
           const expiradoTotal = Number(expRow?.expirado_total || 0);
@@ -2720,9 +2747,13 @@ export async function previewXpExpiracao() {
          SELECT m.id_cliente, COALESCE(SUM(m.xp), 0) AS expirado_total
          FROM xp_movimentacoes m
          JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+         LEFT JOIN xp_codigos c ON c.id = m.id_codigo
          WHERE t.tipo_operacao = 'credito'
-           AND t.dias_expiracao IS NOT NULL
-           AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) < CURDATE()
+           AND (
+             (c.dias_expiracao IS NOT NULL AND DATE_ADD(m.data_movimentacao, INTERVAL c.dias_expiracao DAY) < CURDATE())
+             OR (c.dias_expiracao IS NULL AND t.dias_expiracao IS NOT NULL AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) < CURDATE())
+             OR (c.data_expiracao IS NOT NULL AND DATE(c.data_expiracao) < CURDATE())
+           )
          GROUP BY m.id_cliente
        ) ec
        LEFT JOIN (
