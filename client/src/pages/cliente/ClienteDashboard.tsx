@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { SectionTitle } from "@/components/SectionTitle";
+import { getMovimentacaoPresentation } from "@/lib/xpMovimentacaoPresentation";
 
 export default function ClienteDashboard() {
     const dashboard = trpc.xp.dashboard.useQuery();
@@ -229,6 +230,7 @@ function SaldoCard({
 
 function MovimentacaoRow({ mov }: { mov: any }) {
     const isPositive = Number(mov.xp) > 0;
+    const view = getMovimentacaoPresentation(mov);
     return (
         <div className="flex items-center justify-between py-2 sm:py-3 gap-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -246,10 +248,11 @@ function MovimentacaoRow({ mov }: { mov: any }) {
                 </div>
                 <div className="min-w-0">
                     <p className="text-xs sm:text-sm font-medium truncate">
-                        {mov.tipo_nome || mov.descricao || "Movimentação"}
+                        {view.titulo}
                     </p>
-                    {mov.descricao && mov.tipo_nome && (
-                        <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{mov.descricao}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{view.descricao}</p>
+                    {view.valor && (
+                        <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{view.valor}</p>
                     )}
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
                         {new Date(mov.data_movimentacao).toLocaleDateString("pt-BR")}

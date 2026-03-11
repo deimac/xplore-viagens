@@ -25,6 +25,7 @@ import {
     ListFilter,
 } from "lucide-react";
 import { SectionTitle } from "@/components/SectionTitle";
+import { getMovimentacaoPresentation } from "@/lib/xpMovimentacaoPresentation";
 
 const PAGE_SIZES = [20, 50] as const;
 type PageSize = typeof PAGE_SIZES[number];
@@ -208,6 +209,7 @@ export default function ClienteExtrato() {
                                     <tbody className="divide-y">
                                         {data.items.map((mov: any) => {
                                             const isPositive = Number(mov.xp) > 0;
+                                            const view = getMovimentacaoPresentation(mov);
                                             return (
                                                 <tr key={mov.id} className="hover:bg-muted/10 transition-colors">
                                                     <td className="py-3 px-4 whitespace-nowrap">
@@ -233,11 +235,14 @@ export default function ClienteExtrato() {
                                                     </td>
                                                     <td className="py-3 px-4">
                                                         <Badge variant="outline" className="text-[11px] font-normal">
-                                                            {mov.tipo_nome || "-"}
+                                                            {view.titulo || "-"}
                                                         </Badge>
                                                     </td>
                                                     <td className="py-3 px-4 text-muted-foreground truncate max-w-[200px] hidden sm:table-cell">
-                                                        {mov.descricao || "-"}
+                                                        <div className="space-y-0.5">
+                                                            <p className="truncate">{view.descricao || "-"}</p>
+                                                            {view.valor && <p className="truncate text-xs">{view.valor}</p>}
+                                                        </div>
                                                     </td>
                                                     <td className="py-3 px-4 text-right whitespace-nowrap">
                                                         <span

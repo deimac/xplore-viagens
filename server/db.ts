@@ -1784,7 +1784,7 @@ export async function getXpDashboard(clienteId: number) {
   const ultimas: any[] = await executeQuery(
     `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
-            t.nome AS tipo_nome, t.tipo_operacao
+            t.nome AS tipo_nome, t.slug AS tipo_slug, t.tipo_operacao
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
@@ -1855,7 +1855,7 @@ export async function getXpExtrato(
   const rows: any[] = await executeQuery(
     `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
-            t.nome AS tipo_nome, t.tipo_operacao, t.qualificavel
+            t.nome AS tipo_nome, t.slug AS tipo_slug, t.tipo_operacao, t.qualificavel
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      ${where}
