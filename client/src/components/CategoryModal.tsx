@@ -65,6 +65,8 @@ export default function CategoryModal({
           <button
             onClick={onClose}
             className="text-accent/60 hover:text-accent transition-colors"
+            title="Fechar"
+            aria-label="Fechar modal"
           >
             <X className="w-5 h-5" />
           </button>

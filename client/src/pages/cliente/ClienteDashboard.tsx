@@ -76,14 +76,15 @@ export default function ClienteDashboard() {
                 />
                 <SaldoCard
                     icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
-                    label="Disponível"
-                    value={formatPontos(data.saldoDisponivel)}
+                    label="Resgatável"
+                    value={formatPontos(data.saldoResgatavel)}
                     sub={`≈ R$ ${Number(data.valorEmReais).toFixed(2)}`}
                 />
                 <SaldoCard
                     icon={<Gift className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Qualificável"
                     value={formatPontos(data.saldoQualificavel)}
+                    sub={data.bonusDesbloqueado ? "Bônus desbloqueado ✓" : `Faltam ${formatPontos(Math.max(0, (data.xpMinimoResgate || 0) - data.saldoQualificavel))} p/ desbloquear bônus`}
                 />
                 <SaldoCard
                     icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}

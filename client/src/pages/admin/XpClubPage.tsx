@@ -285,10 +285,10 @@ export default function XpClubPage() {
     }, [clientes, compraClienteId]);
 
     const tipoSelecionado = tiposMovimentacao.find((t: any) => String(t.id) === compraTipoMovimentacaoId) || null;
-    const saldoQualificavelSelecionado = Number(clienteSelecionado?.saldo_qualificavel || 0);
+    const saldoResgatavelSelecionado = Number(clienteSelecionado?.saldo_resgatavel || 0);
     const xpManualNumber = Number(compraXpInput.replace(/\D/g, "")) || 0;
-    const debitoPercent = saldoQualificavelSelecionado > 0
-        ? Math.min(100, Math.round((xpManualNumber / saldoQualificavelSelecionado) * 100))
+    const debitoPercent = saldoResgatavelSelecionado > 0
+        ? Math.min(100, Math.round((xpManualNumber / saldoResgatavelSelecionado) * 100))
         : 0;
 
     const handleRegistrarCompra = () => {
@@ -307,8 +307,8 @@ export default function XpClubPage() {
             toast.error("Informe a quantidade de XP");
             return;
         }
-        if (tipoSelecionado?.tipo_operacao === "debito" && xpManual > saldoQualificavelSelecionado) {
-            toast.error("XP informado excede o saldo qualificável do cliente");
+        if (tipoSelecionado?.tipo_operacao === "debito" && xpManual > saldoResgatavelSelecionado) {
+            toast.error("XP informado excede o saldo resgatável do cliente");
             return;
         }
         if (compraCodigoRef.trim().length > 30) {
@@ -566,7 +566,7 @@ export default function XpClubPage() {
                         <div className="flex items-center gap-2 px-4 py-2 border-b">
                             <Users className="h-3.5 w-3.5 text-purple-600" />
                             <span className="text-xs font-medium">Clientes aptos a resgatar</span>
-                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Clientes com saldo qualificável suficiente para solicitar resgate.</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Clientes com saldo XP suficiente para solicitar resgate.</TooltipContent></Tooltip>
                         </div>
                         <div className="max-h-[180px] overflow-y-auto">
                             {(clientesAptos as any[]).length === 0 ? (
@@ -576,7 +576,7 @@ export default function XpClubPage() {
                                     <thead className="sticky top-0 bg-card">
                                         <tr className="text-left text-muted-foreground">
                                             <th className="px-3 py-1.5 font-medium">Cliente</th>
-                                            <th className="px-3 py-1.5 font-medium text-right">XP qualif.</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">Resgatável</th>
                                             <th className="px-3 py-1.5 font-medium text-right">Valor est.</th>
                                         </tr>
                                     </thead>
@@ -584,7 +584,7 @@ export default function XpClubPage() {
                                         {(clientesAptos as any[]).slice(0, 10).map((c: any) => (
                                             <tr key={c.id} className="border-t border-dashed">
                                                 <td className="px-3 py-1.5 truncate max-w-[120px]">{c.nome || c.email}</td>
-                                                <td className="px-3 py-1.5 text-right tabular-nums font-medium">{Number(c.saldo_qualificavel).toLocaleString("pt-BR")}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums font-medium">{Number(c.saldo_resgatavel).toLocaleString("pt-BR")}</td>
                                                 <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{formatCurrency(c.valor_estimado)}</td>
                                             </tr>
                                         ))}
@@ -594,12 +594,12 @@ export default function XpClubPage() {
                         </div>
                     </div>
 
-                    {/* Maiores saldos qualificáveis */}
+                    {/* Maiores saldos resgatáveis */}
                     <div className="rounded-lg border bg-card">
                         <div className="flex items-center gap-2 px-4 py-2 border-b">
                             <Award className="h-3.5 w-3.5 text-emerald-600" />
-                            <span className="text-xs font-medium">Maiores saldos qualificáveis</span>
-                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Top clientes com os maiores saldos de pontos qualificáveis válidos.</TooltipContent></Tooltip>
+                            <span className="text-xs font-medium">Maiores saldos resgatáveis</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Top clientes com os maiores saldos resgatáveis de XP.</TooltipContent></Tooltip>
                         </div>
                         <div className="max-h-[180px] overflow-y-auto">
                             {(topQualificaveis as any[]).length === 0 ? (
@@ -609,7 +609,7 @@ export default function XpClubPage() {
                                     <thead className="sticky top-0 bg-card">
                                         <tr className="text-left text-muted-foreground">
                                             <th className="px-3 py-1.5 font-medium">Cliente</th>
-                                            <th className="px-3 py-1.5 font-medium text-right">XP qualif.</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">Resgatável</th>
                                             <th className="px-3 py-1.5 font-medium text-right">Valor est.</th>
                                         </tr>
                                     </thead>
@@ -617,7 +617,7 @@ export default function XpClubPage() {
                                         {(topQualificaveis as any[]).map((c: any) => (
                                             <tr key={c.id} className="border-t border-dashed">
                                                 <td className="px-3 py-1.5 truncate max-w-[120px]">{c.nome || c.email}</td>
-                                                <td className="px-3 py-1.5 text-right tabular-nums font-medium">{Number(c.saldo_qualificavel).toLocaleString("pt-BR")}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums font-medium">{Number(c.saldo_resgatavel).toLocaleString("pt-BR")}</td>
                                                 <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{formatCurrency(c.valor_estimado)}</td>
                                             </tr>
                                         ))}
@@ -778,7 +778,7 @@ export default function XpClubPage() {
                                             options={clientesLimitados.map((c: any) => ({
                                                 id: c.id,
                                                 nome: c.nome || "",
-                                                detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP • Qualificável: ${Number(c.saldo_qualificavel || 0)} XP`,
+                                                detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP • Resgatável: ${Number(c.saldo_resgatavel || 0)} XP`,
                                             }))}
                                             value={compraClienteId ? String(compraClienteId) : ""}
                                             onChange={(id) => setCompraClienteId(Number(id))}
@@ -812,7 +812,7 @@ export default function XpClubPage() {
                                         {tipoSelecionado?.tipo_operacao === "debito" && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-2">
                                                 <p>Atencao: este tipo debita XP do cliente. O valor informado sera subtraido do saldo.</p>
-                                                <p>Disponivel para debito (qualificavel): {saldoQualificavelSelecionado.toLocaleString("pt-BR")} XP</p>
+                                                <p>Disponível para débito (resgatável): {saldoResgatavelSelecionado.toLocaleString("pt-BR")} XP</p>
                                                 <div className="space-y-1">
                                                     <div className="flex items-center justify-between text-[11px] text-amber-900">
                                                         <span>0%</span>
@@ -827,11 +827,13 @@ export default function XpClubPage() {
                                                         value={debitoPercent}
                                                         onChange={(e) => {
                                                             const percent = Number(e.target.value);
-                                                            const xpValue = Math.round((saldoQualificavelSelecionado * percent) / 100);
+                                                            const xpValue = Math.round((saldoResgatavelSelecionado * percent) / 100);
                                                             setCompraXpInput(String(xpValue));
                                                         }}
                                                         className="w-full"
-                                                        disabled={saldoQualificavelSelecionado <= 0}
+                                                        disabled={saldoResgatavelSelecionado <= 0}
+                                                        title="Percentual do saldo resgatável para débito"
+                                                        aria-label="Percentual do saldo resgatável para débito"
                                                     />
                                                 </div>
                                             </div>
@@ -844,7 +846,7 @@ export default function XpClubPage() {
                                                 onChange={(e) => {
                                                     const next = e.target.value.replace(/\D/g, "");
                                                     if (tipoSelecionado?.tipo_operacao === "debito") {
-                                                        const max = saldoQualificavelSelecionado;
+                                                        const max = saldoResgatavelSelecionado;
                                                         const nextNumber = Number(next || 0);
                                                         setCompraXpInput(String(Math.min(max, nextNumber)));
                                                         return;
@@ -853,7 +855,7 @@ export default function XpClubPage() {
                                                 }}
                                                 placeholder={
                                                     tipoSelecionado?.tipo_operacao === "debito"
-                                                        ? `Max: ${saldoQualificavelSelecionado.toLocaleString("pt-BR")} XP`
+                                                        ? `Max: ${saldoResgatavelSelecionado.toLocaleString("pt-BR")} XP`
                                                         : "Ex: 1500"
                                                 }
                                                 title="Quantidade de XP"

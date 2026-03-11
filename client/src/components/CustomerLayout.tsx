@@ -159,9 +159,9 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                         <div className="bg-muted/15 rounded-lg p-3 border border-muted/40">
                             <div className="flex items-center gap-2 mb-1">
                                 <Coins className="w-4 h-4 text-accent" strokeWidth={1.5} />
-                                <span className="text-xs font-medium text-muted-foreground">Disponível</span>
+                                <span className="text-xs font-medium text-muted-foreground">Resgatável</span>
                             </div>
-                            <p className="text-lg font-semibold text-accent">{dashboard.saldoDisponivel.toLocaleString()} XP</p>
+                            <p className="text-lg font-semibold text-accent">{(dashboard.saldoResgatavel ?? dashboard.saldoDisponivel).toLocaleString()} XP</p>
                             <p className="text-xs text-muted-foreground">R$ {dashboard.valorEmReais.toFixed(2)}</p>
                         </div>
 
@@ -175,7 +175,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                                 <p className="text-sm font-medium text-green-600">Liberado!</p>
                             ) : (
                                 <p className="text-xs text-muted-foreground">
-                                    Faltam {Math.max(0, dashboard.xpMinimoResgate - dashboard.saldoQualificavel).toLocaleString()} XP qualif.
+                                    Faltam {Math.max(0, dashboard.xpMinimoResgate - dashboard.saldoQualificavel).toLocaleString()} XP qualif. p/ desbloquear bônus
                                 </p>
                             )}
                         </div>
