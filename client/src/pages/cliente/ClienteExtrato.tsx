@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
     Select,
     SelectContent,
@@ -335,14 +335,16 @@ export default function ClienteExtrato() {
 
 function InfoTooltip({ text }: { text: string }) {
     return (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <CircleHelp className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help flex-shrink-0" />
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+        <Popover>
+            <PopoverTrigger asChild>
+                <button type="button" className="inline-flex flex-shrink-0" aria-label="Ajuda">
+                    <CircleHelp className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent side="top" className="max-w-[260px] text-xs leading-relaxed p-3">
                 {text}
-            </TooltipContent>
-        </Tooltip>
+            </PopoverContent>
+        </Popover>
     );
 }
 
@@ -397,23 +399,27 @@ function DesktopRow({ mov }: { mov: any }) {
             {/* Tipo XP (Q ou B) */}
             <td className="py-3 px-4 text-center">
                 {mov.qualificavel ? (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 hover:bg-blue-200 border-0 cursor-help">
-                                <Star className="w-2.5 h-2.5 mr-0.5" /> Q
-                            </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent className="text-xs">Qualificável — conta para liberar bônus</TooltipContent>
-                    </Tooltip>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <button type="button" aria-label="Tipo XP">
+                                <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 hover:bg-blue-200 border-0 cursor-help">
+                                    <Star className="w-2.5 h-2.5 mr-0.5" /> Q
+                                </Badge>
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" className="text-xs p-2.5 w-auto max-w-[200px]">Qualificável — conta para liberar bônus</PopoverContent>
+                    </Popover>
                 ) : (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-purple-200 text-purple-600 cursor-help">
-                                <Gift className="w-2.5 h-2.5 mr-0.5" /> B
-                            </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent className="text-xs">Bônus — liberado ao atingir o mínimo</TooltipContent>
-                    </Tooltip>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <button type="button" aria-label="Tipo XP">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-purple-200 text-purple-600 cursor-help">
+                                    <Gift className="w-2.5 h-2.5 mr-0.5" /> B
+                                </Badge>
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" className="text-xs p-2.5 w-auto max-w-[200px]">Bônus — liberado ao atingir o mínimo</PopoverContent>
+                    </Popover>
                 )}
             </td>
             {/* Vence */}
