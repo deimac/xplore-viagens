@@ -2,6 +2,7 @@ type MovimentacaoInput = {
     xp: number | string;
     tipo_nome?: string | null;
     tipo_slug?: string | null;
+    tipo_descricao?: string | null;
     descricao?: string | null;
 };
 
@@ -17,13 +18,20 @@ function normalizeIdentifier(value?: string | null): string {
 
 function parseCodigoFromDescricao(descricao?: string | null): string | null {
     if (!descricao) return null;
-    const match = descricao.match(/codigo\s+promocional\s*:\s*(.+)$/i);
+    const normalized = descricao
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    const match = normalized.match(/codigo\s+promocional\s*:\s*(.+)$/i);
     return match?.[1]?.trim() || null;
 }
 
 function isInternalDescricao(descricao?: string | null): boolean {
     if (!descricao) return false;
-    const d = descricao.trim().toLowerCase();
+    const d = descricao
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
     return (
         d.startsWith("baixa automatica por vencimento") ||
         d.startsWith("expiracao automatica") ||
@@ -33,29 +41,32 @@ function isInternalDescricao(descricao?: string | null): boolean {
 
 export function getMovimentacaoPresentation(mov: MovimentacaoInput) {
     const slug = normalizeIdentifier(mov.tipo_slug || mov.tipo_nome);
-    const xpAbs = Math.abs(Number(mov.xp || 0)).toLocaleString("pt-BR");
+    const tipoDescricao = mov.tipo_descricao?.trim() || "";
     const rawDescricao = mov.descricao?.trim() || "";
+    const titulo = mov.tipo_nome?.trim() || "Movimentacao";
 
-    if (slug === "vencimento" || slug === "expiracao") {
-        return {
-            titulo: "Vencimento",
-            descricao: "Debito automatico de pontos vencidos",
-            valor: `${xpAbs} XP`,
-        };
+    let descricao = tipoDescricao;
+    if (!descricao) {
+        descricao = Number(mov.xp) >= 0 ? "Credito de pontos" : "Debito de pontos";
     }
+
+    let valor: string | null = null;
 
     if (slug === "codigo_promocional") {
         const codigo = parseCodigoFromDescricao(rawDescricao);
-        return {
-            titulo: "Codigo Promocional",
-            descricao: "Bonus aplicado por codigo",
-            valor: codigo ? `Codigo: ${codigo}` : null,
-        };
-    }
+        valor = codigo ? `Codigo: ${codigo}` : null;
+    } else if (slug !== "vencimento" && slug !== "expiracao") {
+        // For regular movements, show custom operational detail when it differs from the default type description.
+        const sameAsTipoDescricao =
+            rawDescricao &&
+            tipoDescricao &&
+            rawDescricao.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() ===
+            tipoDescricao.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    const titulo = mov.tipo_nome?.trim() || "Movimentacao";
-    const descricao = Number(mov.xp) >= 0 ? "Credito de pontos" : "Debito de pontos";
-    const valor = rawDescricao && !isInternalDescricao(rawDescricao) ? rawDescricao : null;
+        if (rawDescricao && !isInternalDescricao(rawDescricao) && !sameAsTipoDescricao) {
+            valor = rawDescricao;
+        }
+    }
 
     return { titulo, descricao, valor };
 }
