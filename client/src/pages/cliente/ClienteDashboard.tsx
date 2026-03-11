@@ -100,8 +100,8 @@ export default function ClienteDashboard() {
                 </Link>
             </div>
 
-            {/* ── 4 Cards de métricas ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* ── Cards de métricas ── */}
+            <div className={`grid gap-3 sm:gap-4 ${saldoNaoQualificavel > 0 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"}`}>
                 {/* Resgatável */}
                 <MetricCard
                     icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -117,33 +117,37 @@ export default function ClienteDashboard() {
                     icon={<Star className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Qualificável"
                     value={formatPontos(saldoQualificavel)}
-                    sub="Conta p/ liberar bônus"
+                    sub={saldoNaoQualificavel > 0 ? "Conta p/ liberar bônus" : "Seus pontos acumulados"}
                     tooltip="São os pontos acumulados por compras e movimentações oficiais. Esse saldo é a base para desbloquear seus pontos extras de bônus e código."
                 />
 
-                {/* Bônus bloqueados / liberados */}
-                <MetricCard
-                    icon={bonusDesbloqueado ? <Unlock className="w-4 h-4 sm:w-5 sm:h-5" /> : <Lock className="w-4 h-4 sm:w-5 sm:h-5" />}
-                    label={bonusDesbloqueado ? "Bônus liberados" : "Bônus bloqueados"}
-                    value={formatPontos(saldoNaoQualificavel)}
-                    sub={bonusDesbloqueado ? "Já inclusos no resgatável" : "Libere atingindo o mínimo"}
-                    tooltip="São pontos extras ganhos por códigos promocionais ou bônus. Só podem ser usados quando seu saldo qualificável atinge o mínimo exigido."
-                    variant={bonusDesbloqueado ? "success" : "muted"}
-                />
+                {/* Bônus bloqueados / liberados — só mostra se o cliente tem bônus */}
+                {saldoNaoQualificavel > 0 && (
+                    <MetricCard
+                        icon={bonusDesbloqueado ? <Unlock className="w-4 h-4 sm:w-5 sm:h-5" /> : <Lock className="w-4 h-4 sm:w-5 sm:h-5" />}
+                        label={bonusDesbloqueado ? "Bônus liberados" : "Bônus bloqueados"}
+                        value={formatPontos(saldoNaoQualificavel)}
+                        sub={bonusDesbloqueado ? "Já inclusos no resgatável" : "Libere atingindo o mínimo"}
+                        tooltip="São pontos extras ganhos por códigos promocionais ou bônus. Só podem ser usados quando seu saldo qualificável atinge o mínimo exigido."
+                        variant={bonusDesbloqueado ? "success" : "muted"}
+                    />
+                )}
 
-                {/* Meta de desbloqueio */}
-                <MetricCard
-                    icon={<Target className="w-4 h-4 sm:w-5 sm:h-5" />}
-                    label="Meta de desbloqueio"
-                    value={bonusDesbloqueado ? "Liberado" : `Faltam ${formatPontos(faltamDesbloquear)}`}
-                    sub={xpMinimo > 0 ? `Mínimo: ${formatPontos(xpMinimo)} XP qualif.` : "Sem mínimo configurado"}
-                    tooltip="Mostra quanto ainda falta de XP qualificável para liberar seus bônus e pontos de código. Quando atingir, todos os pontos extras ficam disponíveis."
-                    variant={bonusDesbloqueado ? "success" : "warning"}
-                />
+                {/* Meta de desbloqueio — só mostra se o cliente tem bônus */}
+                {saldoNaoQualificavel > 0 && (
+                    <MetricCard
+                        icon={<Target className="w-4 h-4 sm:w-5 sm:h-5" />}
+                        label="Meta de desbloqueio"
+                        value={bonusDesbloqueado ? "Liberado" : `Faltam ${formatPontos(faltamDesbloquear)}`}
+                        sub={xpMinimo > 0 ? `Mínimo: ${formatPontos(xpMinimo)} XP qualif.` : "Sem mínimo configurado"}
+                        tooltip="Mostra quanto ainda falta de XP qualificável para liberar seus bônus e pontos de código. Quando atingir, todos os pontos extras ficam disponíveis."
+                        variant={bonusDesbloqueado ? "success" : "warning"}
+                    />
+                )}
             </div>
 
-            {/* ── Barra de progresso visual ── */}
-            {xpMinimo > 0 && (
+            {/* ── Barra de progresso visual (só mostra se o cliente tem bônus) ── */}
+            {xpMinimo > 0 && saldoNaoQualificavel > 0 && (
                 <Card className={bonusDesbloqueado ? "border-green-200 bg-green-50/30" : "border-accent/20 bg-accent/[0.02]"}>
                     <CardContent className="py-4 sm:py-5">
                         <div className="flex items-center justify-between mb-2">
