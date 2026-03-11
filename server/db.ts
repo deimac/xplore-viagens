@@ -393,6 +393,16 @@ function normalizeOptionalDateColumn(d: any): string | null | undefined {
   return normalizeDateColumn(d);
 }
 
+function normalizeTipoSlug(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .replace(/_+/g, '_');
+}
+
 function parseViagensRows(rows: any[]) {
   return rows.map((row: any) => ({
     ...row,
@@ -1867,7 +1877,7 @@ export async function getXpExtrato(
 
 export async function listTiposMovimentacao() {
   return await executeQuery(
-    `SELECT id, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, ativo, descricao, dias_expiracao, created_at
+    `SELECT id, nome, slug, tipo_operacao, qualificavel, exibir_no_lancamento_manual, ativo, descricao, dias_expiracao, created_at
      FROM xp_tipos_movimentacao
      ORDER BY ativo DESC, nome`
   );
@@ -1883,17 +1893,22 @@ export async function updateTipoMovimentacaoExibicao(input: { id: number; exibir
 
 export async function createTipoMovimentacao(input: {
   nome: string;
+  slug?: string;
   tipoOperacao: string;
   qualificavel: boolean;
   exibirNoLancamentoManual: boolean;
   descricao?: string | null;
   diasExpiracao?: number | null;
 }) {
+  const slug = normalizeTipoSlug(input.slug || input.nome);
+  if (!slug) throw new Error('Slug do tipo de movimentacao invalido.');
+
   const result: any = await executeQuery(
-    `INSERT INTO xp_tipos_movimentacao (nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao, dias_expiracao)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO xp_tipos_movimentacao (nome, slug, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao, dias_expiracao)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       input.nome,
+      slug,
       input.tipoOperacao,
       input.qualificavel ? 1 : 0,
       input.exibirNoLancamentoManual ? 1 : 0,
@@ -1907,18 +1922,23 @@ export async function createTipoMovimentacao(input: {
 export async function updateTipoMovimentacao(input: {
   id: number;
   nome: string;
+  slug?: string;
   tipoOperacao: string;
   qualificavel: boolean;
   exibirNoLancamentoManual: boolean;
   descricao?: string | null;
   diasExpiracao?: number | null;
 }) {
+  const slug = normalizeTipoSlug(input.slug || input.nome);
+  if (!slug) throw new Error('Slug do tipo de movimentacao invalido.');
+
   await executeQuery(
     `UPDATE xp_tipos_movimentacao
-     SET nome = ?, tipo_operacao = ?, qualificavel = ?, exibir_no_lancamento_manual = ?, descricao = ?, dias_expiracao = ?
+     SET nome = ?, slug = ?, tipo_operacao = ?, qualificavel = ?, exibir_no_lancamento_manual = ?, descricao = ?, dias_expiracao = ?
      WHERE id = ?`,
     [
       input.nome,
+      slug,
       input.tipoOperacao,
       input.qualificavel ? 1 : 0,
       input.exibirNoLancamentoManual ? 1 : 0,
@@ -1959,6 +1979,13 @@ export async function reativarTipoMovimentacao(id: number) {
 export async function getTipoMovimentacaoPorNome(nome: string) {
   const rows: any[] = await executeQuery(
     `SELECT * FROM xp_tipos_movimentacao WHERE nome = ? LIMIT 1`, [nome]
+  );
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function getTipoMovimentacaoPorSlug(slug: string) {
+  const rows: any[] = await executeQuery(
+    `SELECT * FROM xp_tipos_movimentacao WHERE slug = ? LIMIT 1`, [slug]
   );
   return rows.length > 0 ? rows[0] : null;
 }
@@ -2020,9 +2047,14 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
           );
           if (usados.length > 0) throw new Error("Você já utilizou este código.");
 
-          // 6. Buscar tipo 'codigo_promocional'
+          // 6. Buscar tipo tecnico 'codigo_promocional' (com fallback por nome para compatibilidade)
           const tipos: any[] = await query(
-            `SELECT * FROM xp_tipos_movimentacao WHERE nome = 'codigo_promocional' LIMIT 1`
+            `SELECT *
+             FROM xp_tipos_movimentacao
+             WHERE slug = 'codigo_promocional'
+                OR nome IN ('codigo_promocional', 'Codigo Promocional', 'Código Promocional')
+             ORDER BY CASE WHEN slug = 'codigo_promocional' THEN 0 ELSE 1 END
+             LIMIT 1`
           );
           if (tipos.length === 0) throw new Error("Tipo de movimentação 'codigo_promocional' não configurado.");
           const tipo = tipos[0];
@@ -2101,24 +2133,27 @@ async function getSaldoClienteAtual(clienteId: number): Promise<number> {
 }
 
 async function ensureTipoMovimentacao(
+  slug: string,
   nome: string,
   tipoOperacao: 'credito' | 'debito',
   qualificavel: boolean,
   descricao: string,
   diasExpiracao: number | null = null
 ): Promise<number> {
+  const normalizedSlug = normalizeTipoSlug(slug);
+
   const rows: any[] = await executeQuery(
-    `SELECT id FROM xp_tipos_movimentacao WHERE nome = ? LIMIT 1`,
-    [nome]
+    `SELECT id FROM xp_tipos_movimentacao WHERE slug = ? LIMIT 1`,
+    [normalizedSlug]
   );
 
   if (rows.length > 0) return Number(rows[0].id);
 
   const result: any = await executeQuery(
     `INSERT INTO xp_tipos_movimentacao
-      (nome, tipo_operacao, qualificavel, descricao, dias_expiracao)
-     VALUES (?, ?, ?, ?, ?)`,
-    [nome, tipoOperacao, qualificavel ? 1 : 0, descricao, diasExpiracao]
+      (slug, nome, tipo_operacao, qualificavel, descricao, dias_expiracao)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [normalizedSlug, nome, tipoOperacao, qualificavel ? 1 : 0, descricao, diasExpiracao]
   );
   return Number(result.insertId);
 }
@@ -2588,15 +2623,15 @@ export async function reconciliarVencimentoXpCliente(clienteId: number): Promise
 
           // Ensure the 'vencimento' tipo exists
           let tipoRows: any[] = await query(
-            `SELECT id FROM xp_tipos_movimentacao WHERE nome = 'vencimento' LIMIT 1`
+            `SELECT id FROM xp_tipos_movimentacao WHERE slug = 'vencimento' LIMIT 1`
           );
           let tipoVencimentoId: number;
           if (tipoRows.length > 0) {
             tipoVencimentoId = Number(tipoRows[0].id);
           } else {
             const ins: any = await query(
-              `INSERT INTO xp_tipos_movimentacao (nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao)
-               VALUES ('vencimento', 'debito', 0, 0, 'Baixa automática por vencimento de XP')`,
+              `INSERT INTO xp_tipos_movimentacao (slug, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao)
+               VALUES ('vencimento', 'Vencimento', 'debito', 0, 0, 'Baixa automática por vencimento de XP')`,
             );
             tipoVencimentoId = Number(ins.insertId);
           }
@@ -2694,7 +2729,7 @@ export async function previewXpExpiracao() {
          SELECT m.id_cliente, COALESCE(ABS(SUM(m.xp)), 0) AS debitado_total
          FROM xp_movimentacoes m
          JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-         WHERE t.nome = 'vencimento'
+          WHERE t.slug = 'vencimento'
          GROUP BY m.id_cliente
        ) ed ON ed.id_cliente = ec.id_cliente
      ) p
@@ -2722,6 +2757,7 @@ export async function runXpExpiracao(adminUserId: number) {
   }
 
   const tipoExpiracaoId = await ensureTipoMovimentacao(
+    'vencimento',
     'vencimento',
     'debito',
     false,
