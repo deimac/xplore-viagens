@@ -13,10 +13,6 @@ import {
     Receipt,
     LogOut,
     ArrowLeft,
-    Gift,
-    AlertTriangle,
-    Trophy,
-    Coins,
     Menu,
     X,
     Home as HomeIcon,
@@ -27,6 +23,8 @@ import {
     Facebook,
     Linkedin,
     Twitter,
+    FileText,
+    HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,9 +40,6 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
 
     const clienteQuery = trpc.cliente.me.useQuery();
     const logoutMutation = trpc.clienteAuth.logout.useMutation();
-    const dashboardQuery = trpc.xp.dashboard.useQuery(undefined, {
-        enabled: !!clienteQuery.data?.cadastroCompleto,
-    });
     const { data: companySettings } = trpc.companySettings.get.useQuery();
 
     const handleLogout = async () => {
@@ -61,12 +56,12 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         { id: "home", icon: HomeIcon, label: "Home", href: "/" },
         { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/xp-club/dashboard" },
         { id: "extrato", icon: Receipt, label: "Extrato", href: "/xp-club/extrato" },
+        { id: "como-funciona", icon: HelpCircle, label: "Como funciona", href: "/xp-club/como-funciona" },
     ];
 
     const isActive = (href: string) => location === href;
 
     const cliente = clienteQuery.data;
-    const dashboard = dashboardQuery.data;
 
     // Fechar menu mobile ao clicar fora
     useEffect(() => {
@@ -150,62 +145,39 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 </div>
             </aside>
 
-            {/* ── Sidebar Direita (Desktop) ── */}
+            {/* ── Sidebar Direita (Desktop) – Atalhos, mesmo padrão da Home ── */}
             <aside className="hidden lg:flex fixed right-0 top-0 h-screen w-40 bg-background border-l border-muted flex-col items-start justify-center py-8 px-6 z-50">
-                {/* Resumo rápido XP */}
-                {dashboard && (
-                    <div className="flex flex-col gap-3 w-full">
-                        {/* Saldo */}
-                        <div className="bg-muted/15 rounded-lg p-3 border border-muted/40">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Coins className="w-4 h-4 text-accent" strokeWidth={1.5} />
-                                <span className="text-xs font-medium text-muted-foreground">Resgatável</span>
+                {/* WhatsApp */}
+                {companySettings?.whatsapp && (
+                    <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40 mb-3">
+                        <button
+                            onClick={() => {
+                                const phoneNumber = companySettings.whatsapp!.replace(/\D/g, "");
+                                window.open(`https://wa.me/55${phoneNumber}`, "_blank");
+                            }}
+                            className="w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40"
+                        >
+                            <MessageCircle className="w-5 h-5 stroke-accent text-accent" strokeWidth={1.5} />
+                            <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
+                                WhatsApp
                             </div>
-                            <p className="text-lg font-semibold text-accent">{(dashboard.saldoResgatavel ?? dashboard.saldoDisponivel).toLocaleString()} XP</p>
-                            <p className="text-xs text-muted-foreground">R$ {dashboard.valorEmReais.toFixed(2)}</p>
-                        </div>
-
-                        {/* Status resgate */}
-                        <div className="bg-muted/15 rounded-lg p-3 border border-muted/40">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Trophy className="w-4 h-4 text-accent" strokeWidth={1.5} />
-                                <span className="text-xs font-medium text-muted-foreground">Resgate</span>
-                            </div>
-                            {dashboard.podeResgatar ? (
-                                <p className="text-sm font-medium text-green-600">Liberado!</p>
-                            ) : (
-                                <p className="text-xs text-muted-foreground">
-                                    Faltam {Math.max(0, dashboard.xpMinimoResgate - dashboard.saldoQualificavel).toLocaleString()} XP qualif. p/ desbloquear bônus
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Alerta vencimento */}
-                        {dashboard.pontosExpirar.length > 0 && (
-                            <div className="bg-muted/15 rounded-lg p-3 border border-muted/40">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <AlertTriangle className="w-4 h-4 text-amber-500" strokeWidth={1.5} />
-                                    <span className="text-xs font-medium text-amber-600">A vencer</span>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    {dashboard.pontosExpirar.reduce((s: number, p: any) => s + p.xp, 0).toLocaleString()} XP próximos de vencer
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Aplicar código (atalho) */}
-                        <div className="bg-muted/15 rounded-lg p-2 border border-muted/40">
-                            <Link href="/xp-club/dashboard">
-                                <button className="w-10 h-10 rounded-md flex items-center justify-center text-accent hover:bg-muted/40 transition-all duration-300 relative group">
-                                    <Gift className="w-5 h-5" strokeWidth={1.5} />
-                                    <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
-                                        Aplicar Código
-                                    </div>
-                                </button>
-                            </Link>
-                        </div>
+                        </button>
                     </div>
                 )}
+
+                {/* Orçamento */}
+                <div className="flex flex-col gap-2 w-fit bg-muted/15 rounded-lg p-2 border border-muted/40">
+                    <Link href="/orcamento">
+                        <button className="w-10 h-10 rounded-md text-accent flex items-center justify-center transition-all duration-300 relative group hover:bg-muted/40">
+                            <FileText className="w-5 h-5 stroke-accent text-accent" strokeWidth={1.5} />
+                            <div className="absolute inset-0 rounded-md bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 bg-white border border-gray-300 rounded-md px-3 py-2 whitespace-nowrap text-sm font-medium text-accent shadow-lg">
+                                Orçamento
+                            </div>
+                        </button>
+                    </Link>
+                </div>
             </aside>
 
             {/* ── Conteúdo Central ── */}

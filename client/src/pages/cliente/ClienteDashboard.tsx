@@ -1,5 +1,6 @@
 /**
  * Dashboard XP – resumo do programa de fidelidade
+ * Layout profissional com métricas, progresso, alertas e ações rápidas
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -7,17 +8,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
     Loader2,
     Star,
     Wallet,
     Gift,
-    Clock,
+    Lock,
+    Unlock,
+    Target,
     AlertTriangle,
     ArrowUpRight,
     ArrowDownRight,
     TicketCheck,
+    Receipt,
+    HelpCircle,
+    CircleHelp,
+    CheckCircle2,
+    TrendingUp,
 } from "lucide-react";
 import { Link } from "wouter";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -53,86 +62,182 @@ export default function ClienteDashboard() {
     const data = dashboard.data;
     if (!data) return null;
 
+    const saldoResgatavel = Number(data.saldoResgatavel ?? 0);
+    const saldoQualificavel = Number(data.saldoQualificavel ?? 0);
+    const saldoNaoQualificavel = Number(data.saldoNaoQualificavel ?? 0);
+    const xpMinimo = Number(data.xpMinimoResgate ?? 0);
+    const bonusDesbloqueado = Boolean(data.bonusDesbloqueado);
+    const progressPercent = xpMinimo > 0 ? Math.min(100, Math.round((saldoQualificavel / xpMinimo) * 100)) : 100;
+    const faltamDesbloquear = Math.max(0, xpMinimo - saldoQualificavel);
+    const totalExpirar = data.pontosExpirar?.reduce((s: number, p: any) => s + Number(p.xp), 0) ?? 0;
+
     return (
-        <div className="space-y-6">
-            {/* Title */}
+        <div className="space-y-5 sm:space-y-6">
+            {/* ── Header ── */}
             <SectionTitle
                 title="Meu"
                 highlight="Painel XP"
-                subtitle="Acompanhe seus pontos e benefícios"
+                subtitle="Acompanhe seus pontos, bônus e benefícios do programa"
                 align="center"
-                className="mb-4 sm:mb-6"
+                className="mb-2 sm:mb-4"
                 titleClassName="text-2xl sm:text-3xl"
                 subtitleClassName="text-sm sm:text-base"
             />
 
-            {/* Saldo cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <SaldoCard
-                    icon={<Star className="w-4 h-4 sm:w-5 sm:h-5" />}
-                    label="Saldo Total"
-                    value={formatPontos(data.saldoTotal)}
+            {/* ── Ações rápidas ── */}
+            <div className="flex flex-wrap justify-center gap-2">
+                <Link href="/xp-club/extrato">
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs border-accent/30 text-accent hover:bg-accent/5">
+                        <Receipt className="w-3.5 h-3.5" />
+                        Ver extrato
+                    </Button>
+                </Link>
+                <Link href="/xp-club/como-funciona">
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs border-accent/30 text-accent hover:bg-accent/5">
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        Como funciona
+                    </Button>
+                </Link>
+            </div>
+
+            {/* ── 4 Cards de métricas ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* Resgatável */}
+                <MetricCard
+                    icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    label="Resgatável agora"
+                    value={formatPontos(saldoResgatavel)}
+                    sub={`≈ R$ ${Number(data.valorEmReais).toFixed(2)}`}
+                    tooltip="É o saldo que você já pode usar neste momento para resgates. Inclui seus pontos qualificáveis e, se liberados, os pontos de bônus."
                     accent
                 />
-                <SaldoCard
-                    icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
-                    label="Resgatável"
-                    value={formatPontos(data.saldoResgatavel)}
-                    sub={`≈ R$ ${Number(data.valorEmReais).toFixed(2)}`}
-                />
-                <SaldoCard
-                    icon={<Gift className="w-4 h-4 sm:w-5 sm:h-5" />}
+
+                {/* Qualificável */}
+                <MetricCard
+                    icon={<Star className="w-4 h-4 sm:w-5 sm:h-5" />}
                     label="Qualificável"
-                    value={formatPontos(data.saldoQualificavel)}
-                    sub={data.bonusDesbloqueado ? "Bônus desbloqueado ✓" : `Faltam ${formatPontos(Math.max(0, (data.xpMinimoResgate || 0) - data.saldoQualificavel))} p/ desbloquear bônus`}
+                    value={formatPontos(saldoQualificavel)}
+                    sub="Conta p/ liberar bônus"
+                    tooltip="São os pontos acumulados por compras e movimentações oficiais. Esse saldo é a base para desbloquear seus pontos extras de bônus e código."
                 />
-                <SaldoCard
-                    icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
-                    label="Status Resgate"
-                    value={data.podeResgatar ? "Liberado" : "Bloqueado"}
-                    badge={data.podeResgatar}
+
+                {/* Bônus bloqueados / liberados */}
+                <MetricCard
+                    icon={bonusDesbloqueado ? <Unlock className="w-4 h-4 sm:w-5 sm:h-5" /> : <Lock className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    label={bonusDesbloqueado ? "Bônus liberados" : "Bônus bloqueados"}
+                    value={formatPontos(saldoNaoQualificavel)}
+                    sub={bonusDesbloqueado ? "Já inclusos no resgatável" : "Libere atingindo o mínimo"}
+                    tooltip="São pontos extras ganhos por códigos promocionais ou bônus. Só podem ser usados quando seu saldo qualificável atinge o mínimo exigido."
+                    variant={bonusDesbloqueado ? "success" : "muted"}
+                />
+
+                {/* Meta de desbloqueio */}
+                <MetricCard
+                    icon={<Target className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    label="Meta de desbloqueio"
+                    value={bonusDesbloqueado ? "Liberado" : `Faltam ${formatPontos(faltamDesbloquear)}`}
+                    sub={xpMinimo > 0 ? `Mínimo: ${formatPontos(xpMinimo)} XP qualif.` : "Sem mínimo configurado"}
+                    tooltip="Mostra quanto ainda falta de XP qualificável para liberar seus bônus e pontos de código. Quando atingir, todos os pontos extras ficam disponíveis."
+                    variant={bonusDesbloqueado ? "success" : "warning"}
                 />
             </div>
 
-            {/* Pontos a vencer */}
+            {/* ── Barra de progresso visual ── */}
+            {xpMinimo > 0 && (
+                <Card className={bonusDesbloqueado ? "border-green-200 bg-green-50/30" : "border-accent/20 bg-accent/[0.02]"}>
+                    <CardContent className="py-4 sm:py-5">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className={`w-4 h-4 ${bonusDesbloqueado ? "text-green-600" : "text-accent"}`} />
+                                <span className="text-xs sm:text-sm font-medium">
+                                    {bonusDesbloqueado ? "Bônus desbloqueado!" : "Progresso para liberar bônus"}
+                                </span>
+                                <InfoTooltip text="Quando a barra atingir 100%, seus pontos de bônus e código ficam liberados para uso." />
+                            </div>
+                            <span className="text-xs sm:text-sm font-semibold tabular-nums">
+                                {formatPontos(saldoQualificavel)} / {formatPontos(xpMinimo)}
+                            </span>
+                        </div>
+
+                        {/* Barra */}
+                        <div className="relative w-full h-3 sm:h-4 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${bonusDesbloqueado
+                                    ? "bg-gradient-to-r from-green-400 to-green-500"
+                                    : "bg-gradient-to-r from-accent/70 to-accent"
+                                    }`}
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                            {/* Marcador do mínimo */}
+                            {!bonusDesbloqueado && progressPercent < 100 && (
+                                <div className="absolute inset-y-0 right-0 w-px bg-gray-300" />
+                            )}
+                        </div>
+
+                        {/* Mensagem contextual */}
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-2">
+                            {bonusDesbloqueado ? (
+                                <span className="flex items-center gap-1 text-green-700">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Bônus liberado! Você já pode usar seus {formatPontos(saldoNaoQualificavel)} XP extras.
+                                </span>
+                            ) : (
+                                <>Faltam <strong>{formatPontos(faltamDesbloquear)} XP qualificáveis</strong> para liberar {formatPontos(saldoNaoQualificavel)} XP de bônus.</>
+                            )}
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* ── Alerta – Pontos a vencer ── */}
             {data.pontosExpirar && data.pontosExpirar.length > 0 && (
-                <Card className="border-orange-200 bg-orange-50/50">
-                    <CardHeader className="pb-1 sm:pb-2">
-                        <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-orange-700">
-                            <AlertTriangle className="w-4 h-4 sm:w-4 sm:h-4" />
-                            Pontos próximos a vencer
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            {data.pontosExpirar.map((item: any, i: number) => (
-                                <div
-                                    key={i}
-                                    className="flex items-center justify-between text-xs sm:text-sm bg-white rounded px-2.5 sm:px-3 py-1.5 sm:py-2 border border-orange-100"
-                                >
-                                    <span className="text-orange-800 font-medium">
-                                        {formatPontos(item.xp)} pontos
-                                    </span>
-                                    <span className="text-muted-foreground text-[10px] sm:text-xs">
-                                        Vencem em{" "}
-                                        {new Date(item.data_expiracao).toLocaleDateString("pt-BR")}
-                                    </span>
+                <Card className="border-amber-200/80 bg-amber-50/40">
+                    <CardContent className="py-3 sm:py-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <p className="text-sm font-medium text-amber-800">
+                                        {formatPontos(totalExpirar)} XP próximos de vencer
+                                    </p>
+                                    <InfoTooltip text="Alguns pontos possuem validade. Quando expiram, são retirados do seu saldo automaticamente." />
                                 </div>
-                            ))}
+                                <div className="space-y-1.5">
+                                    {data.pontosExpirar.map((item: any, i: number) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-center justify-between text-xs bg-white/70 rounded-md px-2.5 py-1.5 border border-amber-100/80"
+                                        >
+                                            <span className="text-amber-800 font-medium">
+                                                {formatPontos(item.xp)} XP
+                                            </span>
+                                            <span className="text-amber-600/70 text-[10px] sm:text-xs">
+                                                vencem em {new Date(item.data_expiracao).toLocaleDateString("pt-BR")}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Link href="/xp-club/extrato" className="text-[11px] text-amber-700 underline hover:text-amber-900 mt-1.5 inline-block">
+                                    Ver detalhes no extrato →
+                                </Link>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             )}
 
-            {/* Aplicar código */}
-            <Card>
-                <CardHeader className="pb-1 sm:pb-2">
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-accent">
-                        <TicketCheck className="w-4 h-4" />
-                        Aplicar Código Promocional
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
+            {/* ── Aplicar código promocional ── */}
+            <Card className="border-accent/15">
+                <CardContent className="py-4 sm:py-5">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-full bg-accent/10 flex items-center justify-center">
+                            <TicketCheck className="w-3.5 h-3.5 text-accent" />
+                        </div>
+                        <span className="text-sm font-medium">Aplicar Código Promocional</span>
+                        <InfoTooltip text="Digite um código promocional válido para receber pontos extras. Os pontos de código entram como bônus (não qualificáveis)." />
+                    </div>
                     <form
                         onSubmit={handleAplicarCodigo}
                         className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3"
@@ -146,22 +251,27 @@ export default function ClienteDashboard() {
                                 maxLength={50}
                             />
                         </div>
-                        <Button type="submit" disabled={aplicarCodigo.isPending || !codigo.trim()}>
+                        <Button type="submit" disabled={aplicarCodigo.isPending || !codigo.trim()} className="gap-1.5">
                             {aplicarCodigo.isPending ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                            ) : null}
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Gift className="w-4 h-4" />
+                            )}
                             Aplicar
                         </Button>
                     </form>
                 </CardContent>
             </Card>
 
-            {/* Últimas movimentações */}
+            {/* ── Últimas movimentações ── */}
             <Card>
                 <CardHeader className="pb-1 sm:pb-2 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                    <CardTitle className="text-sm sm:text-base text-accent">
-                        Últimas Movimentações
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        <CardTitle className="text-sm sm:text-base text-accent">
+                            Últimas Movimentações
+                        </CardTitle>
+                        <InfoTooltip text="Histórico resumido das suas últimas movimentações de XP. Para ver o extrato completo com filtros, acesse a página de Extrato." />
+                    </div>
                     <Link
                         href="/xp-club/extrato"
                         className="text-xs sm:text-sm text-accent underline hover:text-accent/80 transition-colors"
@@ -189,41 +299,73 @@ export default function ClienteDashboard() {
 
 // ─── Sub-components ────────────────────────────────────────────────────
 
-function SaldoCard({
+function InfoTooltip({ text }: { text: string }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <CircleHelp className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help flex-shrink-0" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                {text}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+function MetricCard({
     icon,
     label,
     value,
     sub,
+    tooltip,
     accent,
-    badge,
+    variant,
 }: {
     icon: React.ReactNode;
     label: string;
     value: string;
     sub?: string;
+    tooltip?: string;
     accent?: boolean;
-    badge?: boolean;
+    variant?: "success" | "warning" | "muted";
 }) {
+    const borderClass = variant === "success"
+        ? "border-green-200/80 bg-green-50/30"
+        : variant === "warning"
+            ? "border-amber-200/80 bg-amber-50/30"
+            : variant === "muted"
+                ? "border-muted/60 bg-muted/5"
+                : accent
+                    ? "border-accent/30 bg-accent/5"
+                    : "";
+
+    const valueClass = variant === "success"
+        ? "text-green-700"
+        : variant === "warning"
+            ? "text-amber-700"
+            : accent
+                ? "text-accent"
+                : "text-foreground";
+
     return (
-        <Card className={accent ? "border-accent/30 bg-accent/5" : ""}>
-            <CardContent className="pt-3 pb-3 sm:pt-5 sm:pb-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        {icon}
-                        <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wide">{label}</span>
-                    </div>
-                    {sub && <span className="text-[11px] sm:text-xs text-muted-foreground mt-1 block">{sub}</span>}
+        <Card className={borderClass}>
+            <CardContent className="pt-3 pb-3 sm:pt-4 sm:pb-4 px-3 sm:px-4">
+                {/* Header com tooltip */}
+                <div className="flex items-center gap-1.5 mb-2">
+                    <div className="text-muted-foreground">{icon}</div>
+                    <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-muted-foreground leading-tight">{label}</span>
+                    {tooltip && <InfoTooltip text={tooltip} />}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-xl sm:text-2xl font-bold ${accent ? "text-accent" : "text-foreground"}`}>
-                        {value}
-                    </span>
-                    {badge !== undefined && (
-                        <Badge variant={badge ? "default" : "secondary"}>
-                            {badge ? "Ativo" : "Inativo"}
-                        </Badge>
-                    )}
-                </div>
+
+                {/* Valor */}
+                <p className={`text-lg sm:text-xl font-bold leading-tight ${valueClass}`}>
+                    {value}
+                </p>
+
+                {/* Subtexto */}
+                {sub && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">{sub}</p>
+                )}
             </CardContent>
         </Card>
     );
@@ -262,16 +404,15 @@ function MovimentacaoRow({ mov }: { mov: any }) {
             </div>
             <div className="text-right flex-shrink-0">
                 <span
-                    className={`text-xs sm:text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-500"
-                        }`}
+                    className={`text-xs sm:text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-500"}`}
                 >
                     {isPositive ? "+" : ""}
                     {formatPontos(mov.xp)}
                 </span>
-                {mov.qualificavel && (
-                    <Badge variant="outline" className="ml-2 text-[10px]">
-                        Q
-                    </Badge>
+                {mov.qualificavel ? (
+                    <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 border-accent/30 text-accent">Q</Badge>
+                ) : (
+                    <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 border-muted text-muted-foreground">B</Badge>
                 )}
             </div>
         </div>

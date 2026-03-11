@@ -35,6 +35,7 @@ import ClienteLogin from "./pages/cliente/ClienteLogin";
 import CompletarCadastro from "./pages/cliente/CompletarCadastro";
 import ClienteDashboard from "./pages/cliente/ClienteDashboard";
 import ClienteExtrato from "./pages/cliente/ClienteExtrato";
+import ComoFunciona from "./pages/cliente/ComoFunciona";
 import { CustomerRoute, CustomerCadastroRoute } from "./components/CustomerRoute";
 
 function Router() {
@@ -72,6 +73,7 @@ function Router() {
       <Route path={"/xp-club"} component={() => <Redirect to="/xp-club/dashboard" />} />
       <Route path={"/xp-club/dashboard"} component={() => <CustomerRoute component={ClienteDashboard} />} />
       <Route path={"/xp-club/extrato"} component={() => <CustomerRoute component={ClienteExtrato} />} />
+      <Route path={"/xp-club/como-funciona"} component={() => <CustomerRoute component={ComoFunciona} />} />
 
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
