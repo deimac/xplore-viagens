@@ -230,32 +230,29 @@ export default function ClienteDashboard() {
 
             {/* ── Aplicar código promocional ── */}
             <Card className="border-accent/15">
-                <CardContent className="py-4 sm:py-5">
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-full bg-accent/10 flex items-center justify-center">
-                            <TicketCheck className="w-3.5 h-3.5 text-accent" />
-                        </div>
-                        <span className="text-sm font-medium">Aplicar Código Promocional</span>
-                        <InfoTooltip text="Digite um código promocional válido para receber pontos extras. Os pontos de código entram como bônus (não qualificáveis)." />
-                    </div>
+                <CardContent className="py-2.5 sm:py-3">
                     <form
                         onSubmit={handleAplicarCodigo}
-                        className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3"
+                        className="flex items-center gap-2 sm:gap-3"
                     >
-                        <div className="flex-1">
+                        <div className="w-7 h-7 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                            <TicketCheck className="w-3.5 h-3.5 text-accent" />
+                        </div>
+                        <div className="flex-1 min-w-0">
                             <Input
                                 value={codigo}
                                 onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-                                placeholder="Digite seu código"
-                                className="uppercase tracking-wider"
+                                placeholder="Código promocional"
+                                className="uppercase tracking-wider h-8 text-sm"
                                 maxLength={50}
                             />
                         </div>
-                        <Button type="submit" disabled={aplicarCodigo.isPending || !codigo.trim()} className="gap-1.5">
+                        <InfoTooltip text="Digite um código promocional válido para receber pontos extras. Os pontos de código entram como bônus (não qualificáveis)." />
+                        <Button type="submit" size="sm" disabled={aplicarCodigo.isPending || !codigo.trim()} className="gap-1.5 h-8">
                             {aplicarCodigo.isPending ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
-                                <Gift className="w-4 h-4" />
+                                <Gift className="w-3.5 h-3.5" />
                             )}
                             Aplicar
                         </Button>
@@ -402,7 +399,7 @@ function MovimentacaoRow({ mov }: { mov: any }) {
                     </p>
                 </div>
             </div>
-            <div className="text-right flex-shrink-0">
+            <div className="text-right flex-shrink-0 flex items-center gap-1.5">
                 <span
                     className={`text-xs sm:text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-500"}`}
                 >
@@ -410,9 +407,23 @@ function MovimentacaoRow({ mov }: { mov: any }) {
                     {formatPontos(mov.xp)}
                 </span>
                 {mov.qualificavel ? (
-                    <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 border-accent/30 text-accent">Q</Badge>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge className="text-[9px] px-1 py-0 bg-blue-100 text-blue-700 hover:bg-blue-200 border-0 cursor-help">
+                                <Star className="w-2.5 h-2.5 mr-0.5" /> Q
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs">Qualificável — conta para liberar bônus</TooltipContent>
+                    </Tooltip>
                 ) : (
-                    <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 border-muted text-muted-foreground">B</Badge>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-purple-200 text-purple-600 cursor-help">
+                                <Gift className="w-2.5 h-2.5 mr-0.5" /> B
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs">Bônus — liberado ao atingir o mínimo</TooltipContent>
+                    </Tooltip>
                 )}
             </div>
         </div>
