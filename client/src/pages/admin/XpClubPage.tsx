@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Gift, RefreshCw, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
+import { Coins, Clock3, Gift, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -167,8 +167,6 @@ export default function XpClubPage() {
         onError: (err: any) => toast.error(err?.message || "Erro ao reativar tipo"),
     });
 
-    const expPreviewQuery = trpc.xpAdmin.expiracao.preview.useQuery();
-
     const compraMutation = trpc.xpAdmin.compras.registrarManual.useMutation({
         onSuccess: () => {
             toast.success("Compra registrada e XP creditado");
@@ -230,25 +228,11 @@ export default function XpClubPage() {
         onError: (err: any) => toast.error(err?.message || "Erro ao salvar configuração"),
     });
 
-    const runExpMutation = trpc.xpAdmin.expiracao.run.useMutation({
-        onSuccess: (data: any) => {
-            toast.success(`Vencimento executado: ${data.totalClientes} clientes / ${data.totalXpDebitado} XP`);
-            void Promise.all([
-                expPreviewQuery.refetch(),
-                dashboardQuery.refetch(),
-                movQuery.refetch(),
-                clientesQuery.refetch(),
-            ]);
-        },
-        onError: (err: any) => toast.error(err?.message || "Erro ao rodar vencimento"),
-    });
-
     const clientesData = (clientesQuery.data as any)?.json || clientesQuery.data || {};
     const movData = (movQuery.data as any)?.json || movQuery.data || {};
     const parceirosData = (parceirosQuery.data as any)?.json || parceirosQuery.data || [];
     const codigosData = (codigosQuery.data as any)?.json || codigosQuery.data || [];
     const configData = (configQuery.data as any)?.json || configQuery.data || [];
-    const expPreviewData = (expPreviewQuery.data as any)?.json || expPreviewQuery.data || { totalClientes: 0, totalXp: 0, clientes: [] };
     const dashboard = (dashboardQuery.data as any)?.json || dashboardQuery.data || {};
     const tiposMovimentacao = (tiposMovQuery.data as any)?.json || tiposMovQuery.data || [];
     const tiposMovimentacaoManual = tiposMovimentacao.filter((tipo: any) => {
@@ -264,7 +248,6 @@ export default function XpClubPage() {
     const parceirosLimitados = parceiros.slice(0, 50);
     const codigos = (codigosData as any) || [];
     const configs = (configData as any) || [];
-    const expPreview = (expPreviewData as any) || { totalClientes: 0, totalXp: 0, clientes: [] };
 
     const parceiroSelecionado =
         codigoForm.idParceiro === "none"
@@ -502,14 +485,13 @@ export default function XpClubPage() {
                 </div>
 
                 <Tabs defaultValue="movimentacoes" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-7">
+                    <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
                         <TabsTrigger value="compras">Lançar pontos</TabsTrigger>
                         <TabsTrigger value="tipos">Tipos</TabsTrigger>
                         <TabsTrigger value="codigos">Códigos</TabsTrigger>
                         <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
                         <TabsTrigger value="config">Config</TabsTrigger>
-                        <TabsTrigger value="expiracao">Vencimento</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="movimentacoes" className="space-y-4">
@@ -1209,60 +1191,6 @@ export default function XpClubPage() {
                             </CardContent>
                         </Card>
 
-                    </TabsContent>
-
-                    <TabsContent value="expiracao" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Vencimento automático</CardTitle>
-                                <CardDescription>Visualize pendências e rode a baixa automática de XP vencido.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid gap-3 md:grid-cols-3">
-                                    <div className="rounded-lg border p-4">
-                                        <p className="text-sm text-muted-foreground">Clientes pendentes</p>
-                                        <p className="text-2xl font-semibold">{Number(expPreview.totalClientes || 0)}</p>
-                                    </div>
-                                    <div className="rounded-lg border p-4">
-                                        <p className="text-sm text-muted-foreground">XP pendente para debitar</p>
-                                        <p className="text-2xl font-semibold">{Number(expPreview.totalXp || 0)} XP</p>
-                                    </div>
-                                    <div className="rounded-lg border p-4 flex items-center justify-center">
-                                        <Button onClick={() => runExpMutation.mutate()} disabled={runExpMutation.isPending} className="w-full" title="Rodar vencimento automático">
-                                            <RefreshCw className={`h-4 w-4 mr-2 ${runExpMutation.isPending ? "animate-spin" : ""}`} />
-                                            {runExpMutation.isPending ? "Executando..." : "Rodar vencimento agora"}
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <div className="border rounded-lg overflow-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-muted/40">
-                                            <tr>
-                                                <th className="text-left px-3 py-2">Cliente</th>
-                                                <th className="text-left px-3 py-2">Email</th>
-                                                <th className="text-right px-3 py-2">XP pendente</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {expPreview.clientes?.length ? (
-                                                expPreview.clientes.map((row: any) => (
-                                                    <tr key={row.id_cliente} className="border-t">
-                                                        <td className="px-3 py-2">{row.cliente_nome}</td>
-                                                        <td className="px-3 py-2">{row.cliente_email}</td>
-                                                        <td className="px-3 py-2 text-right font-medium text-red-600">{Number(row.pendente || 0)} XP</td>
-                                                    </tr>
-                                                ))
-                                            ) : (
-                                                <tr>
-                                                    <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">Nenhuma pendência de vencimento no momento.</td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </TabsContent>
                 </Tabs>
             </div>

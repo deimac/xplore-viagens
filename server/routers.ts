@@ -1489,15 +1489,6 @@ export const appRouter = router({
           return await db.upsertXpAdminConfiguracao(input);
         }),
     }),
-
-    expiracao: router({
-      preview: adminProcedure.query(async () => {
-        return await db.previewXpExpiracao();
-      }),
-      run: adminProcedure.mutation(async ({ ctx }) => {
-        return await db.runXpExpiracao(ctx.user.id);
-      }),
-    }),
   }),
 
   // Área do Cliente
