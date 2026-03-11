@@ -1758,7 +1758,9 @@ export async function getXpDashboard(clienteId: number) {
   const xpAlertaDias = await getXpConfigNum('xp_alerta_vencimento_dias', 30);
 
   const valorEmReais = saldoDisponivel * xpValorReais;
-  const podeResgatar = saldoQualificavel >= xpMinimoResgate && xpMinimoResgate > 0;
+  const podeResgatar = xpMinimoResgate > 0
+    ? saldoQualificavel >= xpMinimoResgate
+    : saldoQualificavel > 0;
 
   // Pontos próximos a vencer
   const limiteExpiracao = new Date();
@@ -2207,29 +2209,27 @@ export async function getXpAdminDashboardResumo() {
 
   // Clientes aptos a resgatar (saldo qualificável >= mínimo)
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
-  let clientesAptos = 0;
-  if (xpMinimoResgate > 0) {
-    const [aptosRow]: any[] = await executeQuery(
-      `SELECT COUNT(*) AS total FROM (
-         SELECT m.id_cliente,
-           COALESCE(SUM(
-             CASE
-               WHEN t.tipo_operacao = 'debito' THEN m.xp
-               WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
-                 AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-               THEN m.xp
-               ELSE 0
-             END
-           ), 0) AS sq
-         FROM xp_movimentacoes m
-         JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-         GROUP BY m.id_cliente
-         HAVING sq >= ?
-       ) s`,
-      [hoje, xpMinimoResgate]
-    );
-    clientesAptos = Number(aptosRow?.total || 0);
-  }
+  const thresholdResgate = xpMinimoResgate > 0 ? xpMinimoResgate : 1;
+  const [aptosRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total FROM (
+       SELECT m.id_cliente,
+         COALESCE(SUM(
+           CASE
+             WHEN t.tipo_operacao = 'debito' THEN m.xp
+             WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
+               AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+             THEN m.xp
+             ELSE 0
+           END
+         ), 0) AS sq
+       FROM xp_movimentacoes m
+       JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+       GROUP BY m.id_cliente
+       HAVING sq >= ?
+     ) s`,
+    [hoje, thresholdResgate]
+  );
+  const clientesAptos = Number(aptosRow?.total || 0);
 
   return {
     saldoPrograma: Number(saldoRow?.total || 0),
@@ -2293,7 +2293,7 @@ export async function listXpAdminClientesAptosResgatar(limit: number = 20) {
   const hoje = new Date().toISOString().slice(0, 10);
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
   const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
-  if (xpMinimoResgate <= 0) return [];
+  const thresholdResgate = xpMinimoResgate > 0 ? xpMinimoResgate : 1;
 
   const rows: any[] = await executeQuery(
     `SELECT c.id, c.nome, c.email, c.cpf,
@@ -2314,7 +2314,7 @@ export async function listXpAdminClientesAptosResgatar(limit: number = 20) {
      HAVING saldo_qualificavel >= ?
      ORDER BY saldo_qualificavel DESC
      LIMIT ?`,
-    [hoje, xpMinimoResgate, limit]
+    [hoje, thresholdResgate, limit]
   );
   return rows.map((r: any) => ({
     ...r,
