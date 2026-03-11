@@ -1231,6 +1231,21 @@ export const appRouter = router({
         return await db.getXpAdminDashboardPeriodo(input?.days || 30);
       }),
 
+    clientesAptosResgatar: adminProcedure
+      .query(async () => {
+        return await db.listXpAdminClientesAptosResgatar();
+      }),
+
+    topQualificaveis: adminProcedure
+      .query(async () => {
+        return await db.listXpAdminTopQualificaveis();
+      }),
+
+    codigosAVencer: adminProcedure
+      .query(async () => {
+        return await db.listXpAdminCodigosAVencer();
+      }),
+
     clientes: router({
       list: adminProcedure
         .input(

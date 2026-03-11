@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
+import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar, CircleHelp, Award, TrendingDown, DollarSign } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -99,6 +100,19 @@ export default function XpClubPage() {
     });
     const dashboardPeriodoQuery = trpc.xpAdmin.dashboardPeriodo.useQuery({ days: Number(days) || 30 });
 
+    const clientesAptosQuery = trpc.xpAdmin.clientesAptosResgatar.useQuery(undefined, {
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+    });
+    const topQualificaveisQuery = trpc.xpAdmin.topQualificaveis.useQuery(undefined, {
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+    });
+    const codigosAVencerQuery = trpc.xpAdmin.codigosAVencer.useQuery(undefined, {
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+    });
+
     const clientesQuery = trpc.xpAdmin.clientes.list.useQuery({
         search: clienteSearch,
         page: 1,
@@ -181,6 +195,8 @@ export default function XpClubPage() {
                 dashboardPeriodoQuery.refetch(),
                 movQuery.refetch(),
                 clientesQuery.refetch(),
+                clientesAptosQuery.refetch(),
+                topQualificaveisQuery.refetch(),
             ]);
         },
         onError: (err: any) => {
@@ -240,6 +256,9 @@ export default function XpClubPage() {
     const configData = (configQuery.data as any)?.json || configQuery.data || [];
     const resumo = (dashboardResumoQuery.data as any)?.json || dashboardResumoQuery.data || {};
     const periodo = (dashboardPeriodoQuery.data as any)?.json || dashboardPeriodoQuery.data || {};
+    const clientesAptos = (clientesAptosQuery.data as any)?.json || clientesAptosQuery.data || [];
+    const topQualificaveis = (topQualificaveisQuery.data as any)?.json || topQualificaveisQuery.data || [];
+    const codigosAVencer = (codigosAVencerQuery.data as any)?.json || codigosAVencerQuery.data || [];
     const tiposMovimentacao = (tiposMovQuery.data as any)?.json || tiposMovQuery.data || [];
     const tiposMovimentacaoManual = tiposMovimentacao.filter((tipo: any) => {
         const flag = tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual;
@@ -442,26 +461,45 @@ export default function XpClubPage() {
                 </div>
 
                 {/* Resumo operacional — sem dependência de período */}
-                <div className="grid gap-2 grid-cols-3">
+                <div className="grid gap-2 grid-cols-4">
                     <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
                         <div className="rounded-md bg-blue-500/10 p-2"><Coins className="h-4 w-4 text-blue-600" /></div>
-                        <div className="min-w-0">
-                            <p className="text-xs text-muted-foreground">Saldo do programa</p>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground">Saldo do programa</p>
+                                <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Soma de todos os créditos e débitos de XP. Representa o saldo total em circulação no programa.</TooltipContent></Tooltip>
+                            </div>
                             <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.saldoPrograma || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-muted-foreground">XP</span></p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
+                        <div className="rounded-md bg-emerald-500/10 p-2"><Award className="h-4 w-4 text-emerald-600" /></div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground">Pontos qualificáveis</p>
+                                <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Pontos que podem ser usados em resgate, conforme as regras de elegibilidade do tipo de movimentação.</TooltipContent></Tooltip>
+                            </div>
+                            <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.pontosQualificaveis || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-muted-foreground">XP</span></p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
                         <div className="rounded-md bg-amber-500/10 p-2"><Clock3 className="h-4 w-4 text-amber-600" /></div>
-                        <div className="min-w-0">
-                            <p className="text-xs text-muted-foreground">XP vencendo em breve</p>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground">XP vencendo em breve</p>
+                                <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Soma dos créditos que entram na janela de alerta de vencimento configurada no sistema.</TooltipContent></Tooltip>
+                            </div>
                             <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.xpVencendo || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-muted-foreground">XP</span></p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
-                        <div className="rounded-md bg-emerald-500/10 p-2"><Users className="h-4 w-4 text-emerald-600" /></div>
-                        <div className="min-w-0">
-                            <p className="text-xs text-muted-foreground">Clientes com saldo</p>
-                            <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.clientesComSaldo || 0).toLocaleString("pt-BR")}</p>
+                        <div className="rounded-md bg-purple-500/10 p-2"><Users className="h-4 w-4 text-purple-600" /></div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground">Clientes aptos a resgatar</p>
+                                <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Clientes com saldo qualificável ≥ mínimo exigido ({Number(resumo.xpMinimoResgate || 0).toLocaleString("pt-BR")} XP).</TooltipContent></Tooltip>
+                            </div>
+                            <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.clientesAptosResgatar || 0).toLocaleString("pt-BR")}</p>
                         </div>
                     </div>
                 </div>
@@ -487,26 +525,142 @@ export default function XpClubPage() {
                         ))}
                     </div>
                     <div className="h-6 w-px bg-border" />
-                    <div className="flex items-center gap-6 text-sm flex-1">
-                        <div className="flex items-center gap-1.5">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            <span className="text-muted-foreground text-xs">Créditos</span>
-                            <span className="font-semibold tabular-nums text-blue-600">{Number(periodo.creditos || 0).toLocaleString("pt-BR")}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="h-2 w-2 rounded-full bg-red-500" />
-                            <span className="text-muted-foreground text-xs">Débitos</span>
-                            <span className="font-semibold tabular-nums text-red-600">{Number(periodo.debitos || 0).toLocaleString("pt-BR")}</span>
-                        </div>
+                    <div className="flex items-center gap-5 text-sm flex-1">
                         <div className="flex items-center gap-1.5">
                             <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                            <span className="text-muted-foreground text-xs">Saldo período</span>
-                            <span className={`font-semibold tabular-nums ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>{Number(periodo.saldoLiquidoPeriodo || 0).toLocaleString("pt-BR")}</span>
+                            <span className="text-muted-foreground text-xs">Qualificáveis</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[200px] text-xs">Créditos qualificáveis emitidos no período.</TooltipContent></Tooltip>
+                            <span className="font-semibold tabular-nums text-emerald-600">{Number(periodo.pontosQualificaveis || 0).toLocaleString("pt-BR")}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-orange-400" />
+                            <span className="text-muted-foreground text-xs">Não qualif.</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[200px] text-xs">Créditos não qualificáveis (bônus, campanhas) emitidos no período.</TooltipContent></Tooltip>
+                            <span className="font-semibold tabular-nums text-orange-600">{Number(periodo.pontosNaoQualificaveis || 0).toLocaleString("pt-BR")}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <TrendingDown className="h-3 w-3 text-red-500" />
+                            <span className="text-muted-foreground text-xs">Resgates</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[200px] text-xs">Total de XP resgatados pelos clientes no período.</TooltipContent></Tooltip>
+                            <span className="font-semibold tabular-nums text-red-600">{Number(periodo.resgatesXp || 0).toLocaleString("pt-BR")} <span className="text-[10px] font-normal text-muted-foreground">XP</span></span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <DollarSign className="h-3 w-3 text-cyan-500" />
+                            <span className="text-muted-foreground text-xs">em R$</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[200px] text-xs">Valor monetário equivalente dos resgates do período (XP × valor por ponto).</TooltipContent></Tooltip>
+                            <span className="font-semibold tabular-nums text-cyan-600">{formatCurrency(Number(periodo.resgatesReais || 0))}</span>
                         </div>
                         <div className="flex items-center gap-1.5 ml-auto">
-                            <Tag className="h-3 w-3 text-purple-500" />
-                            <span className="text-muted-foreground text-xs">Usos códigos</span>
-                            <span className="font-semibold tabular-nums text-purple-600">{Number(periodo.usosCodigos || 0)}</span>
+                            <div className={`h-2 w-2 rounded-full ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "bg-blue-500" : "bg-red-500"}`} />
+                            <span className="text-muted-foreground text-xs">Saldo período</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[200px] text-xs">Diferença entre créditos e débitos no período selecionado.</TooltipContent></Tooltip>
+                            <span className={`font-semibold tabular-nums ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "text-blue-600" : "text-red-600"}`}>{Number(periodo.saldoLiquidoPeriodo || 0).toLocaleString("pt-BR")}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Listas operacionais */}
+                <div className="grid gap-3 grid-cols-3">
+                    {/* Clientes aptos a resgatar */}
+                    <div className="rounded-lg border bg-card">
+                        <div className="flex items-center gap-2 px-4 py-2 border-b">
+                            <Users className="h-3.5 w-3.5 text-purple-600" />
+                            <span className="text-xs font-medium">Clientes aptos a resgatar</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Clientes com saldo qualificável suficiente para solicitar resgate.</TooltipContent></Tooltip>
+                        </div>
+                        <div className="max-h-[180px] overflow-y-auto">
+                            {(clientesAptos as any[]).length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-6">Nenhum cliente apto no momento</p>
+                            ) : (
+                                <table className="w-full text-xs">
+                                    <thead className="sticky top-0 bg-card">
+                                        <tr className="text-left text-muted-foreground">
+                                            <th className="px-3 py-1.5 font-medium">Cliente</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">XP qualif.</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">Valor est.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(clientesAptos as any[]).slice(0, 10).map((c: any) => (
+                                            <tr key={c.id} className="border-t border-dashed">
+                                                <td className="px-3 py-1.5 truncate max-w-[120px]">{c.nome || c.email}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums font-medium">{Number(c.saldo_qualificavel).toLocaleString("pt-BR")}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{formatCurrency(c.valor_estimado)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Maiores saldos qualificáveis */}
+                    <div className="rounded-lg border bg-card">
+                        <div className="flex items-center gap-2 px-4 py-2 border-b">
+                            <Award className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="text-xs font-medium">Maiores saldos qualificáveis</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Top clientes com os maiores saldos de pontos qualificáveis válidos.</TooltipContent></Tooltip>
+                        </div>
+                        <div className="max-h-[180px] overflow-y-auto">
+                            {(topQualificaveis as any[]).length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-6">Sem dados</p>
+                            ) : (
+                                <table className="w-full text-xs">
+                                    <thead className="sticky top-0 bg-card">
+                                        <tr className="text-left text-muted-foreground">
+                                            <th className="px-3 py-1.5 font-medium">Cliente</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">XP qualif.</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">Valor est.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(topQualificaveis as any[]).map((c: any) => (
+                                            <tr key={c.id} className="border-t border-dashed">
+                                                <td className="px-3 py-1.5 truncate max-w-[120px]">{c.nome || c.email}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums font-medium">{Number(c.saldo_qualificavel).toLocaleString("pt-BR")}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{formatCurrency(c.valor_estimado)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Códigos a vencer */}
+                    <div className="rounded-lg border bg-card">
+                        <div className="flex items-center gap-2 px-4 py-2 border-b">
+                            <Tag className="h-3.5 w-3.5 text-amber-600" />
+                            <span className="text-xs font-medium">Códigos a vencer</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Códigos promocionais ativos com data de expiração próxima.</TooltipContent></Tooltip>
+                        </div>
+                        <div className="max-h-[180px] overflow-y-auto">
+                            {(codigosAVencer as any[]).length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-6">Nenhum código vencendo em breve</p>
+                            ) : (
+                                <table className="w-full text-xs">
+                                    <thead className="sticky top-0 bg-card">
+                                        <tr className="text-left text-muted-foreground">
+                                            <th className="px-3 py-1.5 font-medium">Código</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">XP</th>
+                                            <th className="px-3 py-1.5 font-medium text-right">Dias rest.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(codigosAVencer as any[]).map((c: any) => (
+                                            <tr key={c.id} className="border-t border-dashed">
+                                                <td className="px-3 py-1.5 font-mono">{c.codigo}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums">{Number(c.xp_bonus).toLocaleString("pt-BR")}</td>
+                                                <td className="px-3 py-1.5 text-right tabular-nums">
+                                                    <Badge variant={Number(c.dias_restantes) <= 7 ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
+                                                        {c.dias_restantes}d
+                                                    </Badge>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
                     </div>
                 </div>

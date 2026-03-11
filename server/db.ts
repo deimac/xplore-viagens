@@ -2159,15 +2159,29 @@ async function ensureTipoMovimentacao(
 }
 
 export async function getXpAdminDashboardResumo() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
   // Saldo do programa
   const [saldoRow]: any[] = await executeQuery(
     `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes`
   );
 
+  // Pontos qualificáveis em aberto (créditos qualificáveis válidos + débitos)
+  const [qualRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(m.xp), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE t.tipo_operacao = 'debito'
+       OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (
+         t.dias_expiracao IS NULL
+         OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+       ))`,
+    [hoje]
+  );
+
   // XP vencendo — mesma lógica da reconciliação (código > tipo > data_expiracao do código)
   const alertaDias = await getXpConfigNum('xp_alerta_vencimento_dias', 30);
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
   const limite = new Date(hoje);
   limite.setDate(limite.getDate() + alertaDias);
 
@@ -2191,18 +2205,38 @@ export async function getXpAdminDashboardResumo() {
     [hoje, limite, hoje, limite, hoje, limite]
   );
 
-  // Clientes com saldo XP positivo
-  const [clientesSaldoRow]: any[] = await executeQuery(
-    `SELECT COUNT(*) AS total FROM (
-       SELECT m.id_cliente FROM xp_movimentacoes m
-       GROUP BY m.id_cliente HAVING SUM(m.xp) > 0
-     ) s`
-  );
+  // Clientes aptos a resgatar (saldo qualificável >= mínimo)
+  const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
+  let clientesAptos = 0;
+  if (xpMinimoResgate > 0) {
+    const [aptosRow]: any[] = await executeQuery(
+      `SELECT COUNT(*) AS total FROM (
+         SELECT m.id_cliente,
+           COALESCE(SUM(
+             CASE
+               WHEN t.tipo_operacao = 'debito' THEN m.xp
+               WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
+                 AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+               THEN m.xp
+               ELSE 0
+             END
+           ), 0) AS sq
+         FROM xp_movimentacoes m
+         JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+         GROUP BY m.id_cliente
+         HAVING sq >= ?
+       ) s`,
+      [hoje, xpMinimoResgate]
+    );
+    clientesAptos = Number(aptosRow?.total || 0);
+  }
 
   return {
     saldoPrograma: Number(saldoRow?.total || 0),
+    pontosQualificaveis: Math.max(0, Number(qualRow?.total || 0)),
     xpVencendo: Number(expirarRow?.total || 0),
-    clientesComSaldo: Number(clientesSaldoRow?.total || 0),
+    clientesAptosResgatar: clientesAptos,
+    xpMinimoResgate,
   };
 }
 
@@ -2211,35 +2245,141 @@ export async function getXpAdminDashboardPeriodo(days: number = 30) {
   from.setDate(from.getDate() - Math.max(1, days));
   from.setHours(0, 0, 0, 0);
 
-  // Créditos e débitos do período — sem DATE() na coluna
+  // Créditos qualificáveis, não qualificáveis e débitos
   const [periodoRow]: any[] = await executeQuery(
     `SELECT
-       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' THEN m.xp ELSE 0 END), 0) AS total_credito,
-       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'debito' THEN ABS(m.xp) ELSE 0 END), 0) AS total_debito
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1 THEN m.xp ELSE 0 END), 0) AS creditos_qualificaveis,
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' AND (t.qualificavel = 0 OR t.qualificavel IS NULL) THEN m.xp ELSE 0 END), 0) AS creditos_nao_qualificaveis,
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'debito' THEN ABS(m.xp) ELSE 0 END), 0) AS total_debito,
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' THEN m.xp ELSE 0 END), 0) AS total_credito
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.data_movimentacao >= ?`,
     [from]
   );
 
-  // Usos de códigos no período — sem DATE() na coluna
-  const [usosRow]: any[] = await executeQuery(
-    `SELECT COUNT(*) AS total
-     FROM xp_codigos_usados
-     WHERE data_uso >= ?`,
+  // Resgates do período (slug = 'resgate')
+  const [resgateRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(ABS(m.xp)), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE t.slug = 'resgate' AND t.tipo_operacao = 'debito'
+       AND m.data_movimentacao >= ?`,
     [from]
   );
 
-  const creditos = Number(periodoRow?.total_credito || 0);
-  const debitos = Number(periodoRow?.total_debito || 0);
+  // Valor em reais equivalente
+  const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
+
+  const creditosQualificaveis = Number(periodoRow?.creditos_qualificaveis || 0);
+  const creditosNaoQualificaveis = Number(periodoRow?.creditos_nao_qualificaveis || 0);
+  const totalCredito = Number(periodoRow?.total_credito || 0);
+  const totalDebito = Number(periodoRow?.total_debito || 0);
+  const resgatesXp = Number(resgateRow?.total || 0);
 
   return {
     days,
-    creditos,
-    debitos,
-    saldoLiquidoPeriodo: creditos - debitos,
-    usosCodigos: Number(usosRow?.total || 0),
+    pontosQualificaveis: creditosQualificaveis,
+    pontosNaoQualificaveis: creditosNaoQualificaveis,
+    resgatesXp,
+    resgatesReais: Math.round(resgatesXp * xpValorReais * 100) / 100,
+    saldoLiquidoPeriodo: totalCredito - totalDebito,
   };
+}
+
+// ── Listas operacionais do dashboard ──────────────────────────────
+
+export async function listXpAdminClientesAptosResgatar(limit: number = 20) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
+  const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
+  if (xpMinimoResgate <= 0) return [];
+
+  const rows: any[] = await executeQuery(
+    `SELECT c.id, c.nome, c.email, c.cpf,
+       COALESCE(SUM(
+         CASE
+           WHEN t.tipo_operacao = 'debito' THEN m.xp
+           WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
+             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+           THEN m.xp
+           ELSE 0
+         END
+       ), 0) AS saldo_qualificavel,
+       COALESCE(SUM(m.xp), 0) AS saldo_total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     JOIN clientes c ON c.id = m.id_cliente
+     GROUP BY c.id, c.nome, c.email, c.cpf
+     HAVING saldo_qualificavel >= ?
+     ORDER BY saldo_qualificavel DESC
+     LIMIT ?`,
+    [hoje, xpMinimoResgate, limit]
+  );
+  return rows.map((r: any) => ({
+    ...r,
+    saldo_qualificavel: Number(r.saldo_qualificavel),
+    saldo_total: Number(r.saldo_total),
+    valor_estimado: Math.round(Number(r.saldo_qualificavel) * xpValorReais * 100) / 100,
+    minimo_resgate: xpMinimoResgate,
+  }));
+}
+
+export async function listXpAdminTopQualificaveis(limit: number = 10) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
+
+  const rows: any[] = await executeQuery(
+    `SELECT c.id, c.nome, c.email,
+       COALESCE(SUM(
+         CASE
+           WHEN t.tipo_operacao = 'debito' THEN m.xp
+           WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
+             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+           THEN m.xp
+           ELSE 0
+         END
+       ), 0) AS saldo_qualificavel,
+       COALESCE(SUM(m.xp), 0) AS saldo_total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     JOIN clientes c ON c.id = m.id_cliente
+     GROUP BY c.id, c.nome, c.email
+     HAVING saldo_qualificavel > 0
+     ORDER BY saldo_qualificavel DESC
+     LIMIT ?`,
+    [hoje, limit]
+  );
+  return rows.map((r: any) => ({
+    ...r,
+    saldo_qualificavel: Number(r.saldo_qualificavel),
+    saldo_total: Number(r.saldo_total),
+    valor_estimado: Math.round(Number(r.saldo_qualificavel) * xpValorReais * 100) / 100,
+  }));
+}
+
+export async function listXpAdminCodigosAVencer(diasAdiante: number = 30) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite = new Date(hoje);
+  limite.setDate(limite.getDate() + diasAdiante);
+
+  const rows: any[] = await executeQuery(
+    `SELECT c.id, c.codigo, c.xp_bonus, c.quantidade_max_uso, c.quantidade_usada,
+            c.data_expiracao, c.dias_expiracao, c.ativo,
+            p.nome AS parceiro_nome,
+            DATEDIFF(c.data_expiracao, CURDATE()) AS dias_restantes
+     FROM xp_codigos c
+     LEFT JOIN xp_parceiros p ON p.id = c.id_parceiro
+     WHERE c.ativo = 1
+       AND c.data_expiracao IS NOT NULL
+       AND c.data_expiracao >= ?
+       AND c.data_expiracao <= ?
+     ORDER BY c.data_expiracao ASC
+     LIMIT 20`,
+    [hoje, limite]
+  );
+  return rows;
 }
 
 export async function listXpAdminClientes(params: {
