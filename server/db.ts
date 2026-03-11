@@ -1867,9 +1867,9 @@ export async function getXpExtrato(
 
 export async function listTiposMovimentacao() {
   return await executeQuery(
-    `SELECT id, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao, dias_expiracao, created_at
+    `SELECT id, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, ativo, descricao, dias_expiracao, created_at
      FROM xp_tipos_movimentacao
-     ORDER BY nome`
+     ORDER BY ativo DESC, nome`
   );
 }
 
@@ -1937,9 +1937,22 @@ export async function deleteTipoMovimentacao(id: number) {
     [id]
   );
   if (refs[0]?.total > 0) {
-    throw new Error("Este tipo está sendo usado em movimentações e não pode ser removido.");
+    // Has related records: inactivate instead of deleting
+    await executeQuery(
+      `UPDATE xp_tipos_movimentacao SET ativo = 0, exibir_no_lancamento_manual = 0 WHERE id = ?`,
+      [id]
+    );
+    return { ok: true, inativado: true, registros: Number(refs[0].total) };
   }
   await executeQuery(`DELETE FROM xp_tipos_movimentacao WHERE id = ?`, [id]);
+  return { ok: true, inativado: false };
+}
+
+export async function reativarTipoMovimentacao(id: number) {
+  await executeQuery(
+    `UPDATE xp_tipos_movimentacao SET ativo = 1 WHERE id = ?`,
+    [id]
+  );
   return { ok: true };
 }
 

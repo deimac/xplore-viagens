@@ -1336,6 +1336,11 @@ export const appRouter = router({
             exibirNoLancamentoManual: input.exibirNoLancamentoManual,
           });
         }),
+      reativar: adminProcedure
+        .input(z.object({ id: z.number().int() }))
+        .mutation(async ({ input }) => {
+          return await db.reativarTipoMovimentacao(input.id);
+        }),
     }),
 
     compras: router({

@@ -146,12 +146,25 @@ export default function XpClubPage() {
     });
 
     const tipoDeleteMutation = trpc.xpAdmin.tiposMovimentacao.delete.useMutation({
-        onSuccess: () => {
-            toast.success("Tipo removido com sucesso");
+        onSuccess: (data: any) => {
+            const result = data?.json || data;
+            if (result?.inativado) {
+                toast.success(`Tipo inativado (${result.registros} movimentação(ões) vinculada(s))`);
+            } else {
+                toast.success("Tipo removido com sucesso");
+            }
             setTipoDeleteId(null);
             void tiposMovQuery.refetch();
         },
         onError: (err: any) => toast.error(err?.message || "Erro ao remover tipo"),
+    });
+
+    const reativarTipoMutation = trpc.xpAdmin.tiposMovimentacao.reativar.useMutation({
+        onSuccess: () => {
+            toast.success("Tipo reativado com sucesso");
+            void tiposMovQuery.refetch();
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao reativar tipo"),
     });
 
     const expPreviewQuery = trpc.xpAdmin.expiracao.preview.useQuery();
@@ -240,7 +253,8 @@ export default function XpClubPage() {
     const tiposMovimentacao = (tiposMovQuery.data as any)?.json || tiposMovQuery.data || [];
     const tiposMovimentacaoManual = tiposMovimentacao.filter((tipo: any) => {
         const flag = tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual;
-        return flag !== 0 && flag !== false;
+        const ativo = tipo.ativo ?? true;
+        return (flag !== 0 && flag !== false) && (ativo !== 0 && ativo !== false);
     });
 
     const clientes = (clientesData as any)?.items || [];
@@ -772,8 +786,15 @@ export default function XpClubPage() {
                                             </thead>
                                             <tbody>
                                                 {tiposMovimentacao.map((tipo: any) => (
-                                                    <tr key={tipo.id} className="border-t hover:bg-muted/20 transition-colors">
-                                                        <td className="px-3 py-2 font-medium">{tipo.nome}</td>
+                                                    <tr key={tipo.id} className={`border-t hover:bg-muted/20 transition-colors ${!(tipo.ativo ?? true) || tipo.ativo === 0 ? 'opacity-50' : ''}`}>
+                                                        <td className="px-3 py-2 font-medium">
+                                                            <div className="flex items-center gap-2">
+                                                                {tipo.nome}
+                                                                {(!(tipo.ativo ?? true) || tipo.ativo === 0) && (
+                                                                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-muted-foreground/30">Inativo</Badge>
+                                                                )}
+                                                            </div>
+                                                        </td>
                                                         <td className="px-3 py-2">
                                                             <Badge variant={
                                                                 tipo.tipo_operacao === "credito" ? "default" :
@@ -812,9 +833,17 @@ export default function XpClubPage() {
                                                                 <Button variant="ghost" size="sm" onClick={() => openTipoModal(tipo)} title="Editar tipo">
                                                                     <Pencil className="h-3.5 w-3.5" />
                                                                 </Button>
-                                                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setTipoDeleteId(Number(tipo.id))} title="Remover tipo">
-                                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                                </Button>
+                                                                {(!(tipo.ativo ?? true) || tipo.ativo === 0) ? (
+                                                                    <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => {
+                                                                        reativarTipoMutation.mutate({ id: Number(tipo.id) });
+                                                                    }} title="Reativar tipo">
+                                                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setTipoDeleteId(Number(tipo.id))} title="Remover tipo">
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -932,7 +961,12 @@ export default function XpClubPage() {
                                         Remover tipo
                                     </DialogTitle>
                                     <DialogDescription>
-                                        Tem certeza que deseja remover o tipo <strong>"{tiposMovimentacao.find((t: any) => Number(t.id) === tipoDeleteId)?.nome}"</strong>? Esta ação não pode ser desfeita.
+                                        {(() => {
+                                            const tipoParaDeletar = tiposMovimentacao.find((t: any) => Number(t.id) === tipoDeleteId);
+                                            return tipoParaDeletar ? (
+                                                <>Deseja remover o tipo <strong>"{tipoParaDeletar.nome}"</strong>? Se houver movimentações vinculadas, o tipo será <strong>inativado</strong> em vez de excluído.</>
+                                            ) : null;
+                                        })()}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
@@ -945,7 +979,7 @@ export default function XpClubPage() {
                                         disabled={tipoDeleteMutation.isPending}
                                         title="Confirmar exclusão"
                                     >
-                                        {tipoDeleteMutation.isPending ? "Removendo..." : "Remover"}
+                                        {tipoDeleteMutation.isPending ? "Processando..." : "Remover / Inativar"}
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>

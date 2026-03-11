@@ -1,0 +1,2 @@
+ALTER TABLE xp_tipos_movimentacao
+ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 1;
