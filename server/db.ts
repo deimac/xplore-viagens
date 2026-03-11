@@ -1782,7 +1782,7 @@ export async function getXpDashboard(clienteId: number) {
 
   // Últimas 5 movimentações
   const ultimas: any[] = await executeQuery(
-    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
+    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.codigo_ref, m.valor_referencia, m.data_compra, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
             t.nome AS tipo_nome, t.slug AS tipo_slug, t.descricao AS tipo_descricao, t.tipo_operacao
      FROM xp_movimentacoes m
@@ -1853,7 +1853,7 @@ export async function getXpExtrato(
 
   params.push(String(pageSize), String(offset));
   const rows: any[] = await executeQuery(
-    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.data_movimentacao,
+    `SELECT m.id, m.xp, m.saldo_apos, m.descricao, m.codigo_ref, m.valor_referencia, m.data_compra, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao,
             t.nome AS tipo_nome, t.slug AS tipo_slug, t.descricao AS tipo_descricao, t.tipo_operacao, t.qualificavel
      FROM xp_movimentacoes m
