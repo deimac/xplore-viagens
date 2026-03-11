@@ -43,7 +43,7 @@ function formatPhone(value: string) {
 export default function XpClubPage() {
     const [days, setDays] = useState("30");
     const [movSearch, setMovSearch] = useState("");
-    const [movTipoOperacao, setMovTipoOperacao] = useState<"all" | "credito" | "debito" | "ajuste">("all");
+    const [movTipoOperacao, setMovTipoOperacao] = useState<"all" | "credito" | "debito">("all");
     const [movDataInicio, setMovDataInicio] = useState("");
     const [movDataFim, setMovDataFim] = useState("");
 
@@ -83,14 +83,14 @@ export default function XpClubPage() {
     const [tipoDeleteId, setTipoDeleteId] = useState<number | null>(null);
     const [tipoForm, setTipoForm] = useState({
         nome: "",
-        tipoOperacao: "credito" as "credito" | "debito" | "ajuste",
+        tipoOperacao: "credito" as "credito" | "debito",
         qualificavel: false,
         exibirNoLancamentoManual: true,
         descricao: "",
         diasExpiracao: "",
     });
 
-    const movTipoOperacaoParam: "credito" | "debito" | "ajuste" | undefined =
+    const movTipoOperacaoParam: "credito" | "debito" | undefined =
         movTipoOperacao === "all" ? undefined : movTipoOperacao;
 
     const dashboardQuery = trpc.xpAdmin.dashboard.useQuery({ days: Number(days) || 30 });
@@ -527,7 +527,7 @@ export default function XpClubPage() {
                                         <Select
                                             value={movTipoOperacao}
                                             onValueChange={(value) => {
-                                                if (value === "all" || value === "credito" || value === "debito" || value === "ajuste") {
+                                                if (value === "all" || value === "credito" || value === "debito") {
                                                     setMovTipoOperacao(value);
                                                 }
                                             }}
@@ -539,7 +539,6 @@ export default function XpClubPage() {
                                                 <SelectItem value="all">Todas</SelectItem>
                                                 <SelectItem value="credito">Crédito</SelectItem>
                                                 <SelectItem value="debito">Débito</SelectItem>
-                                                <SelectItem value="ajuste">Ajuste</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -797,11 +796,9 @@ export default function XpClubPage() {
                                                         </td>
                                                         <td className="px-3 py-2">
                                                             <Badge variant={
-                                                                tipo.tipo_operacao === "credito" ? "default" :
-                                                                    tipo.tipo_operacao === "debito" ? "destructive" : "secondary"
+                                                                tipo.tipo_operacao === "credito" ? "default" : "destructive"
                                                             } className="text-xs">
-                                                                {tipo.tipo_operacao === "credito" ? "Crédito" :
-                                                                    tipo.tipo_operacao === "debito" ? "Débito" : "Ajuste"}
+                                                                {tipo.tipo_operacao === "credito" ? "Crédito" : "Débito"}
                                                             </Badge>
                                                         </td>
                                                         <td className="px-3 py-2 text-center">
@@ -891,7 +888,6 @@ export default function XpClubPage() {
                                             <SelectContent>
                                                 <SelectItem value="credito">Crédito</SelectItem>
                                                 <SelectItem value="debito">Débito</SelectItem>
-                                                <SelectItem value="ajuste">Ajuste</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

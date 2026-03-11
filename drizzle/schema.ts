@@ -488,7 +488,7 @@ export type XpParceiro = typeof xpParceiros.$inferSelect;
 export const xpTiposMovimentacao = mysqlTable("xp_tipos_movimentacao", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 50 }).notNull(),
-  tipoOperacao: mysqlEnum("tipo_operacao", ["credito", "debito", "ajuste"]).notNull(),
+  tipoOperacao: mysqlEnum("tipo_operacao", ["credito", "debito"]).notNull(),
   qualificavel: boolean("qualificavel").notNull().default(false),
   exibirNoLancamentoManual: boolean("exibir_no_lancamento_manual").notNull().default(true),
   ativo: boolean("ativo").notNull().default(true),

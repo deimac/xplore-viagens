@@ -1249,7 +1249,7 @@ export const appRouter = router({
         .input(
           z.object({
             search: z.string().optional(),
-            tipoOperacao: z.enum(['credito', 'debito', 'ajuste']).optional(),
+            tipoOperacao: z.enum(['credito', 'debito']).optional(),
             tipoMovimentacaoId: z.number().int().optional(),
             dataInicio: z.string().optional(),
             dataFim: z.string().optional(),
@@ -1278,7 +1278,7 @@ export const appRouter = router({
         .input(
           z.object({
             nome: z.string().min(1).max(50),
-            tipoOperacao: z.enum(["credito", "debito", "ajuste"]),
+            tipoOperacao: z.enum(["credito", "debito"]),
             qualificavel: z.boolean(),
             exibirNoLancamentoManual: z.boolean(),
             descricao: z.string().max(255).nullish(),
@@ -1300,7 +1300,7 @@ export const appRouter = router({
           z.object({
             id: z.number().int(),
             nome: z.string().min(1).max(50),
-            tipoOperacao: z.enum(["credito", "debito", "ajuste"]),
+            tipoOperacao: z.enum(["credito", "debito"]),
             qualificavel: z.boolean(),
             exibirNoLancamentoManual: z.boolean(),
             descricao: z.string().max(255).nullish(),

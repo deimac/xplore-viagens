@@ -1708,14 +1708,14 @@ export async function getXpDashboard(clienteId: number) {
   );
   const saldoTotal = Number(totalRow.total);
 
-  // Saldo disponível: créditos não expirados + todos os débitos/ajustes
+  // Saldo disponível: créditos não expirados + todos os débitos
   const [dispRow]: any[] = await executeQuery(
     `SELECT COALESCE(SUM(m.xp), 0) AS total
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
        AND (
-         t.tipo_operacao IN ('debito', 'ajuste')
+         t.tipo_operacao = 'debito'
          OR (t.tipo_operacao = 'credito' AND (
            t.dias_expiracao IS NULL
            OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
@@ -1732,7 +1732,7 @@ export async function getXpDashboard(clienteId: number) {
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
        AND (
-         t.tipo_operacao IN ('debito', 'ajuste')
+         t.tipo_operacao = 'debito'
          OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (
            t.dias_expiracao IS NULL
            OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
@@ -2102,7 +2102,7 @@ async function getSaldoClienteAtual(clienteId: number): Promise<number> {
 
 async function ensureTipoMovimentacao(
   nome: string,
-  tipoOperacao: 'credito' | 'debito' | 'ajuste',
+  tipoOperacao: 'credito' | 'debito',
   qualificavel: boolean,
   descricao: string,
   diasExpiracao: number | null = null
@@ -2135,8 +2135,7 @@ export async function getXpAdminDashboard(days: number = 30) {
   const [periodoRow]: any[] = await executeQuery(
     `SELECT
        COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' THEN m.xp ELSE 0 END), 0) AS total_credito,
-       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'debito' THEN ABS(m.xp) ELSE 0 END), 0) AS total_debito,
-       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'ajuste' THEN m.xp ELSE 0 END), 0) AS total_ajuste
+       COALESCE(SUM(CASE WHEN t.tipo_operacao = 'debito' THEN ABS(m.xp) ELSE 0 END), 0) AS total_debito
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE DATE(m.data_movimentacao) >= ?`,
@@ -2184,7 +2183,6 @@ export async function getXpAdminDashboard(days: number = 30) {
       days,
       totalCredito: Number(periodoRow?.total_credito || 0),
       totalDebito: Number(periodoRow?.total_debito || 0),
-      totalAjuste: Number(periodoRow?.total_ajuste || 0),
     },
     pontosExpirar: Number(expirarRow?.total || 0),
     clientesAtivos: Number(clientesAtivosRow?.total || 0),
@@ -2223,7 +2221,7 @@ export async function listXpAdminClientes(params: {
             COALESCE(SUM(m.xp), 0) AS saldo_xp,
             COALESCE(SUM(
               CASE
-                WHEN t.tipo_operacao IN ('debito', 'ajuste') THEN m.xp
+                WHEN t.tipo_operacao = 'debito' THEN m.xp
                 WHEN t.tipo_operacao = 'credito'
                   AND t.qualificavel = 1
                   AND (t.dias_expiracao IS NULL
@@ -2260,7 +2258,7 @@ async function getSaldoQualificavelCliente(clienteId: number) {
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
        AND (
-         t.tipo_operacao IN ('debito', 'ajuste')
+         t.tipo_operacao = 'debito'
          OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (
            t.dias_expiracao IS NULL
            OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
@@ -2273,7 +2271,7 @@ async function getSaldoQualificavelCliente(clienteId: number) {
 
 export async function listXpAdminMovimentacoes(params: {
   search?: string;
-  tipoOperacao?: 'credito' | 'debito' | 'ajuste';
+  tipoOperacao?: 'credito' | 'debito';
   tipoMovimentacaoId?: number;
   dataInicio?: string;
   dataFim?: string;
