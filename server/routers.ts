@@ -1270,12 +1270,33 @@ export const appRouter = router({
         }),
     }),
 
+    tiposMovimentacao: router({
+      list: adminProcedure.query(async () => {
+        return await db.listTiposMovimentacao();
+      }),
+      updateExibicao: adminProcedure
+        .input(
+          z.object({
+            id: z.number().int(),
+            exibirNoLancamentoManual: z.boolean(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          return await db.updateTipoMovimentacaoExibicao({
+            id: input.id,
+            exibirNoLancamentoManual: input.exibirNoLancamentoManual,
+          });
+        }),
+    }),
+
     compras: router({
       registrarManual: adminProcedure
         .input(
           z.object({
             clienteId: z.number().int(),
-            valorReais: z.number().positive(),
+            tipoMovimentacaoId: z.number().int(),
+            xpManual: z.number().int().positive(),
+            valorReais: z.number().positive().optional(),
             descricao: z.string().max(255).optional(),
           })
         )
@@ -1283,6 +1304,8 @@ export const appRouter = router({
           return await db.registrarXpCompraManual({
             clienteId: input.clienteId,
             userId: ctx.user.id,
+            tipoMovimentacaoId: input.tipoMovimentacaoId,
+            xpManual: input.xpManual,
             valorReais: input.valorReais,
             descricao: input.descricao,
           });

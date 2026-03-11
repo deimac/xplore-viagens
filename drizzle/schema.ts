@@ -490,6 +490,7 @@ export const xpTiposMovimentacao = mysqlTable("xp_tipos_movimentacao", {
   nome: varchar("nome", { length: 50 }).notNull(),
   tipoOperacao: mysqlEnum("tipo_operacao", ["credito", "debito", "ajuste"]).notNull(),
   qualificavel: boolean("qualificavel").notNull().default(false),
+  exibirNoLancamentoManual: boolean("exibir_no_lancamento_manual").notNull().default(true),
   descricao: varchar("descricao", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   diasExpiracao: int("dias_expiracao"),

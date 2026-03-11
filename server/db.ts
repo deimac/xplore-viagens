@@ -1866,7 +1866,19 @@ export async function getXpExtrato(
 // ── Tipos de movimentação (para filtro do extrato) ────────────────
 
 export async function listTiposMovimentacao() {
-  return await executeQuery(`SELECT id, nome, tipo_operacao, qualificavel FROM xp_tipos_movimentacao ORDER BY nome`);
+  return await executeQuery(
+    `SELECT id, nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual
+     FROM xp_tipos_movimentacao
+     ORDER BY nome`
+  );
+}
+
+export async function updateTipoMovimentacaoExibicao(input: { id: number; exibirNoLancamentoManual: boolean }) {
+  await executeQuery(
+    `UPDATE xp_tipos_movimentacao SET exibir_no_lancamento_manual = ? WHERE id = ?`,
+    [input.exibirNoLancamentoManual ? 1 : 0, input.id]
+  );
+  return { ok: true };
 }
 
 export async function getTipoMovimentacaoPorNome(nome: string) {
@@ -2114,6 +2126,7 @@ export async function listXpAdminClientes(params: {
   const page = params.page || 1;
   const pageSize = params.pageSize || 20;
   const offset = (page - 1) * pageSize;
+  const hoje = new Date().toISOString().slice(0, 10);
 
   let where = `WHERE 1=1`;
   const whereParams: any[] = [];
@@ -2133,14 +2146,26 @@ export async function listXpAdminClientes(params: {
   const rows: any[] = await executeQuery(
     `SELECT c.id, c.nome, c.email, c.cpf,
             COALESCE(SUM(m.xp), 0) AS saldo_xp,
+            COALESCE(SUM(
+              CASE
+                WHEN t.tipo_operacao IN ('debito', 'ajuste') THEN m.xp
+                WHEN t.tipo_operacao = 'credito'
+                  AND t.qualificavel = 1
+                  AND (t.dias_expiracao IS NULL
+                    OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+                THEN m.xp
+                ELSE 0
+              END
+            ), 0) AS saldo_qualificavel,
             MAX(m.data_movimentacao) AS ultima_movimentacao
      FROM clientes c
      LEFT JOIN xp_movimentacoes m ON m.id_cliente = c.id
+     LEFT JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      ${where}
      GROUP BY c.id, c.nome, c.email, c.cpf
      ORDER BY c.nome ASC
      LIMIT ? OFFSET ?`,
-    [...whereParams, String(pageSize), String(offset)]
+    [...whereParams, hoje, String(pageSize), String(offset)]
   );
 
   return {
@@ -2150,6 +2175,25 @@ export async function listXpAdminClientes(params: {
     pageSize,
     totalPages: Math.ceil(Number(countRow?.total || 0) / pageSize),
   };
+}
+
+async function getSaldoQualificavelCliente(clienteId: number) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const [row]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(m.xp), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     WHERE m.id_cliente = ?
+       AND (
+         t.tipo_operacao IN ('debito', 'ajuste')
+         OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (
+           t.dias_expiracao IS NULL
+           OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+         ))
+       )`,
+    [clienteId, hoje]
+  );
+  return Number(row?.total || 0);
 }
 
 export async function listXpAdminMovimentacoes(params: {
@@ -2230,23 +2274,38 @@ export async function listXpAdminMovimentacoes(params: {
 export async function registrarXpCompraManual(input: {
   clienteId: number;
   userId: number;
-  valorReais: number;
+  tipoMovimentacaoId: number;
+  xpManual: number;
+  valorReais?: number;
   descricao?: string;
 }) {
   await getOrCreateXpConta(input.clienteId);
 
-  const xpPorReal = await getXpConfigNum('xp_por_real_compra', 1);
-  const xpGerado = Math.round(input.valorReais * xpPorReal);
-  if (!Number.isFinite(xpGerado) || xpGerado <= 0) {
-    throw new Error('Valor inválido para gerar XP.');
+  const tipoRows = await executeQuery(
+    `SELECT id, tipo_operacao, nome, exibir_no_lancamento_manual FROM xp_tipos_movimentacao WHERE id = ? LIMIT 1`,
+    [input.tipoMovimentacaoId]
+  );
+  const tipoSelecionado = (tipoRows as any[])[0];
+  if (!tipoSelecionado) {
+    throw new Error('Tipo de movimentação inválido.');
+  }
+  if (!tipoSelecionado.exibir_no_lancamento_manual) {
+    throw new Error('Tipo de movimentação não disponível para lançamento manual.');
   }
 
-  const tipoId = await ensureTipoMovimentacao(
-    'compra_manual',
-    'credito',
-    true,
-    'Crédito de XP por compra manual cadastrada no admin.'
-  );
+  const xpBase = Math.abs(Math.round(input.xpManual));
+  if (!Number.isFinite(xpBase) || xpBase <= 0) {
+    throw new Error('XP manual inválido.');
+  }
+
+  const isDebito = tipoSelecionado.tipo_operacao === 'debito';
+  if (isDebito) {
+    const saldoQualificavel = await getSaldoQualificavelCliente(input.clienteId);
+    if (xpBase > saldoQualificavel) {
+      throw new Error('XP informado excede o saldo qualificável do cliente.');
+    }
+  }
+  const xpGerado = isDebito ? -xpBase : xpBase;
 
   const saldoAtual = await getSaldoClienteAtual(input.clienteId);
   const saldoApos = saldoAtual + xpGerado;
@@ -2258,11 +2317,11 @@ export async function registrarXpCompraManual(input: {
     [
       input.clienteId,
       input.userId,
-      tipoId,
+      input.tipoMovimentacaoId,
       xpGerado,
       saldoApos,
-      input.descricao?.trim() || 'Compra manual registrada no admin',
-      input.valorReais,
+      input.descricao?.trim() || 'Lançamento manual registrado no admin',
+      input.valorReais ?? null,
     ]
   );
 
@@ -2271,7 +2330,7 @@ export async function registrarXpCompraManual(input: {
     [saldoApos, input.clienteId]
   );
 
-  return { xpGerado, saldoApos, xpPorReal };
+  return { xpGerado, saldoApos, tipoOperacao: tipoSelecionado.tipo_operacao };
 }
 
 export async function listXpAdminCodigos() {

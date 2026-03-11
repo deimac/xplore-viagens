@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -47,6 +48,8 @@ export default function XpClubPage() {
 
     const [clienteSearch, setClienteSearch] = useState("");
     const [compraClienteId, setCompraClienteId] = useState<number | null>(null);
+    const [compraTipoMovimentacaoId, setCompraTipoMovimentacaoId] = useState("none");
+    const [compraXpInput, setCompraXpInput] = useState("");
     const [compraValorInput, setCompraValorInput] = useState("");
     const [compraDescricao, setCompraDescricao] = useState("");
 
@@ -92,11 +95,20 @@ export default function XpClubPage() {
         pageSize: 50,
     });
 
+    const tiposMovQuery = trpc.xpAdmin.tiposMovimentacao.list.useQuery();
+
     const parceirosQuery = trpc.xpAdmin.parceiros.list.useQuery();
 
     const codigosQuery = trpc.xpAdmin.codigos.list.useQuery();
 
     const configQuery = trpc.xpAdmin.config.list.useQuery();
+
+    const tipoExibicaoMutation = trpc.xpAdmin.tiposMovimentacao.updateExibicao.useMutation({
+        onSuccess: () => {
+            void tiposMovQuery.refetch();
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao atualizar tipo"),
+    });
 
     const expPreviewQuery = trpc.xpAdmin.expiracao.preview.useQuery();
 
@@ -181,6 +193,11 @@ export default function XpClubPage() {
     const configData = (configQuery.data as any)?.json || configQuery.data || [];
     const expPreviewData = (expPreviewQuery.data as any)?.json || expPreviewQuery.data || { totalClientes: 0, totalXp: 0, clientes: [] };
     const dashboard = (dashboardQuery.data as any)?.json || dashboardQuery.data || {};
+    const tiposMovimentacao = (tiposMovQuery.data as any)?.json || tiposMovQuery.data || [];
+    const tiposMovimentacaoManual = tiposMovimentacao.filter((tipo: any) => {
+        const flag = tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual;
+        return flag !== 0 && flag !== false;
+    });
 
     const clientes = (clientesData as any)?.items || [];
     const clientesLimitados = clientes.slice(0, 50);
@@ -201,21 +218,39 @@ export default function XpClubPage() {
         return clientes.find((c: any) => Number(c.id) === compraClienteId) || null;
     }, [clientes, compraClienteId]);
 
+    const tipoSelecionado = tiposMovimentacao.find((t: any) => String(t.id) === compraTipoMovimentacaoId) || null;
+    const saldoQualificavelSelecionado = Number(clienteSelecionado?.saldo_qualificavel || 0);
+    const xpManualNumber = Number(compraXpInput.replace(/\D/g, "")) || 0;
+    const debitoPercent = saldoQualificavelSelecionado > 0
+        ? Math.min(100, Math.round((xpManualNumber / saldoQualificavelSelecionado) * 100))
+        : 0;
+
     const handleRegistrarCompra = () => {
         const valor = parseCurrencyInput(compraValorInput);
+        const xpManual = Number(compraXpInput.replace(/\D/g, ""));
 
         if (!compraClienteId) {
             toast.error("Selecione um cliente");
             return;
         }
-        if (!valor || valor <= 0) {
-            toast.error("Informe um valor válido em R$");
+        if (compraTipoMovimentacaoId === "none") {
+            toast.error("Selecione o tipo de movimentação");
+            return;
+        }
+        if (!Number.isFinite(xpManual) || xpManual <= 0) {
+            toast.error("Informe a quantidade de XP");
+            return;
+        }
+        if (tipoSelecionado?.tipo_operacao === "debito" && xpManual > saldoQualificavelSelecionado) {
+            toast.error("XP informado excede o saldo qualificável do cliente");
             return;
         }
 
         compraMutation.mutate({
             clienteId: compraClienteId,
-            valorReais: valor,
+            tipoMovimentacaoId: Number(compraTipoMovimentacaoId),
+            xpManual,
+            valorReais: valor || undefined,
             descricao: compraDescricao.trim() || undefined,
         });
     };
@@ -443,7 +478,7 @@ export default function XpClubPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg">Lançar pontos manualmente</CardTitle>
-                                <CardDescription>Selecione o cliente, informe o valor e lance os pontos com validação e máscara de moeda.</CardDescription>
+                                <CardDescription>Selecione o cliente, o tipo e a quantidade de XP. O valor da compra fica como referência opcional.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid gap-3 md:grid-cols-2">
@@ -453,7 +488,7 @@ export default function XpClubPage() {
                                             options={clientesLimitados.map((c: any) => ({
                                                 id: c.id,
                                                 nome: c.nome || "",
-                                                detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP`,
+                                                detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP • Qualificável: ${Number(c.saldo_qualificavel || 0)} XP`,
                                             }))}
                                             value={compraClienteId ? String(compraClienteId) : ""}
                                             onChange={(id) => setCompraClienteId(Number(id))}
@@ -466,7 +501,76 @@ export default function XpClubPage() {
 
                                     <div className="space-y-3">
                                         <div>
-                                            <Label htmlFor="valorCompra">Valor da compra (R$)</Label>
+                                            <Label>Tipo de movimentação</Label>
+                                            <Select
+                                                value={compraTipoMovimentacaoId}
+                                                onValueChange={(value) => setCompraTipoMovimentacaoId(value)}
+                                            >
+                                                <SelectTrigger title="Selecionar tipo de movimentação">
+                                                    <SelectValue placeholder="Selecionar" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Selecione</SelectItem>
+                                                    {tiposMovimentacaoManual.map((tipo: any) => (
+                                                        <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                            {tipo.nome} ({tipo.tipo_operacao})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        {tipoSelecionado?.tipo_operacao === "debito" && (
+                                            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-2">
+                                                <p>Atencao: este tipo debita XP do cliente. O valor informado sera subtraido do saldo.</p>
+                                                <p>Disponivel para debito (qualificavel): {saldoQualificavelSelecionado.toLocaleString("pt-BR")} XP</p>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between text-[11px] text-amber-900">
+                                                        <span>0%</span>
+                                                        <span>{debitoPercent}%</span>
+                                                        <span>100%</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min={0}
+                                                        max={100}
+                                                        step={1}
+                                                        value={debitoPercent}
+                                                        onChange={(e) => {
+                                                            const percent = Number(e.target.value);
+                                                            const xpValue = Math.round((saldoQualificavelSelecionado * percent) / 100);
+                                                            setCompraXpInput(String(xpValue));
+                                                        }}
+                                                        className="w-full"
+                                                        disabled={saldoQualificavelSelecionado <= 0}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <Label htmlFor="xpCompra">Quantidade de XP</Label>
+                                            <Input
+                                                id="xpCompra"
+                                                value={compraXpInput}
+                                                onChange={(e) => {
+                                                    const next = e.target.value.replace(/\D/g, "");
+                                                    if (tipoSelecionado?.tipo_operacao === "debito") {
+                                                        const max = saldoQualificavelSelecionado;
+                                                        const nextNumber = Number(next || 0);
+                                                        setCompraXpInput(String(Math.min(max, nextNumber)));
+                                                        return;
+                                                    }
+                                                    setCompraXpInput(next);
+                                                }}
+                                                placeholder={
+                                                    tipoSelecionado?.tipo_operacao === "debito"
+                                                        ? `Max: ${saldoQualificavelSelecionado.toLocaleString("pt-BR")} XP`
+                                                        : "Ex: 1500"
+                                                }
+                                                title="Quantidade de XP"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="valorCompra">Valor da compra (R$) - opcional</Label>
                                             <Input
                                                 id="valorCompra"
                                                 value={compraValorInput}
@@ -487,6 +591,8 @@ export default function XpClubPage() {
                                         </div>
                                         <div className="rounded-lg border p-3 text-sm">
                                             <p><span className="text-muted-foreground">Cliente selecionado:</span> {clienteSelecionado ? clienteSelecionado.nome : "nenhum"}</p>
+                                            <p><span className="text-muted-foreground">Tipo:</span> {compraTipoMovimentacaoId === "none" ? "-" : tiposMovimentacao.find((t: any) => String(t.id) === compraTipoMovimentacaoId)?.nome || "-"}</p>
+                                            <p><span className="text-muted-foreground">XP:</span> {compraXpInput || "0"}</p>
                                             <p><span className="text-muted-foreground">Valor:</span> {compraValorInput || "R$ 0,00"}</p>
                                         </div>
                                         <Button onClick={handleRegistrarCompra} disabled={compraMutation.isPending} className="w-full" title="Registrar compra manual">
@@ -712,6 +818,49 @@ export default function XpClubPage() {
                                                     <td className="px-3 py-2 font-medium">{cfg.chave}</td>
                                                     <td className="px-3 py-2">{cfg.valor}</td>
                                                     <td className="px-3 py-2">{cfg.descricao || "-"}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Tipos de movimentação</CardTitle>
+                                <CardDescription>Defina quais tipos aparecem no lançamento manual de XP.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="border rounded-lg overflow-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-muted/40">
+                                            <tr>
+                                                <th className="text-left px-3 py-2">Tipo</th>
+                                                <th className="text-left px-3 py-2">Operação</th>
+                                                <th className="text-left px-3 py-2">Qualificável</th>
+                                                <th className="text-right px-3 py-2">Exibir no manual</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {tiposMovimentacao.map((tipo: any) => (
+                                                <tr key={tipo.id} className="border-t">
+                                                    <td className="px-3 py-2 font-medium">{tipo.nome}</td>
+                                                    <td className="px-3 py-2">{tipo.tipo_operacao}</td>
+                                                    <td className="px-3 py-2">{tipo.qualificavel ? "Sim" : "Nao"}</td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        <div className="flex justify-end">
+                                                            <Switch
+                                                                checked={!!(tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual)}
+                                                                onCheckedChange={(checked) =>
+                                                                    tipoExibicaoMutation.mutate({
+                                                                        id: Number(tipo.id),
+                                                                        exibirNoLancamentoManual: checked,
+                                                                    })
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
