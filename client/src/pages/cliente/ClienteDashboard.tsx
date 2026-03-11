@@ -62,12 +62,12 @@ export default function ClienteDashboard() {
     const data = dashboard.data;
     if (!data) return null;
 
-    const saldoResgatavel = Number(data.saldoResgatavel ?? 0);
-    const saldoQualificavel = Number(data.saldoQualificavel ?? 0);
-    const saldoNaoQualificavel = Number(data.saldoNaoQualificavel ?? 0);
+    const saldoResgatavel = Math.max(0, Number(data.saldoResgatavel ?? 0));
+    const saldoQualificavel = Math.max(0, Number(data.saldoQualificavel ?? 0));
+    const saldoNaoQualificavel = Math.max(0, Number(data.saldoNaoQualificavel ?? 0));
     const xpMinimo = Number(data.xpMinimoResgate ?? 0);
     const bonusDesbloqueado = Boolean(data.bonusDesbloqueado);
-    const progressPercent = xpMinimo > 0 ? Math.min(100, Math.round((saldoQualificavel / xpMinimo) * 100)) : 100;
+    const progressPercent = xpMinimo > 0 ? Math.min(100, Math.max(0, Math.round((saldoQualificavel / xpMinimo) * 100))) : 100;
     const faltamDesbloquear = Math.max(0, xpMinimo - saldoQualificavel);
     const totalExpirar = data.pontosExpirar?.reduce((s: number, p: any) => s + Number(p.xp), 0) ?? 0;
 

@@ -2195,39 +2195,10 @@ export async function getXpAdminDashboardResumo() {
 
   // Clientes aptos a resgatar (saldoResgatavel > 0)
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
-  // Precisa calcular por cliente: qualificável + (bonus se qualificável >= mínimo)
-  const aptosRows: any[] = await executeQuery(
-    `SELECT
-       m.id_cliente,
-       COALESCE(SUM(
-         CASE
-           WHEN t.tipo_operacao = 'debito' THEN m.xp
-           WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
-             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-           THEN m.xp
-           ELSE 0
-         END
-       ), 0) AS sq,
-       COALESCE(SUM(
-         CASE
-           WHEN t.tipo_operacao = 'credito' AND (t.qualificavel = 0 OR t.qualificavel IS NULL)
-             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-           THEN m.xp
-           ELSE 0
-         END
-       ), 0) AS snq
-     FROM xp_movimentacoes m
-     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-     GROUP BY m.id_cliente`,
-    [hoje, hoje]
-  );
+  const buckets = await calcBulkBuckets(hoje.toISOString().slice(0, 10), xpMinimoResgate);
   let clientesAptos = 0;
-  for (const r of aptosRows) {
-    const sq = Number(r.sq);
-    const snq = Math.max(0, Number(r.snq));
-    const bonus = (xpMinimoResgate > 0 ? sq >= xpMinimoResgate : true) ? snq : 0;
-    const resgatavel = Math.max(0, sq) + bonus;
-    if (resgatavel > 0) clientesAptos++;
+  for (const b of Array.from(buckets.values())) {
+    if (b.resgatavel > 0) clientesAptos++;
   }
 
   return {
@@ -2293,49 +2264,39 @@ export async function listXpAdminClientesAptosResgatar(limit: number = 20) {
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
   const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
 
-  const rows: any[] = await executeQuery(
+  const buckets = await calcBulkBuckets(hoje, xpMinimoResgate);
+
+  // Filtrar clientes com saldo resgatável > 0
+  const aptosIds: number[] = [];
+  for (const [cid, b] of Array.from(buckets)) {
+    if (b.resgatavel > 0) aptosIds.push(cid);
+  }
+  if (aptosIds.length === 0) return [];
+
+  // Buscar info dos clientes + saldo_total bruto
+  const clientRows: any[] = await executeQuery(
     `SELECT c.id, c.nome, c.email, c.cpf,
-       COALESCE(SUM(m.xp), 0) AS saldo_total,
-       COALESCE(SUM(
-         CASE
-           WHEN t.tipo_operacao = 'debito' THEN m.xp
-           WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
-             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-           THEN m.xp
-           ELSE 0
-         END
-       ), 0) AS saldo_qualificavel,
-       COALESCE(SUM(
-         CASE
-           WHEN t.tipo_operacao = 'credito' AND (t.qualificavel = 0 OR t.qualificavel IS NULL)
-             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-           THEN m.xp
-           ELSE 0
-         END
-       ), 0) AS saldo_nao_qualificavel
-     FROM xp_movimentacoes m
-     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-     JOIN clientes c ON c.id = m.id_cliente
+            COALESCE(SUM(m.xp), 0) AS saldo_total
+     FROM clientes c
+     LEFT JOIN xp_movimentacoes m ON m.id_cliente = c.id
+     WHERE c.id IN (${aptosIds.map(() => '?').join(',')})
      GROUP BY c.id, c.nome, c.email, c.cpf`,
-    [hoje, hoje]
+    aptosIds
   );
 
-  const mapped = rows.map((r: any) => {
-    const sq = Number(r.saldo_qualificavel);
-    const snq = Math.max(0, Number(r.saldo_nao_qualificavel));
-    const bonus = (xpMinimoResgate > 0 ? sq >= xpMinimoResgate : true) ? snq : 0;
-    const resgatavel = Math.max(0, sq) + bonus;
+  const mapped = clientRows.map((r: any) => {
+    const b = buckets.get(r.id) || { sq: 0, snq: 0, resgatavel: 0, bonusDesbloqueado: false };
     return {
       id: r.id,
       nome: r.nome,
       email: r.email,
       cpf: r.cpf,
       saldo_total: Number(r.saldo_total),
-      saldo_qualificavel: sq,
-      saldo_nao_qualificavel: snq,
-      saldo_resgatavel: resgatavel,
-      bonus_desbloqueado: bonus > 0,
-      valor_estimado: Math.round(resgatavel * xpValorReais * 100) / 100,
+      saldo_qualificavel: b.sq,
+      saldo_nao_qualificavel: b.snq,
+      saldo_resgatavel: b.resgatavel,
+      bonus_desbloqueado: b.bonusDesbloqueado,
+      valor_estimado: Math.round(b.resgatavel * xpValorReais * 100) / 100,
       minimo_resgate: xpMinimoResgate,
     };
   });
@@ -2351,46 +2312,36 @@ export async function listXpAdminTopQualificaveis(limit: number = 10) {
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
   const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
 
-  const rows: any[] = await executeQuery(
+  const buckets = await calcBulkBuckets(hoje, xpMinimoResgate);
+
+  // Filtrar clientes com saldo resgatável > 0
+  const aptosIds: number[] = [];
+  for (const [cid, b] of Array.from(buckets)) {
+    if (b.resgatavel > 0) aptosIds.push(cid);
+  }
+  if (aptosIds.length === 0) return [];
+
+  // Buscar info dos clientes + saldo_total bruto
+  const clientRows: any[] = await executeQuery(
     `SELECT c.id, c.nome, c.email,
-       COALESCE(SUM(m.xp), 0) AS saldo_total,
-       COALESCE(SUM(
-         CASE
-           WHEN t.tipo_operacao = 'debito' THEN m.xp
-           WHEN t.tipo_operacao = 'credito' AND t.qualificavel = 1
-             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-           THEN m.xp
-           ELSE 0
-         END
-       ), 0) AS saldo_qualificavel,
-       COALESCE(SUM(
-         CASE
-           WHEN t.tipo_operacao = 'credito' AND (t.qualificavel = 0 OR t.qualificavel IS NULL)
-             AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-           THEN m.xp
-           ELSE 0
-         END
-       ), 0) AS saldo_nao_qualificavel
-     FROM xp_movimentacoes m
-     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-     JOIN clientes c ON c.id = m.id_cliente
+            COALESCE(SUM(m.xp), 0) AS saldo_total
+     FROM clientes c
+     LEFT JOIN xp_movimentacoes m ON m.id_cliente = c.id
+     WHERE c.id IN (${aptosIds.map(() => '?').join(',')})
      GROUP BY c.id, c.nome, c.email`,
-    [hoje, hoje]
+    aptosIds
   );
 
-  const mapped = rows.map((r: any) => {
-    const sq = Number(r.saldo_qualificavel);
-    const snq = Math.max(0, Number(r.saldo_nao_qualificavel));
-    const bonus = (xpMinimoResgate > 0 ? sq >= xpMinimoResgate : true) ? snq : 0;
-    const resgatavel = Math.max(0, sq) + bonus;
+  const mapped = clientRows.map((r: any) => {
+    const b = buckets.get(r.id) || { sq: 0, snq: 0, resgatavel: 0, bonusDesbloqueado: false };
     return {
       id: r.id,
       nome: r.nome,
       email: r.email,
       saldo_total: Number(r.saldo_total),
-      saldo_qualificavel: sq,
-      saldo_resgatavel: resgatavel,
-      valor_estimado: Math.round(resgatavel * xpValorReais * 100) / 100,
+      saldo_qualificavel: b.sq,
+      saldo_resgatavel: b.resgatavel,
+      valor_estimado: Math.round(b.resgatavel * xpValorReais * 100) / 100,
     };
   });
 
@@ -2454,49 +2405,30 @@ export async function listXpAdminClientes(params: {
   const rows: any[] = await executeQuery(
     `SELECT c.id, c.nome, c.email, c.cpf,
             COALESCE(SUM(m.xp), 0) AS saldo_xp,
-            COALESCE(SUM(
-              CASE
-                WHEN t.tipo_operacao = 'debito' THEN m.xp
-                WHEN t.tipo_operacao = 'credito'
-                  AND t.qualificavel = 1
-                  AND (t.dias_expiracao IS NULL
-                    OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-                THEN m.xp
-                ELSE 0
-              END
-            ), 0) AS saldo_qualificavel,
-            COALESCE(SUM(
-              CASE
-                WHEN t.tipo_operacao = 'credito'
-                  AND (t.qualificavel = 0 OR t.qualificavel IS NULL)
-                  AND (t.dias_expiracao IS NULL
-                    OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
-                THEN m.xp
-                ELSE 0
-              END
-            ), 0) AS saldo_nao_qualificavel,
             MAX(m.data_movimentacao) AS ultima_movimentacao
      FROM clientes c
      LEFT JOIN xp_movimentacoes m ON m.id_cliente = c.id
-     LEFT JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      ${where}
      GROUP BY c.id, c.nome, c.email, c.cpf
      ORDER BY c.nome ASC
      LIMIT ? OFFSET ?`,
-    [...whereParams, hoje, hoje, String(pageSize), String(offset)]
+    [...whereParams, String(pageSize), String(offset)]
   );
 
+  // Calcular buckets via replay cronológico para os clientes da página
+  const pageClientIds = rows.map((r: any) => Number(r.id));
+  const buckets = pageClientIds.length > 0
+    ? await calcBulkBuckets(hoje, xpMinimoResgate, pageClientIds)
+    : new Map<number, { sq: number; snq: number; resgatavel: number; bonusDesbloqueado: boolean }>();
+
   const items = rows.map((r: any) => {
-    const sq = Number(r.saldo_qualificavel);
-    const snq = Math.max(0, Number(r.saldo_nao_qualificavel));
-    const bonus = (xpMinimoResgate > 0 ? sq >= xpMinimoResgate : true) ? snq : 0;
-    const resgatavel = Math.max(0, sq) + bonus;
+    const b = buckets.get(r.id) || { sq: 0, snq: 0, resgatavel: 0, bonusDesbloqueado: false };
     return {
       ...r,
-      saldo_qualificavel: sq,
-      saldo_nao_qualificavel: snq,
-      saldo_resgatavel: resgatavel,
-      bonus_desbloqueado: bonus > 0,
+      saldo_qualificavel: b.sq,
+      saldo_nao_qualificavel: b.snq,
+      saldo_resgatavel: b.resgatavel,
+      bonus_desbloqueado: b.bonusDesbloqueado,
     };
   });
 
@@ -2509,44 +2441,121 @@ export async function listXpAdminClientes(params: {
   };
 }
 
+/** Calcula buckets XP (qualificável/não-qualificável) para múltiplos clientes via replay cronológico */
+async function calcBulkBuckets(
+  hoje: string,
+  xpMinimoResgate: number,
+  clienteIds?: number[]
+): Promise<Map<number, { sq: number; snq: number; resgatavel: number; bonusDesbloqueado: boolean }>> {
+  let sql = `
+    SELECT m.id_cliente, m.xp, t.tipo_operacao, t.qualificavel
+    FROM xp_movimentacoes m
+    JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+    WHERE (
+      t.tipo_operacao = 'debito'
+      OR (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+    )`;
+  const params: any[] = [hoje];
+  if (clienteIds && clienteIds.length > 0) {
+    sql += ` AND m.id_cliente IN (${clienteIds.map(() => '?').join(',')})`;
+    params.push(...clienteIds);
+  }
+  sql += ` ORDER BY m.id_cliente ASC, m.data_movimentacao ASC, m.id ASC`;
+
+  const movs: any[] = await executeQuery(sql, params);
+  const result = new Map<number, { sq: number; snq: number; resgatavel: number; bonusDesbloqueado: boolean }>();
+
+  let currentCliente = -1;
+  let sq = 0;
+  let snq = 0;
+
+  function flush() {
+    if (currentCliente < 0) return;
+    sq = Math.max(0, sq);
+    snq = Math.max(0, snq);
+    const bonusDesbloqueado = xpMinimoResgate > 0 ? sq >= xpMinimoResgate : true;
+    const resgatavel = sq + (bonusDesbloqueado ? snq : 0);
+    result.set(currentCliente, { sq, snq, resgatavel, bonusDesbloqueado });
+  }
+
+  for (const mov of movs) {
+    const cid = Number(mov.id_cliente);
+    if (cid !== currentCliente) {
+      flush();
+      currentCliente = cid;
+      sq = 0;
+      snq = 0;
+    }
+    const xp = Number(mov.xp);
+    if (mov.tipo_operacao === 'credito') {
+      if (mov.qualificavel === 1 || mov.qualificavel === true) {
+        sq += xp;
+      } else {
+        snq += xp;
+      }
+    } else {
+      // Débito: consumir bônus/código primeiro, depois qualificável
+      let debito = Math.abs(xp);
+      const consumirBonus = Math.min(debito, snq);
+      snq -= consumirBonus;
+      debito -= consumirBonus;
+      sq -= debito;
+    }
+  }
+  flush();
+
+  return result;
+}
+
 async function calcSaldoResgate(clienteId: number) {
   const hoje = new Date().toISOString().slice(0, 10);
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
 
-  // Saldo qualificável: créditos qualificáveis válidos + todos débitos
-  const [qualRow]: any[] = await executeQuery(
-    `SELECT COALESCE(SUM(m.xp), 0) AS total
+  // Buscar todas as movimentações válidas em ordem cronológica
+  // Créditos expirados são excluídos; débitos sempre entram
+  const movs: any[] = await executeQuery(
+    `SELECT m.xp, t.tipo_operacao, t.qualificavel
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
      WHERE m.id_cliente = ?
        AND (
          t.tipo_operacao = 'debito'
-         OR (t.tipo_operacao = 'credito' AND t.qualificavel = 1 AND (
-           t.dias_expiracao IS NULL
-           OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
-         ))
-       )`,
+         OR (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)
+       )
+     ORDER BY m.data_movimentacao ASC, m.id ASC`,
     [clienteId, hoje]
   );
-  const saldoQualificavel = Number(qualRow?.total || 0);
 
-  // Saldo não qualificável: créditos não qualificáveis válidos
-  const [naoQualRow]: any[] = await executeQuery(
-    `SELECT COALESCE(SUM(m.xp), 0) AS total
-     FROM xp_movimentacoes m
-     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-     WHERE m.id_cliente = ?
-       AND t.tipo_operacao = 'credito'
-       AND (t.qualificavel = 0 OR t.qualificavel IS NULL)
-       AND (t.dias_expiracao IS NULL OR DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?)`,
-    [clienteId, hoje]
-  );
-  const saldoNaoQualificavel = Math.max(0, Number(naoQualRow?.total || 0));
+  // Replay cronológico com dois buckets
+  let saldoQualificavel = 0;
+  let saldoNaoQualificavel = 0;
+
+  for (const mov of movs) {
+    const xp = Number(mov.xp);
+    if (mov.tipo_operacao === 'credito') {
+      if (mov.qualificavel === 1 || mov.qualificavel === true) {
+        saldoQualificavel += xp;
+      } else {
+        saldoNaoQualificavel += xp;
+      }
+    } else {
+      // Débito: consumir bônus/código primeiro, depois qualificável
+      let debito = Math.abs(xp);
+      const consumirBonus = Math.min(debito, saldoNaoQualificavel);
+      saldoNaoQualificavel -= consumirBonus;
+      debito -= consumirBonus;
+      saldoQualificavel -= debito;
+    }
+  }
+
+  // Garantir que nenhum bucket fique negativo por segurança
+  saldoQualificavel = Math.max(0, saldoQualificavel);
+  saldoNaoQualificavel = Math.max(0, saldoNaoQualificavel);
 
   const bonusDesbloqueado = xpMinimoResgate > 0
     ? saldoQualificavel >= xpMinimoResgate
     : true;
-  const saldoResgatavel = Math.max(0, saldoQualificavel) + (bonusDesbloqueado ? saldoNaoQualificavel : 0);
+  const saldoResgatavel = saldoQualificavel + (bonusDesbloqueado ? saldoNaoQualificavel : 0);
 
   return {
     saldoQualificavel,
