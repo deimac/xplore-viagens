@@ -1708,7 +1708,7 @@ export async function getXpDashboard(clienteId: number) {
   );
   const saldoTotal = Number(totalRow.total);
 
-  // Saldo disponível: créditos não expirados + todos os débitos
+  // Saldo disponível: créditos não vencidos + todos os débitos
   const [dispRow]: any[] = await executeQuery(
     `SELECT COALESCE(SUM(m.xp), 0) AS total
      FROM xp_movimentacoes m
@@ -1725,7 +1725,7 @@ export async function getXpDashboard(clienteId: number) {
   );
   const saldoDisponivel = Number(dispRow.total);
 
-  // Saldo qualificável: créditos não expirados E qualificáveis + todos débitos
+  // Saldo qualificável: créditos não vencidos E qualificáveis + todos débitos
   const [qualRow]: any[] = await executeQuery(
     `SELECT COALESCE(SUM(m.xp), 0) AS total
      FROM xp_movimentacoes m
@@ -1745,12 +1745,12 @@ export async function getXpDashboard(clienteId: number) {
   // Configs
   const xpValorReais = await getXpConfigNum('xp_valor_reais', 0.10);
   const xpMinimoResgate = await getXpConfigNum('xp_minimo_resgate', 0);
-  const xpAlertaDias = await getXpConfigNum('xp_alerta_expiracao_dias', 30);
+  const xpAlertaDias = await getXpConfigNum('xp_alerta_vencimento_dias', 30);
 
   const valorEmReais = saldoDisponivel * xpValorReais;
   const podeResgatar = saldoQualificavel >= xpMinimoResgate && xpMinimoResgate > 0;
 
-  // Pontos próximos a expirar
+  // Pontos próximos a vencer
   const limiteExpiracao = new Date();
   limiteExpiracao.setDate(limiteExpiracao.getDate() + xpAlertaDias);
   const limiteStr = limiteExpiracao.toISOString().slice(0, 10);
@@ -2027,7 +2027,7 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
           if (tipos.length === 0) throw new Error("Tipo de movimentação 'codigo_promocional' não configurado.");
           const tipo = tipos[0];
 
-          // 7. Calcular expiração
+          // 7. Calcular vencimento
           let dataExpiracao: string | null = null;
           const diasExp = codigo.dias_expiracao ?? tipo.dias_expiracao;
           if (diasExp) {
@@ -2143,7 +2143,7 @@ export async function getXpAdminDashboard(days: number = 30) {
   );
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const alertaDias = await getXpConfigNum('xp_alerta_expiracao_dias', 30);
+  const alertaDias = await getXpConfigNum('xp_alerta_vencimento_dias', 30);
   const limite = new Date();
   limite.setDate(limite.getDate() + alertaDias);
   const limiteStr = limite.toISOString().slice(0, 10);
@@ -2554,6 +2554,120 @@ export async function upsertXpAdminConfiguracao(input: {
   return { success: true };
 }
 
+// ── Reconciliação automática de vencimento XP (por cliente) ───────
+
+export async function reconciliarVencimentoXpCliente(clienteId: number): Promise<void> {
+  if (!_pool) {
+    await getDb();
+    if (!_pool) throw new Error('Database not available');
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    _pool!.getConnection((connErr, connection) => {
+      if (connErr || !connection) {
+        reject(connErr || new Error('Failed to get DB connection'));
+        return;
+      }
+
+      connection.beginTransaction((txErr) => {
+        if (txErr) { connection.release(); reject(txErr); return; }
+
+        const query = (sql: string, params: any[] = []): Promise<any> =>
+          new Promise((res, rej) => {
+            connection.execute(sql, params, (err, results) => {
+              if (err) rej(err); else res(results);
+            });
+          });
+
+        (async () => {
+          // Lock the client's xp_contas row to prevent concurrent reconciliation
+          await query(
+            `SELECT id FROM xp_contas WHERE id_cliente = ? FOR UPDATE`,
+            [clienteId]
+          );
+
+          // Ensure the 'vencimento' tipo exists
+          let tipoRows: any[] = await query(
+            `SELECT id FROM xp_tipos_movimentacao WHERE nome = 'vencimento' LIMIT 1`
+          );
+          let tipoVencimentoId: number;
+          if (tipoRows.length > 0) {
+            tipoVencimentoId = Number(tipoRows[0].id);
+          } else {
+            const ins: any = await query(
+              `INSERT INTO xp_tipos_movimentacao (nome, tipo_operacao, qualificavel, exibir_no_lancamento_manual, descricao)
+               VALUES ('vencimento', 'debito', 0, 0, 'Baixa automática por vencimento de XP')`,
+            );
+            tipoVencimentoId = Number(ins.insertId);
+          }
+
+          // Sum all expired credits for this client
+          const [expRow]: any[] = await query(
+            `SELECT COALESCE(SUM(m.xp), 0) AS expirado_total
+             FROM xp_movimentacoes m
+             JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+             WHERE m.id_cliente = ?
+               AND t.tipo_operacao = 'credito'
+               AND t.dias_expiracao IS NOT NULL
+               AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) < CURDATE()`,
+            [clienteId]
+          );
+          const expiradoTotal = Number(expRow?.expirado_total || 0);
+          if (expiradoTotal <= 0) return; // nothing expired
+
+          // Sum already debited by vencimento for this client
+          const [debRow]: any[] = await query(
+            `SELECT COALESCE(ABS(SUM(m.xp)), 0) AS debitado_total
+             FROM xp_movimentacoes m
+             WHERE m.id_cliente = ? AND m.id_tipo_movimentacao = ?`,
+            [clienteId, tipoVencimentoId]
+          );
+          const debitadoTotal = Number(debRow?.debitado_total || 0);
+
+          const pendente = Math.max(expiradoTotal - debitadoTotal, 0);
+          if (pendente <= 0) return; // already reconciled
+
+          // Calculate current balance
+          const [saldoRow]: any[] = await query(
+            `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes WHERE id_cliente = ?`,
+            [clienteId]
+          );
+          const saldoApos = Number(saldoRow.total) - pendente;
+
+          // Insert vencimento debit
+          await query(
+            `INSERT INTO xp_movimentacoes
+              (id_cliente, id_tipo_movimentacao, xp, saldo_apos, descricao)
+             VALUES (?, ?, ?, ?, 'Baixa automática por vencimento de XP')`,
+            [clienteId, tipoVencimentoId, -pendente, saldoApos]
+          );
+
+          // Update cached balance
+          await query(
+            `UPDATE xp_contas SET saldo_xp = ?, data_atualizacao = NOW() WHERE id_cliente = ?`,
+            [saldoApos, clienteId]
+          );
+        })()
+          .then(() => {
+            connection.commit((commitErr) => {
+              connection.release();
+              if (commitErr) reject(commitErr);
+              else resolve();
+            });
+          })
+          .catch((err) => {
+            connection.rollback(() => {
+              connection.release();
+              reject(err);
+            });
+          });
+      });
+    });
+  });
+}
+
+// ── Preview / Run vencimento global (admin) ───────────────────────
+
 export async function previewXpExpiracao() {
   const rows: any[] = await executeQuery(
     `SELECT p.id_cliente,
@@ -2580,7 +2694,7 @@ export async function previewXpExpiracao() {
          SELECT m.id_cliente, COALESCE(ABS(SUM(m.xp)), 0) AS debitado_total
          FROM xp_movimentacoes m
          JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-         WHERE t.nome = 'expiracao'
+         WHERE t.nome = 'vencimento'
          GROUP BY m.id_cliente
        ) ed ON ed.id_cliente = ec.id_cliente
      ) p
@@ -2608,10 +2722,10 @@ export async function runXpExpiracao(adminUserId: number) {
   }
 
   const tipoExpiracaoId = await ensureTipoMovimentacao(
-    'expiracao',
+    'vencimento',
     'debito',
     false,
-    'Débito automático de XP expirado.'
+    'Baixa automática por vencimento de XP'
   );
 
   const itens: any[] = [];
@@ -2634,7 +2748,7 @@ export async function runXpExpiracao(adminUserId: number) {
         tipoExpiracaoId,
         -xpDebitar,
         saldoApos,
-        'Expiração automática de XP',
+        'Baixa automática por vencimento de XP',
       ]
     );
 

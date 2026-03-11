@@ -180,15 +180,15 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                             )}
                         </div>
 
-                        {/* Alerta expiração */}
+                        {/* Alerta vencimento */}
                         {dashboard.pontosExpirar.length > 0 && (
                             <div className="bg-muted/15 rounded-lg p-3 border border-muted/40">
                                 <div className="flex items-center gap-2 mb-1">
                                     <AlertTriangle className="w-4 h-4 text-amber-500" strokeWidth={1.5} />
-                                    <span className="text-xs font-medium text-amber-600">Expirando</span>
+                                    <span className="text-xs font-medium text-amber-600">A vencer</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    {dashboard.pontosExpirar.reduce((s: number, p: any) => s + p.xp, 0).toLocaleString()} XP próximos de expirar
+                                    {dashboard.pontosExpirar.reduce((s: number, p: any) => s + p.xp, 0).toLocaleString()} XP próximos de vencer
                                 </p>
                             </div>
                         )}

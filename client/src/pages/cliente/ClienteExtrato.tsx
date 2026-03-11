@@ -201,7 +201,7 @@ export default function ClienteExtrato() {
                                                 Qualif.
                                             </th>
                                             <th className="text-left py-3 px-4 font-medium text-muted-foreground hidden md:table-cell">
-                                                Expira
+                                                Vence
                                             </th>
                                         </tr>
                                     </thead>

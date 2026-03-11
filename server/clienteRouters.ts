@@ -298,6 +298,7 @@ export const clienteRouter = router({
 export const xpRouter = router({
     dashboard: clienteProtectedProcedure.query(async ({ ctx }) => {
         await db.getOrCreateXpConta(ctx.cliente!.id);
+        await db.reconciliarVencimentoXpCliente(ctx.cliente!.id);
         return await db.getXpDashboard(ctx.cliente!.id);
     }),
 
@@ -313,6 +314,7 @@ export const xpRouter = router({
             }).optional()
         )
         .query(async ({ input, ctx }) => {
+            await db.reconciliarVencimentoXpCliente(ctx.cliente!.id);
             return await db.getXpExtrato(ctx.cliente!.id, input || {});
         }),
 

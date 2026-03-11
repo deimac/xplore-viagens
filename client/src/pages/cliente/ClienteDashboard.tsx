@@ -92,13 +92,13 @@ export default function ClienteDashboard() {
                 />
             </div>
 
-            {/* Pontos expirando */}
+            {/* Pontos a vencer */}
             {data.pontosExpirar && data.pontosExpirar.length > 0 && (
                 <Card className="border-orange-200 bg-orange-50/50">
                     <CardHeader className="pb-1 sm:pb-2">
                         <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-orange-700">
                             <AlertTriangle className="w-4 h-4 sm:w-4 sm:h-4" />
-                            Pontos próximos a expirar
+                            Pontos próximos a vencer
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -112,7 +112,7 @@ export default function ClienteDashboard() {
                                         {formatPontos(item.xp)} pontos
                                     </span>
                                     <span className="text-muted-foreground text-[10px] sm:text-xs">
-                                        Expiram em{" "}
+                                        Vencem em{" "}
                                         {new Date(item.data_expiracao).toLocaleDateString("pt-BR")}
                                     </span>
                                 </div>

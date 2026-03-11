@@ -232,7 +232,7 @@ export default function XpClubPage() {
 
     const runExpMutation = trpc.xpAdmin.expiracao.run.useMutation({
         onSuccess: (data: any) => {
-            toast.success(`Expiração executada: ${data.totalClientes} clientes / ${data.totalXpDebitado} XP`);
+            toast.success(`Vencimento executado: ${data.totalClientes} clientes / ${data.totalXpDebitado} XP`);
             void Promise.all([
                 expPreviewQuery.refetch(),
                 dashboardQuery.refetch(),
@@ -240,7 +240,7 @@ export default function XpClubPage() {
                 clientesQuery.refetch(),
             ]);
         },
-        onError: (err: any) => toast.error(err?.message || "Erro ao rodar expiração"),
+        onError: (err: any) => toast.error(err?.message || "Erro ao rodar vencimento"),
     });
 
     const clientesData = (clientesQuery.data as any)?.json || clientesQuery.data || {};
@@ -338,7 +338,7 @@ export default function XpClubPage() {
 
         const diasExpiracao = codigoForm.diasExpiracao ? Number(codigoForm.diasExpiracao) : null;
         if (diasExpiracao !== null && (!Number.isFinite(diasExpiracao) || diasExpiracao <= 0)) {
-            toast.error("Dias de expiração inválidos");
+            toast.error("Dias de vencimento inválidos");
             return;
         }
 
@@ -419,7 +419,7 @@ export default function XpClubPage() {
         }
         const diasExp = tipoForm.diasExpiracao ? Number(tipoForm.diasExpiracao) : null;
         if (diasExp !== null && (!Number.isFinite(diasExp) || diasExp <= 0)) {
-            toast.error("Dias de expiração inválido");
+            toast.error("Dias de vencimento inválido");
             return;
         }
         const payload = {
@@ -443,7 +443,7 @@ export default function XpClubPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">XP Club</h1>
-                        <p className="text-muted-foreground mt-1">Dashboard e controle completo de movimentações, códigos, parceiros e expiração.</p>
+                        <p className="text-muted-foreground mt-1">Dashboard e controle completo de movimentações, códigos, parceiros e vencimento.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="days">Período (dias)</Label>
@@ -466,7 +466,7 @@ export default function XpClubPage() {
                     </Card>
                     <Card>
                         <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">XP para expirar</CardDescription>
+                            <CardDescription className="text-xs">XP a vencer</CardDescription>
                             <CardTitle className="text-lg flex items-center gap-2"><Clock3 className="h-4 w-4 text-amber-600" />{Number(dashboard.pontosExpirar || 0)} XP</CardTitle>
                         </CardHeader>
                     </Card>
@@ -504,7 +504,7 @@ export default function XpClubPage() {
                         <TabsTrigger value="codigos">Códigos</TabsTrigger>
                         <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
                         <TabsTrigger value="config">Config</TabsTrigger>
-                        <TabsTrigger value="expiracao">Expiração</TabsTrigger>
+                        <TabsTrigger value="expiracao">Vencimento</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="movimentacoes" className="space-y-4">
@@ -903,13 +903,13 @@ export default function XpClubPage() {
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="tipoDiasExp">Dias para expiração</Label>
+                                        <Label htmlFor="tipoDiasExp">Dias para vencimento</Label>
                                         <Input
                                             id="tipoDiasExp"
                                             value={tipoForm.diasExpiracao}
                                             onChange={(e) => setTipoForm((f) => ({ ...f, diasExpiracao: e.target.value.replace(/\D/g, "") }))}
                                             placeholder="Ex: 365 (vazio = não expira)"
-                                            title="Dias para expiração"
+                                            title="Dias para vencimento"
                                         />
                                     </div>
                                     <div className="flex items-center justify-between rounded-lg border p-3">
@@ -1020,12 +1020,12 @@ export default function XpClubPage() {
                                     <Input value={codigoForm.quantidadeMaxUso} onChange={(e) => setCodigoForm((p) => ({ ...p, quantidadeMaxUso: e.target.value.replace(/\D/g, "") }))} placeholder="Ex: 500" title="Quantidade máxima de uso" />
                                 </div>
                                 <div>
-                                    <Label>Data expiração (opcional)</Label>
-                                    <Input type="date" value={codigoForm.dataExpiracao} onChange={(e) => setCodigoForm((p) => ({ ...p, dataExpiracao: e.target.value }))} title="Data de expiração" />
+                                    <Label>Data vencimento (opcional)</Label>
+                                    <Input type="date" value={codigoForm.dataExpiracao} onChange={(e) => setCodigoForm((p) => ({ ...p, dataExpiracao: e.target.value }))} title="Data de vencimento" />
                                 </div>
                                 <div>
-                                    <Label>Dias expiração XP (opcional)</Label>
-                                    <Input value={codigoForm.diasExpiracao} onChange={(e) => setCodigoForm((p) => ({ ...p, diasExpiracao: e.target.value.replace(/\D/g, "") }))} placeholder="Ex: 90" title="Dias de expiração do XP desse código" />
+                                    <Label>Dias vencimento XP (opcional)</Label>
+                                    <Input value={codigoForm.diasExpiracao} onChange={(e) => setCodigoForm((p) => ({ ...p, diasExpiracao: e.target.value.replace(/\D/g, "") }))} placeholder="Ex: 90" title="Dias de vencimento do XP desse código" />
                                 </div>
                                 <div className="md:col-span-3">
                                     <Button onClick={handleCriarCodigo} disabled={codigoCreateMutation.isPending} title="Criar código">
@@ -1048,7 +1048,7 @@ export default function XpClubPage() {
                                                 <th className="text-left px-3 py-2">Parceiro</th>
                                                 <th className="text-right px-3 py-2">XP</th>
                                                 <th className="text-right px-3 py-2">Uso</th>
-                                                <th className="text-left px-3 py-2">Expiração</th>
+                                                <th className="text-left px-3 py-2">Vencimento</th>
                                                 <th className="text-left px-3 py-2">Status</th>
                                                 <th className="text-right px-3 py-2">Ação</th>
                                             </tr>
@@ -1153,7 +1153,7 @@ export default function XpClubPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-lg">Salvar configuração XP</CardTitle>
-                                <CardDescription>Ex.: `xp_por_real_compra`, `xp_valor_reais`, `xp_minimo_resgate`, `xp_alerta_expiracao_dias`.</CardDescription>
+                                <CardDescription>Ex.: `xp_por_real_compra`, `xp_valor_reais`, `xp_minimo_resgate`, `xp_alerta_vencimento_dias`.</CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-3 md:grid-cols-3">
                                 <div>
@@ -1209,8 +1209,8 @@ export default function XpClubPage() {
                     <TabsContent value="expiracao" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Expiração automática</CardTitle>
-                                <CardDescription>Visualize pendências e rode o débito automático de XP expirado.</CardDescription>
+                                <CardTitle className="text-lg">Vencimento automático</CardTitle>
+                                <CardDescription>Visualize pendências e rode a baixa automática de XP vencido.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid gap-3 md:grid-cols-3">
@@ -1223,9 +1223,9 @@ export default function XpClubPage() {
                                         <p className="text-2xl font-semibold">{Number(expPreview.totalXp || 0)} XP</p>
                                     </div>
                                     <div className="rounded-lg border p-4 flex items-center justify-center">
-                                        <Button onClick={() => runExpMutation.mutate()} disabled={runExpMutation.isPending} className="w-full" title="Rodar expiração automática">
+                                        <Button onClick={() => runExpMutation.mutate()} disabled={runExpMutation.isPending} className="w-full" title="Rodar vencimento automático">
                                             <RefreshCw className={`h-4 w-4 mr-2 ${runExpMutation.isPending ? "animate-spin" : ""}`} />
-                                            {runExpMutation.isPending ? "Executando..." : "Rodar expiração agora"}
+                                            {runExpMutation.isPending ? "Executando..." : "Rodar vencimento agora"}
                                         </Button>
                                     </div>
                                 </div>
@@ -1250,7 +1250,7 @@ export default function XpClubPage() {
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">Nenhuma pendência de expiração no momento.</td>
+                                                    <td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">Nenhuma pendência de vencimento no momento.</td>
                                                 </tr>
                                             )}
                                         </tbody>
