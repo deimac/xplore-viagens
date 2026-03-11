@@ -2357,7 +2357,7 @@ export async function listXpAdminMovimentacoes(params: {
             m.id_users, u.name AS admin_nome,
             m.id_codigo, cd.codigo,
             m.id_tipo_movimentacao, t.nome AS tipo_nome, t.tipo_operacao,
-            m.xp, m.saldo_apos, m.descricao, m.valor_referencia, m.data_movimentacao,
+            m.xp, m.saldo_apos, m.descricao, m.codigo_ref, m.data_compra, m.valor_referencia, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao
      FROM xp_movimentacoes m
      JOIN clientes c ON c.id = m.id_cliente

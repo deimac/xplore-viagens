@@ -540,23 +540,25 @@ export default function XpClubPage() {
                                 </div>
 
                                 <div className="border rounded-lg overflow-auto">
-                                    <table className="w-full min-w-[980px] text-sm">
+                                    <table className="w-full min-w-[1180px] text-sm">
                                         <thead className="bg-muted/40">
                                             <tr>
                                                 <th className="text-left px-3 py-2">Data</th>
                                                 <th className="text-left px-3 py-2">Cliente</th>
                                                 <th className="text-left px-3 py-2">Tipo</th>
                                                 <th className="text-left px-3 py-2">Descrição</th>
+                                                <th className="text-left px-3 py-2">Código CRM</th>
+                                                <th className="text-left px-3 py-2">Data Compra</th>
                                                 <th className="text-right px-3 py-2">XP</th>
                                                 <th className="text-right px-3 py-2">Saldo após</th>
-                                                <th className="text-right px-3 py-2">R$ ref.</th>
+                                                <th className="text-right px-3 py-2">Valor Compra</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {movQuery.isLoading ? (
-                                                <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Carregando...</td></tr>
+                                                <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Carregando...</td></tr>
                                             ) : movItems.length === 0 ? (
-                                                <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">Sem movimentações para os filtros.</td></tr>
+                                                <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Sem movimentações para os filtros.</td></tr>
                                             ) : (
                                                 movItems.map((row: any) => (
                                                     <tr key={row.id} className="border-t">
@@ -566,6 +568,8 @@ export default function XpClubPage() {
                                                             <Badge variant={row.tipo_operacao === "credito" ? "default" : row.tipo_operacao === "debito" ? "destructive" : "secondary"}>{row.tipo_nome}</Badge>
                                                         </td>
                                                         <td className="px-3 py-2">{row.descricao || "-"}</td>
+                                                        <td className="px-3 py-2">{row.codigo_ref || "-"}</td>
+                                                        <td className="px-3 py-2 whitespace-nowrap">{row.data_compra ? new Date(row.data_compra).toLocaleDateString("pt-BR") : "-"}</td>
                                                         <td className={`px-3 py-2 text-right font-medium ${Number(row.xp) >= 0 ? "text-emerald-600" : "text-red-600"}`}>{Number(row.xp) >= 0 ? "+" : ""}{Number(row.xp)}</td>
                                                         <td className="px-3 py-2 text-right">{Number(row.saldo_apos || 0)}</td>
                                                         <td className="px-3 py-2 text-right">{row.valor_referencia ? formatCurrency(Number(row.valor_referencia)) : "-"}</td>
