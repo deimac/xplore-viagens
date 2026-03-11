@@ -2158,71 +2158,87 @@ async function ensureTipoMovimentacao(
   return Number(result.insertId);
 }
 
-export async function getXpAdminDashboard(days: number = 30) {
-  const from = new Date();
-  from.setDate(from.getDate() - Math.max(1, days));
-  const fromStr = from.toISOString().slice(0, 10);
-
+export async function getXpAdminDashboardResumo() {
+  // Saldo do programa
   const [saldoRow]: any[] = await executeQuery(
     `SELECT COALESCE(SUM(xp), 0) AS total FROM xp_movimentacoes`
   );
 
+  // XP vencendo — mesma lógica da reconciliação (código > tipo > data_expiracao do código)
+  const alertaDias = await getXpConfigNum('xp_alerta_vencimento_dias', 30);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite = new Date(hoje);
+  limite.setDate(limite.getDate() + alertaDias);
+
+  const [expirarRow]: any[] = await executeQuery(
+    `SELECT COALESCE(SUM(m.xp), 0) AS total
+     FROM xp_movimentacoes m
+     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+     LEFT JOIN xp_codigos c ON c.id = m.id_codigo
+     WHERE t.tipo_operacao = 'credito'
+       AND (
+         (c.dias_expiracao IS NOT NULL
+           AND DATE_ADD(m.data_movimentacao, INTERVAL c.dias_expiracao DAY) >= ?
+           AND DATE_ADD(m.data_movimentacao, INTERVAL c.dias_expiracao DAY) <= ?)
+         OR (c.dias_expiracao IS NULL AND t.dias_expiracao IS NOT NULL
+           AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
+           AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) <= ?)
+         OR (c.dias_expiracao IS NULL AND t.dias_expiracao IS NULL
+           AND c.data_expiracao IS NOT NULL
+           AND c.data_expiracao >= ? AND c.data_expiracao <= ?)
+       )`,
+    [hoje, limite, hoje, limite, hoje, limite]
+  );
+
+  // Clientes com saldo XP positivo
+  const [clientesSaldoRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total FROM (
+       SELECT m.id_cliente FROM xp_movimentacoes m
+       GROUP BY m.id_cliente HAVING SUM(m.xp) > 0
+     ) s`
+  );
+
+  return {
+    saldoPrograma: Number(saldoRow?.total || 0),
+    xpVencendo: Number(expirarRow?.total || 0),
+    clientesComSaldo: Number(clientesSaldoRow?.total || 0),
+  };
+}
+
+export async function getXpAdminDashboardPeriodo(days: number = 30) {
+  const from = new Date();
+  from.setDate(from.getDate() - Math.max(1, days));
+  from.setHours(0, 0, 0, 0);
+
+  // Créditos e débitos do período — sem DATE() na coluna
   const [periodoRow]: any[] = await executeQuery(
     `SELECT
        COALESCE(SUM(CASE WHEN t.tipo_operacao = 'credito' THEN m.xp ELSE 0 END), 0) AS total_credito,
        COALESCE(SUM(CASE WHEN t.tipo_operacao = 'debito' THEN ABS(m.xp) ELSE 0 END), 0) AS total_debito
      FROM xp_movimentacoes m
      JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-     WHERE DATE(m.data_movimentacao) >= ?`,
-    [fromStr]
+     WHERE m.data_movimentacao >= ?`,
+    [from]
   );
 
-  const hoje = new Date().toISOString().slice(0, 10);
-  const alertaDias = await getXpConfigNum('xp_alerta_vencimento_dias', 30);
-  const limite = new Date();
-  limite.setDate(limite.getDate() + alertaDias);
-  const limiteStr = limite.toISOString().slice(0, 10);
-
-  const [expirarRow]: any[] = await executeQuery(
-    `SELECT COALESCE(SUM(m.xp), 0) AS total
-     FROM xp_movimentacoes m
-     JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
-     WHERE t.tipo_operacao = 'credito'
-       AND t.dias_expiracao IS NOT NULL
-       AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) >= ?
-       AND DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) <= ?`,
-    [hoje, limiteStr]
-  );
-
-  const [clientesAtivosRow]: any[] = await executeQuery(
-    `SELECT COUNT(*) AS total FROM clientes`
-  );
-
-  const [codigosAtivosRow]: any[] = await executeQuery(
-    `SELECT COUNT(*) AS total
-     FROM xp_codigos
-     WHERE ativo = 1
-       AND (data_expiracao IS NULL OR DATE(data_expiracao) >= CURDATE())`
-  );
-
+  // Usos de códigos no período — sem DATE() na coluna
   const [usosRow]: any[] = await executeQuery(
     `SELECT COUNT(*) AS total
      FROM xp_codigos_usados
-     WHERE DATE(data_uso) >= ?`,
-    [fromStr]
+     WHERE data_uso >= ?`,
+    [from]
   );
 
+  const creditos = Number(periodoRow?.total_credito || 0);
+  const debitos = Number(periodoRow?.total_debito || 0);
+
   return {
-    saldoLiquido: Number(saldoRow?.total || 0),
-    periodo: {
-      days,
-      totalCredito: Number(periodoRow?.total_credito || 0),
-      totalDebito: Number(periodoRow?.total_debito || 0),
-    },
-    pontosExpirar: Number(expirarRow?.total || 0),
-    clientesAtivos: Number(clientesAtivosRow?.total || 0),
-    codigosAtivos: Number(codigosAtivosRow?.total || 0),
-    usosCodigosPeriodo: Number(usosRow?.total || 0),
+    days,
+    creditos,
+    debitos,
+    saldoLiquidoPeriodo: creditos - debitos,
+    usosCodigos: Number(usosRow?.total || 0),
   };
 }
 

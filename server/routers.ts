@@ -1220,10 +1220,15 @@ export const appRouter = router({
   }),
 
   xpAdmin: router({
-    dashboard: adminProcedure
+    dashboardResumo: adminProcedure
+      .query(async () => {
+        return await db.getXpAdminDashboardResumo();
+      }),
+
+    dashboardPeriodo: adminProcedure
       .input(z.object({ days: z.number().int().min(1).max(365).optional() }).optional())
       .query(async ({ input }) => {
-        return await db.getXpAdminDashboard(input?.days || 30);
+        return await db.getXpAdminDashboardPeriodo(input?.days || 30);
       }),
 
     clientes: router({

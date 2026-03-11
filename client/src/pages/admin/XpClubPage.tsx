@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Gift, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
+import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar } from "lucide-react";
 
 function formatCurrency(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -93,7 +93,11 @@ export default function XpClubPage() {
     const movTipoOperacaoParam: "credito" | "debito" | undefined =
         movTipoOperacao === "all" ? undefined : movTipoOperacao;
 
-    const dashboardQuery = trpc.xpAdmin.dashboard.useQuery({ days: Number(days) || 30 });
+    const dashboardResumoQuery = trpc.xpAdmin.dashboardResumo.useQuery(undefined, {
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+    });
+    const dashboardPeriodoQuery = trpc.xpAdmin.dashboardPeriodo.useQuery({ days: Number(days) || 30 });
 
     const clientesQuery = trpc.xpAdmin.clientes.list.useQuery({
         search: clienteSearch,
@@ -173,7 +177,8 @@ export default function XpClubPage() {
             setCompraValorInput("");
             setCompraDescricao("");
             void Promise.all([
-                dashboardQuery.refetch(),
+                dashboardResumoQuery.refetch(),
+                dashboardPeriodoQuery.refetch(),
                 movQuery.refetch(),
                 clientesQuery.refetch(),
             ]);
@@ -188,7 +193,7 @@ export default function XpClubPage() {
             toast.success("Código criado com sucesso");
             setCodigoForm({ idParceiro: "none", codigo: "", xpBonus: "", quantidadeMaxUso: "", dataExpiracao: "", diasExpiracao: "" });
             void codigosQuery.refetch();
-            void dashboardQuery.refetch();
+            void dashboardResumoQuery.refetch();
         },
         onError: (err: any) => toast.error(err?.message || "Erro ao criar código"),
     });
@@ -196,7 +201,7 @@ export default function XpClubPage() {
     const codigoToggleMutation = trpc.xpAdmin.codigos.toggle.useMutation({
         onSuccess: () => {
             void codigosQuery.refetch();
-            void dashboardQuery.refetch();
+            void dashboardResumoQuery.refetch();
         },
         onError: (err: any) => toast.error(err?.message || "Erro ao atualizar código"),
     });
@@ -223,7 +228,7 @@ export default function XpClubPage() {
             toast.success("Configuração salva");
             setCfgForm({ chave: "", valor: "", descricao: "" });
             void configQuery.refetch();
-            void dashboardQuery.refetch();
+            void dashboardResumoQuery.refetch();
         },
         onError: (err: any) => toast.error(err?.message || "Erro ao salvar configuração"),
     });
@@ -233,7 +238,8 @@ export default function XpClubPage() {
     const parceirosData = (parceirosQuery.data as any)?.json || parceirosQuery.data || [];
     const codigosData = (codigosQuery.data as any)?.json || codigosQuery.data || [];
     const configData = (configQuery.data as any)?.json || configQuery.data || [];
-    const dashboard = (dashboardQuery.data as any)?.json || dashboardQuery.data || {};
+    const resumo = (dashboardResumoQuery.data as any)?.json || dashboardResumoQuery.data || {};
+    const periodo = (dashboardPeriodoQuery.data as any)?.json || dashboardPeriodoQuery.data || {};
     const tiposMovimentacao = (tiposMovQuery.data as any)?.json || tiposMovQuery.data || [];
     const tiposMovimentacaoManual = tiposMovimentacao.filter((tipo: any) => {
         const flag = tipo.exibir_no_lancamento_manual ?? tipo.exibirNoLancamentoManual;
@@ -427,90 +433,85 @@ export default function XpClubPage() {
 
     return (
         <AdminLayout>
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">XP Club</h1>
-                    <p className="text-muted-foreground mt-1">Dashboard e controle completo de movimentações, códigos, parceiros e vencimento.</p>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">XP Club</h1>
+                        <p className="text-muted-foreground text-sm">Programa de fidelidade</p>
+                    </div>
                 </div>
 
-                {/* Visão atual — métricas independentes de período */}
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    <Card>
-                        <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">Saldo líquido</CardDescription>
-                            <CardTitle className="text-lg flex items-center gap-2"><Coins className="h-4 w-4 text-blue-600" />{Number(dashboard.saldoLiquido || 0)} XP</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">XP a vencer</CardDescription>
-                            <CardTitle className="text-lg flex items-center gap-2"><Clock3 className="h-4 w-4 text-amber-600" />{Number(dashboard.pontosExpirar || 0)} XP</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">Clientes</CardDescription>
-                            <CardTitle className="text-lg flex items-center gap-2"><Users className="h-4 w-4 text-emerald-600" />{Number(dashboard.clientesAtivos || 0)}</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">Códigos ativos</CardDescription>
-                            <CardTitle className="text-lg flex items-center gap-2"><Gift className="h-4 w-4 text-purple-600" />{Number(dashboard.codigosAtivos || 0)}</CardTitle>
-                        </CardHeader>
-                    </Card>
+                {/* Resumo operacional — sem dependência de período */}
+                <div className="grid gap-2 grid-cols-3">
+                    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
+                        <div className="rounded-md bg-blue-500/10 p-2"><Coins className="h-4 w-4 text-blue-600" /></div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Saldo do programa</p>
+                            <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.saldoPrograma || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-muted-foreground">XP</span></p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
+                        <div className="rounded-md bg-amber-500/10 p-2"><Clock3 className="h-4 w-4 text-amber-600" /></div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">XP vencendo em breve</p>
+                            <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.xpVencendo || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-muted-foreground">XP</span></p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
+                        <div className="rounded-md bg-emerald-500/10 p-2"><Users className="h-4 w-4 text-emerald-600" /></div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Clientes com saldo</p>
+                            <p className="text-lg font-semibold tabular-nums leading-tight">{Number(resumo.clientesComSaldo || 0).toLocaleString("pt-BR")}</p>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Análise do período — métricas filtradas por período */}
-                <Card className="border-dashed">
-                    <CardHeader className="py-3 px-4">
-                        <div className="flex items-center justify-between">
-                            <CardDescription className="text-sm font-medium">Análise do período</CardDescription>
-                            <div className="flex items-center gap-1">
-                                {[
-                                    { label: "7d", value: "7" },
-                                    { label: "30d", value: "30" },
-                                    { label: "90d", value: "90" },
-                                    { label: "1 ano", value: "365" },
-                                ].map((preset) => (
-                                    <Button
-                                        key={preset.value}
-                                        variant={days === preset.value ? "default" : "outline"}
-                                        size="sm"
-                                        className="h-7 px-2.5 text-xs"
-                                        onClick={() => setDays(preset.value)}
-                                    >
-                                        {preset.label}
-                                    </Button>
-                                ))}
-                            </div>
+                {/* Faixa analítica — dependente de período */}
+                <div className="flex items-center gap-3 rounded-lg border border-dashed bg-muted/30 px-4 py-2">
+                    <div className="flex items-center gap-1.5 mr-1">
+                        {[
+                            { label: "7d", value: "7" },
+                            { label: "30d", value: "30" },
+                            { label: "90d", value: "90" },
+                            { label: "1a", value: "365" },
+                        ].map((preset) => (
+                            <Button
+                                key={preset.value}
+                                variant={days === preset.value ? "default" : "ghost"}
+                                size="sm"
+                                className={`h-6 px-2 text-[11px] ${days === preset.value ? "" : "text-muted-foreground"}`}
+                                onClick={() => setDays(preset.value)}
+                            >
+                                {preset.label}
+                            </Button>
+                        ))}
+                    </div>
+                    <div className="h-6 w-px bg-border" />
+                    <div className="flex items-center gap-6 text-sm flex-1">
+                        <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <span className="text-muted-foreground text-xs">Créditos</span>
+                            <span className="font-semibold tabular-nums text-blue-600">{Number(periodo.creditos || 0).toLocaleString("pt-BR")}</span>
                         </div>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-3 pt-0">
-                        <div className="grid gap-3 md:grid-cols-3">
-                            <Card className="bg-muted/40">
-                                <CardHeader className="py-3 px-4">
-                                    <CardDescription className="text-xs">Créditos</CardDescription>
-                                    <CardTitle className="text-lg text-blue-600">{Number(dashboard.periodo?.totalCredito || 0)} XP</CardTitle>
-                                </CardHeader>
-                            </Card>
-                            <Card className="bg-muted/40">
-                                <CardHeader className="py-3 px-4">
-                                    <CardDescription className="text-xs">Débitos</CardDescription>
-                                    <CardTitle className="text-lg text-red-600">{Number(dashboard.periodo?.totalDebito || 0)} XP</CardTitle>
-                                </CardHeader>
-                            </Card>
-                            <Card className="bg-muted/40">
-                                <CardHeader className="py-3 px-4">
-                                    <CardDescription className="text-xs">Usos de códigos</CardDescription>
-                                    <CardTitle className="text-lg flex items-center gap-2"><Tag className="h-4 w-4 text-purple-600" />{Number(dashboard.usosCodigosPeriodo || 0)}</CardTitle>
-                                </CardHeader>
-                            </Card>
+                        <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-red-500" />
+                            <span className="text-muted-foreground text-xs">Débitos</span>
+                            <span className="font-semibold tabular-nums text-red-600">{Number(periodo.debitos || 0).toLocaleString("pt-BR")}</span>
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                            <span className="text-muted-foreground text-xs">Saldo período</span>
+                            <span className={`font-semibold tabular-nums ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>{Number(periodo.saldoLiquidoPeriodo || 0).toLocaleString("pt-BR")}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 ml-auto">
+                            <Tag className="h-3 w-3 text-purple-500" />
+                            <span className="text-muted-foreground text-xs">Usos códigos</span>
+                            <span className="font-semibold tabular-nums text-purple-600">{Number(periodo.usosCodigos || 0)}</span>
+                        </div>
+                    </div>
+                </div>
 
-                <Tabs defaultValue="movimentacoes" className="space-y-4">
+                <Tabs defaultValue="movimentacoes" className="space-y-3">
                     <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
                         <TabsTrigger value="compras">Lançar pontos</TabsTrigger>
