@@ -428,24 +428,13 @@ export default function XpClubPage() {
     return (
         <AdminLayout>
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">XP Club</h1>
-                        <p className="text-muted-foreground mt-1">Dashboard e controle completo de movimentações, códigos, parceiros e vencimento.</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="days">Período (dias)</Label>
-                        <Input
-                            id="days"
-                            value={days}
-                            onChange={(e) => setDays(e.target.value.replace(/\D/g, "").slice(0, 3))}
-                            className="w-24"
-                            title="Período em dias"
-                        />
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">XP Club</h1>
+                    <p className="text-muted-foreground mt-1">Dashboard e controle completo de movimentações, códigos, parceiros e vencimento.</p>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                {/* Visão atual — métricas independentes de período */}
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <Card>
                         <CardHeader className="py-3 px-4">
                             <CardDescription className="text-xs">Saldo líquido</CardDescription>
@@ -466,23 +455,60 @@ export default function XpClubPage() {
                     </Card>
                     <Card>
                         <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">Créditos período</CardDescription>
-                            <CardTitle className="text-lg text-blue-600">{Number(dashboard.periodo?.totalCredito || 0)} XP</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">Débitos período</CardDescription>
-                            <CardTitle className="text-lg text-red-600">{Number(dashboard.periodo?.totalDebito || 0)} XP</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Card>
-                        <CardHeader className="py-3 px-4">
-                            <CardDescription className="text-xs">Códigos ativos/usos</CardDescription>
-                            <CardTitle className="text-lg flex items-center gap-2"><Gift className="h-4 w-4 text-purple-600" />{Number(dashboard.codigosAtivos || 0)} / {Number(dashboard.usosCodigosPeriodo || 0)}</CardTitle>
+                            <CardDescription className="text-xs">Códigos ativos</CardDescription>
+                            <CardTitle className="text-lg flex items-center gap-2"><Gift className="h-4 w-4 text-purple-600" />{Number(dashboard.codigosAtivos || 0)}</CardTitle>
                         </CardHeader>
                     </Card>
                 </div>
+
+                {/* Análise do período — métricas filtradas por período */}
+                <Card className="border-dashed">
+                    <CardHeader className="py-3 px-4">
+                        <div className="flex items-center justify-between">
+                            <CardDescription className="text-sm font-medium">Análise do período</CardDescription>
+                            <div className="flex items-center gap-1">
+                                {[
+                                    { label: "7d", value: "7" },
+                                    { label: "30d", value: "30" },
+                                    { label: "90d", value: "90" },
+                                    { label: "1 ano", value: "365" },
+                                ].map((preset) => (
+                                    <Button
+                                        key={preset.value}
+                                        variant={days === preset.value ? "default" : "outline"}
+                                        size="sm"
+                                        className="h-7 px-2.5 text-xs"
+                                        onClick={() => setDays(preset.value)}
+                                    >
+                                        {preset.label}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-3 pt-0">
+                        <div className="grid gap-3 md:grid-cols-3">
+                            <Card className="bg-muted/40">
+                                <CardHeader className="py-3 px-4">
+                                    <CardDescription className="text-xs">Créditos</CardDescription>
+                                    <CardTitle className="text-lg text-blue-600">{Number(dashboard.periodo?.totalCredito || 0)} XP</CardTitle>
+                                </CardHeader>
+                            </Card>
+                            <Card className="bg-muted/40">
+                                <CardHeader className="py-3 px-4">
+                                    <CardDescription className="text-xs">Débitos</CardDescription>
+                                    <CardTitle className="text-lg text-red-600">{Number(dashboard.periodo?.totalDebito || 0)} XP</CardTitle>
+                                </CardHeader>
+                            </Card>
+                            <Card className="bg-muted/40">
+                                <CardHeader className="py-3 px-4">
+                                    <CardDescription className="text-xs">Usos de códigos</CardDescription>
+                                    <CardTitle className="text-lg flex items-center gap-2"><Tag className="h-4 w-4 text-purple-600" />{Number(dashboard.usosCodigosPeriodo || 0)}</CardTitle>
+                                </CardHeader>
+                            </Card>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <Tabs defaultValue="movimentacoes" className="space-y-4">
                     <TabsList className="grid w-full grid-cols-6">
@@ -549,9 +575,9 @@ export default function XpClubPage() {
                                                 <th className="text-left px-3 py-2">Descrição</th>
                                                 <th className="text-left px-3 py-2">Código CRM</th>
                                                 <th className="text-left px-3 py-2">Data Compra</th>
-                                                <th className="text-right px-3 py-2">XP</th>
-                                                <th className="text-right px-3 py-2">Saldo após</th>
                                                 <th className="text-right px-3 py-2">Valor Compra</th>
+                                                <th className="text-right px-3 py-2">XP</th>
+                                                <th className="text-right px-3 py-2">Saldo</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -570,9 +596,9 @@ export default function XpClubPage() {
                                                         <td className="px-3 py-2">{row.descricao || "-"}</td>
                                                         <td className="px-3 py-2">{row.codigo_ref || "-"}</td>
                                                         <td className="px-3 py-2 whitespace-nowrap">{row.data_compra ? new Date(row.data_compra).toLocaleDateString("pt-BR") : "-"}</td>
+                                                        <td className="px-3 py-2 text-right">{row.valor_referencia ? formatCurrency(Number(row.valor_referencia)) : "-"}</td>
                                                         <td className={`px-3 py-2 text-right font-medium ${Number(row.xp) >= 0 ? "text-emerald-600" : "text-red-600"}`}>{Number(row.xp) >= 0 ? "+" : ""}{Number(row.xp)}</td>
                                                         <td className="px-3 py-2 text-right">{Number(row.saldo_apos || 0)}</td>
-                                                        <td className="px-3 py-2 text-right">{row.valor_referencia ? formatCurrency(Number(row.valor_referencia)) : "-"}</td>
                                                     </tr>
                                                 ))
                                             )}
