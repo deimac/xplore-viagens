@@ -127,6 +127,18 @@ export default function Home() {
     }
   }, []);
   const [location, navigate] = useLocation();
+
+  // Auto-abrir auth quando acessa /xp-club diretamente
+  useEffect(() => {
+    if (location === "/xp-club") {
+      if (isClienteLogado) {
+        navigate("/xp-club/dashboard");
+      } else if (!clienteMeQuery.isLoading) {
+        setShowAuth(true);
+      }
+    }
+  }, [location, isClienteLogado, clienteMeQuery.isLoading]);
+
   // Helper to open hospedagens list and scroll to top
   const openAllHospedagens = () => {
     setShowAllHospedagens(true);

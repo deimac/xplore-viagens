@@ -68,10 +68,9 @@ function Router() {
       <Route path={"/exclusao-de-dados"} component={ExclusaoDadosPage} />
 
       {/* Área do Cliente */}
-      <Route path={"/xpclub"} component={() => <Redirect to="/xp-club/login" />} />
       <Route path={"/xp-club/login"} component={ClienteLogin} />
       <Route path={"/xp-club/completar-cadastro"} component={() => <CustomerCadastroRoute component={CompletarCadastro} />} />
-      <Route path={"/xp-club"} component={() => <Redirect to="/xp-club/dashboard" />} />
+      <Route path={"/xp-club"} component={Home} />
       <Route path={"/xp-club/dashboard"} component={() => <CustomerRoute component={ClienteDashboard} />} />
       <Route path={"/xp-club/extrato"} component={() => <CustomerRoute component={ClienteExtrato} />} />
       <Route path={"/xp-club/como-funciona"} component={() => <CustomerRoute component={ComoFunciona} />} />
