@@ -49,6 +49,35 @@ interface VooPremiumModalProps {
     oferta?: OfertaVooPremium;
 }
 
+const MESES_ABREVIADOS = [
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+] as const;
+
+function normalizarMesReferencia(valor?: string): string {
+    if (!valor) return "";
+    const v = valor.trim();
+    if (!v) return "";
+
+    const numeroMes = Number(v.slice(-2));
+    if (/^\d{4}-\d{2}$/.test(v) && Number.isInteger(numeroMes) && numeroMes >= 1 && numeroMes <= 12) {
+        return MESES_ABREVIADOS[numeroMes - 1];
+    }
+
+    const matchAbrev = MESES_ABREVIADOS.find((m) => m.toLowerCase() === v.toLowerCase());
+    return matchAbrev || "";
+}
+
 export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: VooPremiumModalProps) {
     const [formData, setFormData] = useState<OfertaVooPremium>({
         tipo_oferta: 'DATA_FIXA',
@@ -107,7 +136,10 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
             setFormData({
                 ...oferta,
                 datas_fixas: oferta.datas_fixas || [],
-                datas_flexiveis: oferta.datas_flexiveis || [],
+                datas_flexiveis: (oferta.datas_flexiveis || []).map((d) => ({
+                    ...d,
+                    mes_referencia: normalizarMesReferencia(d.mes_referencia),
+                })),
             });
             setPrecoFormatado(formatarValorBrasileiro(oferta.preco));
         } else {
@@ -490,12 +522,20 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                                 const realIndex = formData.datas_flexiveis?.findIndex(d => d === data) || 0;
                                                 return (
                                                     <div key={realIndex} className="flex gap-2">
-                                                        <Input
-                                                            value={data.mes_referencia}
-                                                            onChange={(e) => handleDataFlexivelChange(realIndex, 'mes_referencia', e.target.value)}
-                                                            placeholder="Ex: 2026-01"
-                                                            className="h-11 w-40"
-                                                        />
+                                                        <Select
+                                                            value={data.mes_referencia || "none"}
+                                                            onValueChange={(value) => handleDataFlexivelChange(realIndex, 'mes_referencia', value === "none" ? "" : value)}
+                                                        >
+                                                            <SelectTrigger className="h-11 w-40">
+                                                                <SelectValue placeholder="Mês" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">Selecione</SelectItem>
+                                                                {MESES_ABREVIADOS.map((mes) => (
+                                                                    <SelectItem key={mes} value={mes}>{mes}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                         <Input
                                                             value={data.dias_disponiveis}
                                                             onChange={(e) => handleDataFlexivelChange(realIndex, 'dias_disponiveis', e.target.value)}
@@ -538,12 +578,20 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                                 const realIndex = formData.datas_flexiveis?.findIndex(d => d === data) || 0;
                                                 return (
                                                     <div key={realIndex} className="flex gap-2">
-                                                        <Input
-                                                            value={data.mes_referencia}
-                                                            onChange={(e) => handleDataFlexivelChange(realIndex, 'mes_referencia', e.target.value)}
-                                                            placeholder="Ex: 2026-01"
-                                                            className="h-11 w-40"
-                                                        />
+                                                        <Select
+                                                            value={data.mes_referencia || "none"}
+                                                            onValueChange={(value) => handleDataFlexivelChange(realIndex, 'mes_referencia', value === "none" ? "" : value)}
+                                                        >
+                                                            <SelectTrigger className="h-11 w-40">
+                                                                <SelectValue placeholder="Mês" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">Selecione</SelectItem>
+                                                                {MESES_ABREVIADOS.map((mes) => (
+                                                                    <SelectItem key={mes} value={mes}>{mes}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                         <Input
                                                             value={data.dias_disponiveis}
                                                             onChange={(e) => handleDataFlexivelChange(realIndex, 'dias_disponiveis', e.target.value)}
@@ -571,7 +619,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                 </div>
 
                                 <p className="text-sm text-muted-foreground">
-                                    Mês no formato JAN, FEV (abreviado) e dias separados por vírgula
+                                    Selecione o mês no combo (Jan a Dez) e informe os dias separados por vírgula
                                 </p>
                             </div>
                         )}
