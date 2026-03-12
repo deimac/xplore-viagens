@@ -2778,6 +2778,8 @@ export async function listXpCompraPendentes(params?: {
 
   const rows = await executeQuery(
     `SELECT p.*,
+            p.xp_resgate AS xp_sugerido,
+            p.valor_resgate AS valor_sugerido,
             c.nome AS cliente_nome, c.email AS cliente_email,
             u.username AS criador_nome,
             t.nome AS tipo_credito_nome
@@ -2805,6 +2807,8 @@ export async function listXpCompraPendentes(params?: {
 export async function getXpCompraPendente(id: number) {
   const [row]: any[] = await executeQuery(
     `SELECT p.*,
+            p.xp_resgate AS xp_sugerido,
+            p.valor_resgate AS valor_sugerido,
             c.nome AS cliente_nome, c.email AS cliente_email,
             u.username AS criador_nome,
             uc.username AS conclusao_nome,
