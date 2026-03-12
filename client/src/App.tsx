@@ -68,6 +68,7 @@ function Router() {
       <Route path={"/exclusao-de-dados"} component={ExclusaoDadosPage} />
 
       {/* Área do Cliente */}
+      <Route path={"/xpclub"} component={() => <Redirect to="/xp-club/login" />} />
       <Route path={"/xp-club/login"} component={ClienteLogin} />
       <Route path={"/xp-club/completar-cadastro"} component={() => <CustomerCadastroRoute component={CompletarCadastro} />} />
       <Route path={"/xp-club"} component={() => <Redirect to="/xp-club/dashboard" />} />
