@@ -551,6 +551,34 @@ export const xpMovimentacoes = mysqlTable("xp_movimentacoes", {
 export type XpMovimentacao = typeof xpMovimentacoes.$inferSelect;
 
 /**
+ * XP Compras Pendentes – geradas automaticamente ao registrar um resgate
+ */
+export const xpComprasPendentes = mysqlTable("xp_compras_pendentes", {
+  id: int("id").autoincrement().primaryKey(),
+  idCliente: int("id_cliente").notNull().references(() => clientes.id),
+  idMovimentacaoResgate: int("id_movimentacao_resgate").notNull().references(() => xpMovimentacoes.id),
+  idMovimentacaoCompra: int("id_movimentacao_compra").references(() => xpMovimentacoes.id),
+  idUsersCriador: int("id_users_criador").notNull().references(() => users.id),
+  idUsersConclusao: int("id_users_conclusao").references(() => users.id),
+  status: mysqlEnum("status", ["pendente", "concluida", "cancelada"]).notNull().default("pendente"),
+  idTipoMovimentacaoCredito: int("id_tipo_movimentacao_credito").references(() => xpTiposMovimentacao.id),
+  xpResgate: int("xp_resgate").notNull(),
+  valorResgate: decimal("valor_resgate", { precision: 10, scale: 2 }),
+  dataCompra: date("data_compra"),
+  codigoRef: varchar("codigo_ref", { length: 30 }),
+  descricaoResgate: varchar("descricao_resgate", { length: 255 }),
+  xpCompra: int("xp_compra"),
+  valorCompra: decimal("valor_compra", { precision: 10, scale: 2 }),
+  descricaoCompra: varchar("descricao_compra", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  concluidaEm: timestamp("concluida_em"),
+  canceladaEm: timestamp("cancelada_em"),
+});
+
+export type XpCompraPendente = typeof xpComprasPendentes.$inferSelect;
+
+/**
  * XP Configurações – chave/valor do sistema de fidelidade
  */
 export const xpConfiguracoes = mysqlTable("xp_configuracoes", {

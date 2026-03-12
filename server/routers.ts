@@ -1435,6 +1435,60 @@ export const appRouter = router({
         }),
     }),
 
+    pendentes: router({
+      list: adminProcedure
+        .input(
+          z.object({
+            status: z.enum(['pendente', 'concluida', 'cancelada']).optional(),
+            search: z.string().optional(),
+            page: z.number().int().min(1).optional(),
+            pageSize: z.number().int().min(1).max(100).optional(),
+          }).optional()
+        )
+        .query(async ({ input }) => {
+          return await db.listXpCompraPendentes({
+            status: input?.status,
+            search: input?.search,
+            page: input?.page,
+            pageSize: input?.pageSize,
+          });
+        }),
+      getById: adminProcedure
+        .input(z.object({ id: z.number().int() }))
+        .query(async ({ input }) => {
+          return await db.getXpCompraPendente(input.id);
+        }),
+      count: adminProcedure
+        .query(async () => {
+          return await db.countXpCompraPendentes();
+        }),
+      concluir: adminProcedure
+        .input(
+          z.object({
+            id: z.number().int(),
+            tipoMovimentacaoId: z.number().int(),
+            xpCompra: z.number().int().positive(),
+            valorCompra: z.number().positive().optional(),
+            descricao: z.string().max(255).optional(),
+          })
+        )
+        .mutation(async ({ input, ctx }) => {
+          return await db.concluirXpCompraPendente({
+            id: input.id,
+            userId: ctx.user.id,
+            tipoMovimentacaoId: input.tipoMovimentacaoId,
+            xpCompra: input.xpCompra,
+            valorCompra: input.valorCompra,
+            descricao: input.descricao,
+          });
+        }),
+      cancelar: adminProcedure
+        .input(z.object({ id: z.number().int() }))
+        .mutation(async ({ input, ctx }) => {
+          return await db.cancelarXpCompraPendente(input.id, ctx.user.id);
+        }),
+    }),
+
     codigos: router({
       list: adminProcedure.query(async () => {
         return await db.listXpAdminCodigos();

@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar, CircleHelp, Award, TrendingDown, DollarSign } from "lucide-react";
+import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar, CircleHelp, Award, TrendingDown, DollarSign, ClipboardList, ShoppingCart, Ban, Eye, Loader2 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 function formatCurrency(value: number) {
@@ -76,6 +76,19 @@ export default function XpClubPage() {
     const [cfgForm, setCfgForm] = useState({
         chave: "",
         valor: "",
+        descricao: "",
+    });
+
+    // ── Pendentes state ──
+    const [pendentesStatusFilter, setPendentesStatusFilter] = useState<"all" | "pendente" | "concluida" | "cancelada">("pendente");
+    const [pendentesSearch, setPendentesSearch] = useState("");
+    const [concluirDialogOpen, setConcluirDialogOpen] = useState(false);
+    const [pendenteSelecionada, setPendenteSelecionada] = useState<any | null>(null);
+    const [cancelarPendenteId, setCancelarPendenteId] = useState<number | null>(null);
+    const [concluirForm, setConcluirForm] = useState({
+        tipoMovimentacaoId: "none",
+        xpCompra: "",
+        valorCompra: "",
         descricao: "",
     });
 
@@ -249,6 +262,47 @@ export default function XpClubPage() {
         onError: (err: any) => toast.error(err?.message || "Erro ao salvar configuração"),
     });
 
+    // ── Pendentes queries / mutations ──
+    const pendentesQuery = trpc.xpAdmin.pendentes.list.useQuery({
+        status: pendentesStatusFilter === "all" ? undefined : pendentesStatusFilter,
+        search: pendentesSearch || undefined,
+        page: 1,
+        pageSize: 50,
+    });
+
+    const pendentesCountQuery = trpc.xpAdmin.pendentes.count.useQuery(undefined, {
+        staleTime: 30_000,
+        refetchOnWindowFocus: false,
+    });
+
+    const concluirPendenteMutation = trpc.xpAdmin.pendentes.concluir.useMutation({
+        onSuccess: (data: any) => {
+            const result = data?.json || data;
+            toast.success(`Compra concluída! +${result?.xpGerado || 0} XP creditados`);
+            setConcluirDialogOpen(false);
+            setPendenteSelecionada(null);
+            void Promise.all([
+                pendentesQuery.refetch(),
+                pendentesCountQuery.refetch(),
+                dashboardResumoQuery.refetch(),
+                movQuery.refetch(),
+            ]);
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao concluir compra pendente"),
+    });
+
+    const cancelarPendenteMutation = trpc.xpAdmin.pendentes.cancelar.useMutation({
+        onSuccess: () => {
+            toast.success("Compra pendente cancelada");
+            setCancelarPendenteId(null);
+            void Promise.all([
+                pendentesQuery.refetch(),
+                pendentesCountQuery.refetch(),
+            ]);
+        },
+        onError: (err: any) => toast.error(err?.message || "Erro ao cancelar compra pendente"),
+    });
+
     const clientesData = (clientesQuery.data as any)?.json || clientesQuery.data || {};
     const movData = (movQuery.data as any)?.json || movQuery.data || {};
     const parceirosData = (parceirosQuery.data as any)?.json || parceirosQuery.data || [];
@@ -273,6 +327,15 @@ export default function XpClubPage() {
     const parceirosLimitados = parceiros.slice(0, 50);
     const codigos = (codigosData as any) || [];
     const configs = (configData as any) || [];
+
+    const pendentesData = (pendentesQuery.data as any)?.json || pendentesQuery.data || {};
+    const pendentesItems = (pendentesData as any)?.items || [];
+    const pendentesCount = (pendentesCountQuery.data as any)?.json ?? pendentesCountQuery.data ?? 0;
+
+    const tiposCreditoManual = tiposMovimentacao.filter((t: any) => {
+        const ativo = t.ativo ?? true;
+        return t.tipo_operacao === 'credito' && (ativo !== 0 && ativo !== false);
+    });
 
     const parceiroSelecionado =
         codigoForm.idParceiro === "none"
@@ -381,6 +444,38 @@ export default function XpClubPage() {
             email: parceiroForm.email.trim() || null,
             telefone: parceiroForm.telefone.replace(/\D/g, "") || null,
             observacoes: parceiroForm.observacoes.trim() || null,
+        });
+    };
+
+    const openConcluirDialog = (pendente: any) => {
+        setPendenteSelecionada(pendente);
+        setConcluirForm({
+            tipoMovimentacaoId: pendente.id_tipo_movimentacao_credito ? String(pendente.id_tipo_movimentacao_credito) : "none",
+            xpCompra: pendente.xp_sugerido ? String(pendente.xp_sugerido) : "",
+            valorCompra: pendente.valor_sugerido ? maskCurrencyInput(String(Math.round(Number(pendente.valor_sugerido) * 100))) : "",
+            descricao: pendente.descricao_sugerida || "",
+        });
+        setConcluirDialogOpen(true);
+    };
+
+    const handleConcluirPendente = () => {
+        if (!pendenteSelecionada) return;
+        if (concluirForm.tipoMovimentacaoId === "none") {
+            toast.error("Selecione o tipo de crédito");
+            return;
+        }
+        const xp = Number(concluirForm.xpCompra.replace(/\D/g, ""));
+        if (!Number.isFinite(xp) || xp <= 0) {
+            toast.error("XP da compra deve ser maior que zero");
+            return;
+        }
+        const valor = parseCurrencyInput(concluirForm.valorCompra);
+        concluirPendenteMutation.mutate({
+            id: pendenteSelecionada.id,
+            tipoMovimentacaoId: Number(concluirForm.tipoMovimentacaoId),
+            xpCompra: xp,
+            valorCompra: valor || undefined,
+            descricao: concluirForm.descricao.trim() || undefined,
         });
     };
 
@@ -666,9 +761,17 @@ export default function XpClubPage() {
                 </div>
 
                 <Tabs defaultValue="movimentacoes" className="space-y-3">
-                    <TabsList className="grid w-full grid-cols-6">
+                    <TabsList className="grid w-full grid-cols-7">
                         <TabsTrigger value="movimentacoes">Movimentações</TabsTrigger>
                         <TabsTrigger value="compras">Lançar pontos</TabsTrigger>
+                        <TabsTrigger value="pendentes" className="relative">
+                            Pendentes
+                            {Number(pendentesCount) > 0 && (
+                                <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1">
+                                    {pendentesCount}
+                                </span>
+                            )}
+                        </TabsTrigger>
                         <TabsTrigger value="tipos">Tipos</TabsTrigger>
                         <TabsTrigger value="codigos">Códigos</TabsTrigger>
                         <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
@@ -918,6 +1021,213 @@ export default function XpClubPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* ── Compras Pendentes ── */}
+                    <TabsContent value="pendentes" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <ClipboardList className="h-5 w-5 text-amber-600" />
+                                    Compras Pendentes
+                                </CardTitle>
+                                <CardDescription>
+                                    Quando um resgate é registrado, uma compra pendente é criada automaticamente para que o crédito correspondente seja lançado depois.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div>
+                                        <Label>Status</Label>
+                                        <Select value={pendentesStatusFilter} onValueChange={(v: any) => setPendentesStatusFilter(v)}>
+                                            <SelectTrigger title="Filtrar por status">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                <SelectItem value="pendente">Pendentes</SelectItem>
+                                                <SelectItem value="concluida">Concluídas</SelectItem>
+                                                <SelectItem value="cancelada">Canceladas</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label>Busca</Label>
+                                        <div className="relative">
+                                            <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                                            <Input className="pl-9" value={pendentesSearch} onChange={(e) => setPendentesSearch(e.target.value)} placeholder="Nome ou email do cliente" title="Buscar pendentes" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border rounded-lg overflow-auto">
+                                    <table className="w-full min-w-[900px] text-sm">
+                                        <thead className="bg-muted/40">
+                                            <tr>
+                                                <th className="text-left px-3 py-2">Status</th>
+                                                <th className="text-left px-3 py-2">Cliente</th>
+                                                <th className="text-left px-3 py-2">Resgate (XP)</th>
+                                                <th className="text-left px-3 py-2">Tipo crédito sugerido</th>
+                                                <th className="text-right px-3 py-2">XP sugerido</th>
+                                                <th className="text-right px-3 py-2">XP final</th>
+                                                <th className="text-left px-3 py-2">Criado em</th>
+                                                <th className="text-right px-3 py-2">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pendentesQuery.isLoading ? (
+                                                <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                                                    <Loader2 className="h-5 w-5 animate-spin inline mr-2" />Carregando...
+                                                </td></tr>
+                                            ) : pendentesItems.length === 0 ? (
+                                                <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                                                    <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                                                    <p>Nenhuma compra pendente encontrada.</p>
+                                                </td></tr>
+                                            ) : (
+                                                pendentesItems.map((p: any) => (
+                                                    <tr key={p.id} className="border-t">
+                                                        <td className="px-3 py-2">
+                                                            {p.status === 'pendente' && (
+                                                                <Badge className="bg-amber-100 text-amber-800 border-amber-300">
+                                                                    <Clock3 className="h-3 w-3 mr-1" />Pendente
+                                                                </Badge>
+                                                            )}
+                                                            {p.status === 'concluida' && (
+                                                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300">
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />Concluída
+                                                                </Badge>
+                                                            )}
+                                                            {p.status === 'cancelada' && (
+                                                                <Badge className="bg-red-100 text-red-800 border-red-300">
+                                                                    <XCircle className="h-3 w-3 mr-1" />Cancelada
+                                                                </Badge>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-3 py-2">
+                                                            <div className="font-medium">{p.cliente_nome}</div>
+                                                            <div className="text-xs text-muted-foreground">{p.cliente_email}</div>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-red-600 font-medium">
+                                                            -{Math.abs(Number(p.xp_resgate || 0))} XP
+                                                        </td>
+                                                        <td className="px-3 py-2 text-muted-foreground">
+                                                            {p.tipo_credito_nome || '-'}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right text-muted-foreground">
+                                                            {p.xp_sugerido ? Number(p.xp_sugerido).toLocaleString('pt-BR') : '-'}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right font-medium text-emerald-600">
+                                                            {p.xp_compra ? `+${Number(p.xp_compra).toLocaleString('pt-BR')}` : '-'}
+                                                        </td>
+                                                        <td className="px-3 py-2 whitespace-nowrap text-muted-foreground text-xs">
+                                                            {new Date(p.created_at).toLocaleDateString('pt-BR')}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right">
+                                                            {p.status === 'pendente' ? (
+                                                                <div className="flex gap-1 justify-end">
+                                                                    <Button size="sm" variant="default" className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs" onClick={() => openConcluirDialog(p)} title="Concluir compra">
+                                                                        <ShoppingCart className="h-3 w-3 mr-1" />Concluir
+                                                                    </Button>
+                                                                    <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs" onClick={() => setCancelarPendenteId(p.id)} title="Cancelar pendente">
+                                                                        <Ban className="h-3 w-3 mr-1" />Cancelar
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {p.status === 'concluida' && p.concluida_em ? new Date(p.concluida_em).toLocaleDateString('pt-BR') : ''}
+                                                                    {p.status === 'cancelada' && p.cancelada_em ? new Date(p.cancelada_em).toLocaleDateString('pt-BR') : ''}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* ── Dialog: Concluir Compra Pendente ── */}
+                    <Dialog open={concluirDialogOpen} onOpenChange={(open) => { if (!open) { setConcluirDialogOpen(false); setPendenteSelecionada(null); } }}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                    <ShoppingCart className="h-5 w-5 text-emerald-600" />
+                                    Concluir compra pendente
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Registrar o crédito de XP correspondente à compra que deu origem ao resgate.
+                                </DialogDescription>
+                            </DialogHeader>
+                            {pendenteSelecionada && (
+                                <div className="space-y-4">
+                                    <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+                                        <p><span className="text-muted-foreground">Cliente:</span> <span className="font-medium">{pendenteSelecionada.cliente_nome}</span></p>
+                                        <p><span className="text-muted-foreground">Resgate:</span> <span className="text-red-600 font-medium">-{Math.abs(Number(pendenteSelecionada.xp_resgate || 0))} XP</span></p>
+                                        <p><span className="text-muted-foreground">Mov. resgate:</span> #{pendenteSelecionada.id_movimentacao_resgate}</p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <Label>Tipo de crédito</Label>
+                                            <Select value={concluirForm.tipoMovimentacaoId} onValueChange={(v) => setConcluirForm(f => ({ ...f, tipoMovimentacaoId: v }))}>
+                                                <SelectTrigger title="Selecionar tipo de crédito">
+                                                    <SelectValue placeholder="Selecionar" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Selecione</SelectItem>
+                                                    {tiposCreditoManual.map((t: any) => (
+                                                        <SelectItem key={t.id} value={String(t.id)}>{t.nome}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="concluirXp">XP da compra</Label>
+                                            <Input id="concluirXp" value={concluirForm.xpCompra} onChange={(e) => setConcluirForm(f => ({ ...f, xpCompra: e.target.value.replace(/\D/g, '') }))} placeholder="Ex: 1500" title="XP da compra" />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="concluirValor">Valor da compra (R$) - opcional</Label>
+                                            <Input id="concluirValor" value={concluirForm.valorCompra} onChange={(e) => setConcluirForm(f => ({ ...f, valorCompra: maskCurrencyInput(e.target.value) }))} placeholder="R$ 0,00" title="Valor da compra" />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="concluirDesc">Descrição (opcional)</Label>
+                                            <Input id="concluirDesc" value={concluirForm.descricao} onChange={(e) => setConcluirForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Pacote Cancún" title="Descrição" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => { setConcluirDialogOpen(false); setPendenteSelecionada(null); }}>Cancelar</Button>
+                                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleConcluirPendente} disabled={concluirPendenteMutation.isPending}>
+                                    {concluirPendenteMutation.isPending ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Processando...</> : <><CheckCircle2 className="h-4 w-4 mr-1" />Concluir e creditar XP</>}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* ── Dialog: Cancelar Pendente ── */}
+                    <Dialog open={cancelarPendenteId !== null} onOpenChange={(open) => { if (!open) setCancelarPendenteId(null); }}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-red-600">
+                                    <Ban className="h-5 w-5" />
+                                    Cancelar compra pendente
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Essa ação não pode ser desfeita. A pendência será marcada como cancelada e nenhum crédito será gerado.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setCancelarPendenteId(null)}>Voltar</Button>
+                                <Button variant="destructive" onClick={() => { if (cancelarPendenteId) cancelarPendenteMutation.mutate({ id: cancelarPendenteId }); }} disabled={cancelarPendenteMutation.isPending}>
+                                    {cancelarPendenteMutation.isPending ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Cancelando...</> : 'Confirmar cancelamento'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                     {/* ── Tipos de Movimentação ── */}
                     <TabsContent value="tipos" className="space-y-4">

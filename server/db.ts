@@ -2659,7 +2659,7 @@ export async function registrarXpCompraManual(input: {
   await getOrCreateXpConta(input.clienteId);
 
   const tipoRows = await executeQuery(
-    `SELECT id, tipo_operacao, nome, exibir_no_lancamento_manual FROM xp_tipos_movimentacao WHERE id = ? LIMIT 1`,
+    `SELECT id, tipo_operacao, nome, slug, exibir_no_lancamento_manual FROM xp_tipos_movimentacao WHERE id = ? LIMIT 1`,
     [input.tipoMovimentacaoId]
   );
   const tipoSelecionado = (tipoRows as any[])[0];
@@ -2687,7 +2687,7 @@ export async function registrarXpCompraManual(input: {
   const saldoAtual = await getSaldoClienteAtual(input.clienteId);
   const saldoApos = saldoAtual + xpGerado;
 
-  await executeQuery(
+  const insertResult: any = await executeQuery(
     `INSERT INTO xp_movimentacoes
       (id_cliente, id_users, id_tipo_movimentacao, xp, saldo_apos, descricao, valor_referencia, data_compra, codigo_ref)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -2709,7 +2709,221 @@ export async function registrarXpCompraManual(input: {
     [saldoApos, input.clienteId]
   );
 
-  return { xpGerado, saldoApos, tipoOperacao: tipoSelecionado.tipo_operacao };
+  const movId = insertResult?.insertId ?? null;
+
+  // Se for um resgate, gerar compra pendente automaticamente
+  if (tipoSelecionado.slug === 'resgate' && isDebito && movId) {
+    // Buscar primeiro tipo de crédito qualificável de compra para sugerir
+    const tipoCreditoRows: any[] = await executeQuery(
+      `SELECT id FROM xp_tipos_movimentacao
+       WHERE tipo_operacao = 'credito' AND qualificavel = 1 AND ativo = 1
+       ORDER BY slug = 'compra' DESC, id ASC LIMIT 1`,
+      []
+    );
+    const tipoCredSugerido = tipoCreditoRows[0]?.id ?? null;
+
+    await executeQuery(
+      `INSERT INTO xp_compras_pendentes
+        (id_cliente, id_movimentacao_resgate, id_users_criador, status,
+         id_tipo_movimentacao_credito, xp_resgate, valor_resgate,
+         data_compra, codigo_ref, descricao_resgate)
+       VALUES (?, ?, ?, 'pendente', ?, ?, ?, ?, ?, ?)`,
+      [
+        input.clienteId,
+        movId,
+        input.userId,
+        tipoCredSugerido,
+        xpBase,
+        input.valorReais ?? null,
+        input.dataCompra || null,
+        input.codigoRef?.trim() || null,
+        input.descricao?.trim() || null,
+      ]
+    );
+  }
+
+  return { xpGerado, saldoApos, tipoOperacao: tipoSelecionado.tipo_operacao, movimentacaoId: movId };
+}
+
+// ── Compras Pendentes (geradas por resgate) ──────────────────────
+
+export async function listXpCompraPendentes(params?: {
+  status?: 'pendente' | 'concluida' | 'cancelada';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const page = params?.page || 1;
+  const pageSize = params?.pageSize || 20;
+  const offset = (page - 1) * pageSize;
+
+  let where = 'WHERE 1=1';
+  const sqlParams: any[] = [];
+
+  if (params?.status) {
+    where += ' AND p.status = ?';
+    sqlParams.push(params.status);
+  }
+  if (params?.search?.trim()) {
+    const s = `%${params.search.trim()}%`;
+    where += ' AND (c.nome LIKE ? OR c.email LIKE ?)';
+    sqlParams.push(s, s);
+  }
+
+  const [countRow]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total FROM xp_compras_pendentes p
+     JOIN clientes c ON c.id = p.id_cliente ${where}`,
+    sqlParams
+  );
+
+  const rows = await executeQuery(
+    `SELECT p.*,
+            c.nome AS cliente_nome, c.email AS cliente_email,
+            u.username AS criador_nome,
+            t.nome AS tipo_credito_nome
+     FROM xp_compras_pendentes p
+     JOIN clientes c ON c.id = p.id_cliente
+     LEFT JOIN users u ON u.id = p.id_users_criador
+     LEFT JOIN xp_tipos_movimentacao t ON t.id = p.id_tipo_movimentacao_credito
+     ${where}
+     ORDER BY
+       CASE p.status WHEN 'pendente' THEN 0 WHEN 'concluida' THEN 1 ELSE 2 END,
+       p.created_at DESC
+     LIMIT ? OFFSET ?`,
+    [...sqlParams, String(pageSize), String(offset)]
+  );
+
+  return {
+    items: rows,
+    total: Number(countRow?.total || 0),
+    page,
+    pageSize,
+    totalPages: Math.ceil(Number(countRow?.total || 0) / pageSize),
+  };
+}
+
+export async function getXpCompraPendente(id: number) {
+  const [row]: any[] = await executeQuery(
+    `SELECT p.*,
+            c.nome AS cliente_nome, c.email AS cliente_email,
+            u.username AS criador_nome,
+            uc.username AS conclusao_nome,
+            t.nome AS tipo_credito_nome
+     FROM xp_compras_pendentes p
+     JOIN clientes c ON c.id = p.id_cliente
+     LEFT JOIN users u ON u.id = p.id_users_criador
+     LEFT JOIN users uc ON uc.id = p.id_users_conclusao
+     LEFT JOIN xp_tipos_movimentacao t ON t.id = p.id_tipo_movimentacao_credito
+     WHERE p.id = ? LIMIT 1`,
+    [id]
+  );
+  return row || null;
+}
+
+export async function countXpCompraPendentes() {
+  const [row]: any[] = await executeQuery(
+    `SELECT COUNT(*) AS total FROM xp_compras_pendentes WHERE status = 'pendente'`,
+    []
+  );
+  return Number(row?.total || 0);
+}
+
+export async function concluirXpCompraPendente(input: {
+  id: number;
+  userId: number;
+  tipoMovimentacaoId: number;
+  xpCompra: number;
+  valorCompra?: number;
+  descricao?: string;
+}) {
+  // Buscar a pendência
+  const pendente = await getXpCompraPendente(input.id);
+  if (!pendente) throw new Error('Compra pendente não encontrada.');
+  if (pendente.status !== 'pendente') throw new Error('Esta compra pendente já foi processada.');
+
+  // Validar tipo de crédito
+  const tipoRows = await executeQuery(
+    `SELECT id, tipo_operacao, nome FROM xp_tipos_movimentacao WHERE id = ? AND tipo_operacao = 'credito' AND ativo = 1 LIMIT 1`,
+    [input.tipoMovimentacaoId]
+  );
+  const tipo = (tipoRows as any[])[0];
+  if (!tipo) throw new Error('Tipo de movimentação de crédito inválido.');
+
+  const xpBase = Math.abs(Math.round(input.xpCompra));
+  if (!Number.isFinite(xpBase) || xpBase <= 0) throw new Error('XP da compra deve ser maior que zero.');
+
+  // Registrar movimentação de crédito real
+  await getOrCreateXpConta(pendente.id_cliente);
+  const saldoAtual = await getSaldoClienteAtual(pendente.id_cliente);
+  const saldoApos = saldoAtual + xpBase;
+
+  const insertResult: any = await executeQuery(
+    `INSERT INTO xp_movimentacoes
+      (id_cliente, id_users, id_tipo_movimentacao, xp, saldo_apos, descricao, valor_referencia, data_compra, codigo_ref)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      pendente.id_cliente,
+      input.userId,
+      input.tipoMovimentacaoId,
+      xpBase,
+      saldoApos,
+      input.descricao?.trim() || `Compra gerada pelo resgate #${pendente.id_movimentacao_resgate}`,
+      input.valorCompra ?? null,
+      pendente.data_compra || null,
+      pendente.codigo_ref || null,
+    ]
+  );
+
+  await executeQuery(
+    `UPDATE xp_contas SET saldo_xp = ?, data_atualizacao = NOW() WHERE id_cliente = ?`,
+    [saldoApos, pendente.id_cliente]
+  );
+
+  const movCompraId = insertResult?.insertId ?? null;
+
+  // Atualizar pendência
+  await executeQuery(
+    `UPDATE xp_compras_pendentes
+     SET status = 'concluida',
+         id_movimentacao_compra = ?,
+         id_users_conclusao = ?,
+         id_tipo_movimentacao_credito = ?,
+         xp_compra = ?,
+         valor_compra = ?,
+         descricao_compra = ?,
+         concluida_em = NOW(),
+         updated_at = NOW()
+     WHERE id = ?`,
+    [
+      movCompraId,
+      input.userId,
+      input.tipoMovimentacaoId,
+      xpBase,
+      input.valorCompra ?? null,
+      input.descricao?.trim() || null,
+      input.id,
+    ]
+  );
+
+  return { xpGerado: xpBase, saldoApos, movimentacaoId: movCompraId };
+}
+
+export async function cancelarXpCompraPendente(id: number, userId: number) {
+  const pendente = await getXpCompraPendente(id);
+  if (!pendente) throw new Error('Compra pendente não encontrada.');
+  if (pendente.status !== 'pendente') throw new Error('Esta compra pendente já foi processada.');
+
+  await executeQuery(
+    `UPDATE xp_compras_pendentes
+     SET status = 'cancelada',
+         id_users_conclusao = ?,
+         cancelada_em = NOW(),
+         updated_at = NOW()
+     WHERE id = ?`,
+    [userId, id]
+  );
+
+  return { cancelada: true };
 }
 
 export async function listXpAdminCodigos() {
