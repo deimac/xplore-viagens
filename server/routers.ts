@@ -1466,20 +1466,16 @@ export const appRouter = router({
         .input(
           z.object({
             id: z.number().int(),
-            tipoMovimentacaoId: z.number().int(),
             xpCompra: z.number().int().positive(),
             valorCompra: z.number().positive().optional(),
-            descricao: z.string().max(255).optional(),
           })
         )
         .mutation(async ({ input, ctx }) => {
           return await db.concluirXpCompraPendente({
             id: input.id,
             userId: ctx.user.id,
-            tipoMovimentacaoId: input.tipoMovimentacaoId,
             xpCompra: input.xpCompra,
             valorCompra: input.valorCompra,
-            descricao: input.descricao,
           });
         }),
       cancelar: adminProcedure
@@ -1545,6 +1541,7 @@ export const appRouter = router({
         .mutation(async ({ input }) => {
           return await db.toggleXpAdminCodigo(input.id, input.ativo);
         }),
+
     }),
 
     config: router({

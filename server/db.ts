@@ -2829,20 +2829,22 @@ export async function countXpCompraPendentes() {
 export async function concluirXpCompraPendente(input: {
   id: number;
   userId: number;
-  tipoMovimentacaoId: number;
   xpCompra: number;
   valorCompra?: number;
-  descricao?: string;
 }) {
   // Buscar a pendência
   const pendente = await getXpCompraPendente(input.id);
   if (!pendente) throw new Error('Compra pendente não encontrada.');
   if (pendente.status !== 'pendente') throw new Error('Esta compra pendente já foi processada.');
 
-  // Validar tipo de crédito
+  // Tipo de crédito é sempre compra (fallback para primeiro crédito ativo)
   const tipoRows = await executeQuery(
-    `SELECT id, tipo_operacao, nome FROM xp_tipos_movimentacao WHERE id = ? AND tipo_operacao = 'credito' AND ativo = 1 LIMIT 1`,
-    [input.tipoMovimentacaoId]
+    `SELECT id, tipo_operacao, nome
+     FROM xp_tipos_movimentacao
+     WHERE tipo_operacao = 'credito' AND ativo = 1
+     ORDER BY slug = 'compra' DESC, id ASC
+     LIMIT 1`,
+    []
   );
   const tipo = (tipoRows as any[])[0];
   if (!tipo) throw new Error('Tipo de movimentação de crédito inválido.');
@@ -2862,10 +2864,10 @@ export async function concluirXpCompraPendente(input: {
     [
       pendente.id_cliente,
       input.userId,
-      input.tipoMovimentacaoId,
+      tipo.id,
       xpBase,
       saldoApos,
-      input.descricao?.trim() || `Compra gerada pelo resgate #${pendente.id_movimentacao_resgate}`,
+      pendente.descricao_resgate?.trim() || `Compra gerada pelo resgate #${pendente.id_movimentacao_resgate}`,
       input.valorCompra ?? null,
       pendente.data_compra || null,
       pendente.codigo_ref || null,
@@ -2895,10 +2897,10 @@ export async function concluirXpCompraPendente(input: {
     [
       movCompraId,
       input.userId,
-      input.tipoMovimentacaoId,
+      tipo.id,
       xpBase,
       input.valorCompra ?? null,
-      input.descricao?.trim() || null,
+      pendente.descricao_resgate?.trim() || null,
       input.id,
     ]
   );

@@ -86,10 +86,8 @@ export default function XpClubPage() {
     const [pendenteSelecionada, setPendenteSelecionada] = useState<any | null>(null);
     const [cancelarPendenteId, setCancelarPendenteId] = useState<number | null>(null);
     const [concluirForm, setConcluirForm] = useState({
-        tipoMovimentacaoId: "none",
         xpCompra: "",
         valorCompra: "",
-        descricao: "",
     });
 
     const [tipoModalOpen, setTipoModalOpen] = useState(false);
@@ -332,11 +330,6 @@ export default function XpClubPage() {
     const pendentesItems = (pendentesData as any)?.items || [];
     const pendentesCount = (pendentesCountQuery.data as any)?.json ?? pendentesCountQuery.data ?? 0;
 
-    const tiposCreditoManual = tiposMovimentacao.filter((t: any) => {
-        const ativo = t.ativo ?? true;
-        return t.tipo_operacao === 'credito' && (ativo !== 0 && ativo !== false);
-    });
-
     const parceiroSelecionado =
         codigoForm.idParceiro === "none"
             ? null
@@ -450,20 +443,14 @@ export default function XpClubPage() {
     const openConcluirDialog = (pendente: any) => {
         setPendenteSelecionada(pendente);
         setConcluirForm({
-            tipoMovimentacaoId: pendente.id_tipo_movimentacao_credito ? String(pendente.id_tipo_movimentacao_credito) : "none",
-            xpCompra: pendente.xp_sugerido ? String(pendente.xp_sugerido) : "",
+            xpCompra: pendente.xp_resgate ? String(pendente.xp_resgate) : "",
             valorCompra: pendente.valor_sugerido ? maskCurrencyInput(String(Math.round(Number(pendente.valor_sugerido) * 100))) : "",
-            descricao: pendente.descricao_sugerida || "",
         });
         setConcluirDialogOpen(true);
     };
 
     const handleConcluirPendente = () => {
         if (!pendenteSelecionada) return;
-        if (concluirForm.tipoMovimentacaoId === "none") {
-            toast.error("Selecione o tipo de crédito");
-            return;
-        }
         const xp = Number(concluirForm.xpCompra.replace(/\D/g, ""));
         if (!Number.isFinite(xp) || xp <= 0) {
             toast.error("XP da compra deve ser maior que zero");
@@ -472,10 +459,8 @@ export default function XpClubPage() {
         const valor = parseCurrencyInput(concluirForm.valorCompra);
         concluirPendenteMutation.mutate({
             id: pendenteSelecionada.id,
-            tipoMovimentacaoId: Number(concluirForm.tipoMovimentacaoId),
             xpCompra: xp,
             valorCompra: valor || undefined,
-            descricao: concluirForm.descricao.trim() || undefined,
         });
     };
 
@@ -1067,7 +1052,6 @@ export default function XpClubPage() {
                                                 <th className="text-left px-3 py-2">Cliente</th>
                                                 <th className="text-left px-3 py-2">Resgate (XP)</th>
                                                 <th className="text-left px-3 py-2">Tipo crédito sugerido</th>
-                                                <th className="text-right px-3 py-2">XP sugerido</th>
                                                 <th className="text-right px-3 py-2">XP final</th>
                                                 <th className="text-left px-3 py-2">Criado em</th>
                                                 <th className="text-right px-3 py-2">Ações</th>
@@ -1075,15 +1059,15 @@ export default function XpClubPage() {
                                         </thead>
                                         <tbody>
                                             {pendentesQuery.isLoading ? (
-                                                <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                                                <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                                                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" />Carregando...
                                                 </td></tr>
                                             ) : pendentesQuery.error ? (
-                                                <tr><td colSpan={8} className="px-3 py-8 text-center text-red-600">
+                                                <tr><td colSpan={7} className="px-3 py-8 text-center text-red-600">
                                                     Erro ao carregar pendentes: {pendentesQuery.error.message}
                                                 </td></tr>
                                             ) : pendentesItems.length === 0 ? (
-                                                <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                                                <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                                                     <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
                                                     <p>Nenhuma compra pendente encontrada.</p>
                                                 </td></tr>
@@ -1116,9 +1100,6 @@ export default function XpClubPage() {
                                                         </td>
                                                         <td className="px-3 py-2 text-muted-foreground">
                                                             {p.tipo_credito_nome || '-'}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right text-muted-foreground">
-                                                            {p.xp_sugerido ? Number(p.xp_sugerido).toLocaleString('pt-BR') : '-'}
                                                         </td>
                                                         <td className="px-3 py-2 text-right font-medium text-emerald-600">
                                                             {p.xp_compra ? `+${Number(p.xp_compra).toLocaleString('pt-BR')}` : '-'}
@@ -1171,23 +1152,10 @@ export default function XpClubPage() {
                                         <p><span className="text-muted-foreground">Cliente:</span> <span className="font-medium">{pendenteSelecionada.cliente_nome || `Cliente #${pendenteSelecionada.id_cliente}`}</span></p>
                                         <p><span className="text-muted-foreground">Resgate:</span> <span className="text-red-600 font-medium">-{Math.abs(Number(pendenteSelecionada.xp_resgate || 0))} XP</span></p>
                                         <p><span className="text-muted-foreground">Mov. resgate:</span> #{pendenteSelecionada.id_movimentacao_resgate}</p>
+                                        <p><span className="text-muted-foreground">Descrição:</span> {pendenteSelecionada.descricao_resgate || '-'}</p>
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div>
-                                            <Label>Tipo de crédito</Label>
-                                            <Select value={concluirForm.tipoMovimentacaoId} onValueChange={(v) => setConcluirForm(f => ({ ...f, tipoMovimentacaoId: v }))}>
-                                                <SelectTrigger title="Selecionar tipo de crédito">
-                                                    <SelectValue placeholder="Selecionar" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">Selecione</SelectItem>
-                                                    {tiposCreditoManual.map((t: any) => (
-                                                        <SelectItem key={t.id} value={String(t.id)}>{t.nome}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
                                         <div>
                                             <Label htmlFor="concluirXp">XP da compra</Label>
                                             <Input id="concluirXp" value={concluirForm.xpCompra} onChange={(e) => setConcluirForm(f => ({ ...f, xpCompra: e.target.value.replace(/\D/g, '') }))} placeholder="Ex: 1500" title="XP da compra" />
@@ -1197,8 +1165,8 @@ export default function XpClubPage() {
                                             <Input id="concluirValor" value={concluirForm.valorCompra} onChange={(e) => setConcluirForm(f => ({ ...f, valorCompra: maskCurrencyInput(e.target.value) }))} placeholder="R$ 0,00" title="Valor da compra" />
                                         </div>
                                         <div>
-                                            <Label htmlFor="concluirDesc">Descrição (opcional)</Label>
-                                            <Input id="concluirDesc" value={concluirForm.descricao} onChange={(e) => setConcluirForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Pacote Cancún" title="Descrição" />
+                                            <Label htmlFor="concluirDesc">Descrição</Label>
+                                            <Input id="concluirDesc" value={pendenteSelecionada.descricao_resgate || ''} readOnly disabled title="Descrição" />
                                         </div>
                                     </div>
                                 </div>
