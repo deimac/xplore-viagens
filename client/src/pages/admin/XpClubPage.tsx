@@ -1078,6 +1078,10 @@ export default function XpClubPage() {
                                                 <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                                                     <Loader2 className="h-5 w-5 animate-spin inline mr-2" />Carregando...
                                                 </td></tr>
+                                            ) : pendentesQuery.error ? (
+                                                <tr><td colSpan={8} className="px-3 py-8 text-center text-red-600">
+                                                    Erro ao carregar pendentes: {pendentesQuery.error.message}
+                                                </td></tr>
                                             ) : pendentesItems.length === 0 ? (
                                                 <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
                                                     <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />

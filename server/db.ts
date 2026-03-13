@@ -2781,11 +2781,9 @@ export async function listXpCompraPendentes(params?: {
             p.xp_resgate AS xp_sugerido,
             p.valor_resgate AS valor_sugerido,
             c.nome AS cliente_nome, c.email AS cliente_email,
-            u.username AS criador_nome,
             t.nome AS tipo_credito_nome
      FROM xp_compras_pendentes p
     LEFT JOIN clientes c ON c.id = p.id_cliente
-     LEFT JOIN users u ON u.id = p.id_users_criador
      LEFT JOIN xp_tipos_movimentacao t ON t.id = p.id_tipo_movimentacao_credito
      ${where}
      ORDER BY
@@ -2810,13 +2808,9 @@ export async function getXpCompraPendente(id: number) {
             p.xp_resgate AS xp_sugerido,
             p.valor_resgate AS valor_sugerido,
             c.nome AS cliente_nome, c.email AS cliente_email,
-            u.username AS criador_nome,
-            uc.username AS conclusao_nome,
             t.nome AS tipo_credito_nome
      FROM xp_compras_pendentes p
     LEFT JOIN clientes c ON c.id = p.id_cliente
-     LEFT JOIN users u ON u.id = p.id_users_criador
-     LEFT JOIN users uc ON uc.id = p.id_users_conclusao
      LEFT JOIN xp_tipos_movimentacao t ON t.id = p.id_tipo_movimentacao_credito
      WHERE p.id = ? LIMIT 1`,
     [id]
