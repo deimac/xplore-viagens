@@ -1104,8 +1104,8 @@ export default function XpClubPage() {
                                                             )}
                                                         </td>
                                                         <td className="px-3 py-2">
-                                                            <div className="font-medium">{p.cliente_nome}</div>
-                                                            <div className="text-xs text-muted-foreground">{p.cliente_email}</div>
+                                                            <div className="font-medium">{p.cliente_nome || `Cliente #${p.id_cliente}`}</div>
+                                                            <div className="text-xs text-muted-foreground">{p.cliente_email || 'Email não encontrado'}</div>
                                                         </td>
                                                         <td className="px-3 py-2 text-red-600 font-medium">
                                                             -{Math.abs(Number(p.xp_resgate || 0))} XP
@@ -1164,7 +1164,7 @@ export default function XpClubPage() {
                             {pendenteSelecionada && (
                                 <div className="space-y-4">
                                     <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-                                        <p><span className="text-muted-foreground">Cliente:</span> <span className="font-medium">{pendenteSelecionada.cliente_nome}</span></p>
+                                        <p><span className="text-muted-foreground">Cliente:</span> <span className="font-medium">{pendenteSelecionada.cliente_nome || `Cliente #${pendenteSelecionada.id_cliente}`}</span></p>
                                         <p><span className="text-muted-foreground">Resgate:</span> <span className="text-red-600 font-medium">-{Math.abs(Number(pendenteSelecionada.xp_resgate || 0))} XP</span></p>
                                         <p><span className="text-muted-foreground">Mov. resgate:</span> #{pendenteSelecionada.id_movimentacao_resgate}</p>
                                     </div>

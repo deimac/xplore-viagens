@@ -2772,7 +2772,7 @@ export async function listXpCompraPendentes(params?: {
 
   const [countRow]: any[] = await executeQuery(
     `SELECT COUNT(*) AS total FROM xp_compras_pendentes p
-     JOIN clientes c ON c.id = p.id_cliente ${where}`,
+     LEFT JOIN clientes c ON c.id = p.id_cliente ${where}`,
     sqlParams
   );
 
@@ -2784,7 +2784,7 @@ export async function listXpCompraPendentes(params?: {
             u.username AS criador_nome,
             t.nome AS tipo_credito_nome
      FROM xp_compras_pendentes p
-     JOIN clientes c ON c.id = p.id_cliente
+    LEFT JOIN clientes c ON c.id = p.id_cliente
      LEFT JOIN users u ON u.id = p.id_users_criador
      LEFT JOIN xp_tipos_movimentacao t ON t.id = p.id_tipo_movimentacao_credito
      ${where}
@@ -2814,7 +2814,7 @@ export async function getXpCompraPendente(id: number) {
             uc.username AS conclusao_nome,
             t.nome AS tipo_credito_nome
      FROM xp_compras_pendentes p
-     JOIN clientes c ON c.id = p.id_cliente
+    LEFT JOIN clientes c ON c.id = p.id_cliente
      LEFT JOIN users u ON u.id = p.id_users_criador
      LEFT JOIN users uc ON uc.id = p.id_users_conclusao
      LEFT JOIN xp_tipos_movimentacao t ON t.id = p.id_tipo_movimentacao_credito
