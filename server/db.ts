@@ -2683,6 +2683,7 @@ export async function registrarXpCompraManual(input: {
     }
   }
   const xpGerado = isDebito ? -xpBase : xpBase;
+  const descricaoLancamento = input.descricao?.trim() || 'Lançamento manual registrado no admin';
 
   const saldoAtual = await getSaldoClienteAtual(input.clienteId);
   const saldoApos = saldoAtual + xpGerado;
@@ -2697,7 +2698,7 @@ export async function registrarXpCompraManual(input: {
       input.tipoMovimentacaoId,
       xpGerado,
       saldoApos,
-      input.descricao?.trim() || 'Lançamento manual registrado no admin',
+      descricaoLancamento,
       input.valorReais ?? null,
       input.dataCompra || null,
       input.codigoRef?.trim() || null,
@@ -2737,7 +2738,7 @@ export async function registrarXpCompraManual(input: {
         input.valorReais ?? null,
         input.dataCompra || null,
         input.codigoRef?.trim() || null,
-        input.descricao?.trim() || null,
+        descricaoLancamento,
       ]
     );
   }
@@ -2849,6 +2850,15 @@ export async function concluirXpCompraPendente(input: {
   const tipo = (tipoRows as any[])[0];
   if (!tipo) throw new Error('Tipo de movimentação de crédito inválido.');
 
+  const resgateRows: any[] = await executeQuery(
+    `SELECT descricao FROM xp_movimentacoes WHERE id = ? LIMIT 1`,
+    [pendente.id_movimentacao_resgate]
+  );
+  const descricaoResgate =
+    resgateRows[0]?.descricao?.trim() ||
+    pendente.descricao_resgate?.trim() ||
+    `Compra gerada pelo resgate #${pendente.id_movimentacao_resgate}`;
+
   const xpBase = Math.abs(Math.round(input.xpCompra));
   if (!Number.isFinite(xpBase) || xpBase <= 0) throw new Error('XP da compra deve ser maior que zero.');
 
@@ -2867,7 +2877,7 @@ export async function concluirXpCompraPendente(input: {
       tipo.id,
       xpBase,
       saldoApos,
-      pendente.descricao_resgate?.trim() || `Compra gerada pelo resgate #${pendente.id_movimentacao_resgate}`,
+      descricaoResgate,
       input.valorCompra ?? null,
       pendente.data_compra || null,
       pendente.codigo_ref || null,
@@ -2900,7 +2910,7 @@ export async function concluirXpCompraPendente(input: {
       tipo.id,
       xpBase,
       input.valorCompra ?? null,
-      pendente.descricao_resgate?.trim() || null,
+      descricaoResgate,
       input.id,
     ]
   );

@@ -9,12 +9,6 @@ type MovimentacaoInput = {
     data_compra?: string | null;
 };
 
-function formatCurrencyBRL(value: number | string): string {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return String(value);
-    return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 function normalizeIdentifier(value?: string | null): string {
     if (!value) return "";
     return value
@@ -74,10 +68,6 @@ export function getMovimentacaoPresentation(mov: MovimentacaoInput) {
 
     if (rawDescricao && !isInternalDescricao(rawDescricao) && !sameAsTipoDescricao) {
         detalhesLancamento.push(`Descricao: ${rawDescricao}`);
-    }
-
-    if (mov.valor_referencia !== null && mov.valor_referencia !== undefined && String(mov.valor_referencia).trim() !== "") {
-        detalhesLancamento.push(`Valor Compra: ${formatCurrencyBRL(mov.valor_referencia)}`);
     }
 
     if (detalhesLancamento.length > 0) {
