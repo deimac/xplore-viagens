@@ -16,6 +16,8 @@ interface HeroSlide {
   subtitle?: string | null;
   order: number;
   isActive: number;
+  mostrarNoSite: number;
+  mostrarNaTv: number;
 }
 
 interface HeroSlideModalProps {
@@ -32,6 +34,8 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
     subtitle: "",
     order: 0,
     isActive: 1,
+    mostrarNoSite: 1,
+    mostrarNaTv: 1,
   });
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -61,6 +65,8 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
         subtitle: "",
         order: 0,
         isActive: 1,
+        mostrarNoSite: 1,
+        mostrarNaTv: 1,
       });
       setPreviewUrl("");
     }
@@ -131,7 +137,7 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
           {/* Upload de Imagem */}
           <div className="space-y-2">
             <Label>Imagem *</Label>
-            
+
             {previewUrl ? (
               <div className="relative">
                 <img
@@ -143,6 +149,8 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
                   type="button"
                   onClick={handleRemoveImage}
                   className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  aria-label="Remover imagem"
+                  title="Remover imagem"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -161,7 +169,7 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
                 </p>
               </div>
             )}
-            
+
             <input
               ref={fileInputRef}
               type="file"
@@ -169,8 +177,9 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
               onChange={handleFileChange}
               className="hidden"
               disabled={uploading}
+              aria-label="Selecionar imagem para upload"
             />
-            
+
             <p className="text-sm text-muted-foreground">
               Tamanho recomendado: 1920x1200px (proporção 16:10) com céu expansivo na parte superior
             </p>
@@ -235,7 +244,26 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
               checked={formData.isActive === 1}
               onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked ? 1 : 0 })}
             />
-            <Label htmlFor="isActive">Slide ativo (visível no site)</Label>
+            <Label htmlFor="isActive">Slide ativo</Label>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="mostrarNoSite"
+                checked={formData.mostrarNoSite === 1}
+                onCheckedChange={(checked) => setFormData({ ...formData, mostrarNoSite: checked ? 1 : 0 })}
+              />
+              <Label htmlFor="mostrarNoSite">Mostrar no Site</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="mostrarNaTv"
+                checked={formData.mostrarNaTv === 1}
+                onCheckedChange={(checked) => setFormData({ ...formData, mostrarNaTv: checked ? 1 : 0 })}
+              />
+              <Label htmlFor="mostrarNaTv">Mostrar na TV</Label>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

@@ -23,6 +23,8 @@ export interface Property {
     area_m2?: number | string;
     active: boolean;
     is_featured?: boolean;
+    mostrarNoSite?: boolean;
+    mostrarNaTv?: boolean;
     created_at: string;
     updated_at: string;
     primary_image?: string;
@@ -83,6 +85,8 @@ export interface PropertyFormData {
     xp: number;
     area_m2?: number | string;
     is_featured?: boolean;
+    mostrarNoSite?: boolean;
+    mostrarNaTv?: boolean;
 }
 
 export interface PropertyImageUpload {

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xplore TV</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            cursor: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Player container */
+        #player {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Slide base */
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            z-index: 1;
+        }
+
+        .slide.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        .slide.slide-transition {
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .slide.slide-left {
+            transform: translateX(-100%);
+        }
+
+        .slide.slide-right {
+            transform: translateX(100%);
+        }
+
+        .slide.slide-center {
+            transform: translateX(0);
+        }
+
+        /* Tipo: Imagem */
+        .slide-imagem {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .slide-imagem .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 50%);
+        }
+
+        .slide-imagem .caption {
+            position: absolute;
+            bottom: 8vh;
+            left: 5vw;
+            right: 5vw;
+            color: #fff;
+            z-index: 3;
+        }
+
+        .slide-imagem .caption h2 {
+            font-size: clamp(2rem, 4vw, 4rem);
+            font-weight: 700;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+            line-height: 1.15;
+        }
+
+        .slide-imagem .caption p {
+            font-size: clamp(1rem, 2vw, 1.8rem);
+            margin-top: 0.5em;
+            opacity: 0.9;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Tipo: Vídeo */
+        .slide-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Tipo: Marca (brand) */
+        .slide-marca {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            flex-direction: column;
+            gap: 2vh;
+        }
+
+        .slide-marca .brand-logo {
+            max-width: 40vw;
+            max-height: 30vh;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 20px rgba(255, 255, 255, 0.15));
+        }
+
+        .slide-marca .brand-name {
+            font-size: clamp(2rem, 5vw, 5rem);
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+
+        .slide-marca .brand-tagline {
+            font-size: clamp(1rem, 2.5vw, 2.2rem);
+            color: rgba(255, 255, 255, 0.75);
+            text-align: center;
+            font-weight: 300;
+        }
+
+        /* Tipo: Contato */
+        .slide-contato {
+            background: linear-gradient(135deg, #0c4a6e 0%, #164e63 50%, #0e7490 100%);
+            flex-direction: column;
+            gap: 3vh;
+            padding: 5vh 5vw;
+        }
+
+        .slide-contato h2 {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+        }
+
+        .slide-contato .contact-items {
+            display: flex;
+            flex-direction: column;
+            gap: 2vh;
+            align-items: center;
+        }
+
+        .slide-contato .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5vw;
+            color: #fff;
+            font-size: clamp(1.2rem, 2.5vw, 2rem);
+        }
+
+        .slide-contato .contact-icon {
+            width: clamp(2rem, 3vw, 3rem);
+            height: clamp(2rem, 3vw, 3rem);
+            opacity: 0.85;
+        }
+
+        /* Loading state */
+        #loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            color: #fff;
+            font-size: 1.5rem;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Error state */
+        #error {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: #000;
+            color: #fff;
+            font-size: 1.2rem;
+            z-index: 100;
+            gap: 1rem;
+        }
+
+        #error.visible {
+            display: flex;
+        }
+
+        #error .error-icon {
+            font-size: 3rem;
+            opacity: 0.6;
+        }
+
+        #error .retry-text {
+            opacity: 0.5;
+            font-size: 1rem;
+        }
+
+        /* Tipo: Viagem */
+        .slide-viagem {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .slide-viagem .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 40%, transparent 60%);
+        }
+
+        .slide-viagem .viagem-info {
+            position: absolute;
+            bottom: 8vh;
+            left: 5vw;
+            right: 5vw;
+            color: #fff;
+            z-index: 3;
+        }
+
+        .slide-viagem .viagem-info h2 {
+            font-size: clamp(2rem, 3.5vw, 3.5rem);
+            font-weight: 700;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+            line-height: 1.15;
+        }
+
+        .slide-viagem .viagem-info .viagem-detalhes {
+            display: flex;
+            align-items: baseline;
+            gap: 2vw;
+            margin-top: 1vh;
+            flex-wrap: wrap;
+        }
+
+        .slide-viagem .viagem-preco {
+            font-size: clamp(1.5rem, 3vw, 2.8rem);
+            font-weight: 800;
+            color: #22d3ee;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .slide-viagem .viagem-parcelas {
+            font-size: clamp(0.9rem, 1.8vw, 1.5rem);
+            opacity: 0.85;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .slide-viagem .viagem-datas {
+            font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+            opacity: 0.75;
+            margin-top: 0.5vh;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .slide-viagem .viagem-badge {
+            position: absolute;
+            top: 5vh;
+            right: 5vw;
+            background: rgba(14, 116, 144, 0.85);
+            color: #fff;
+            padding: 0.8vh 2vw;
+            border-radius: 0.5rem;
+            font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+            font-weight: 600;
+            z-index: 3;
+            backdrop-filter: blur(4px);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Tipo: Hospedagem */
+        .slide-hospedagem {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .slide-hospedagem .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 65%);
+        }
+
+        .slide-hospedagem .hosp-info {
+            position: absolute;
+            bottom: 8vh;
+            left: 5vw;
+            right: 5vw;
+            color: #fff;
+            z-index: 3;
+        }
+
+        .slide-hospedagem .hosp-info h2 {
+            font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+            font-weight: 700;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+        }
+
+        .slide-hospedagem .hosp-info .hosp-local {
+            font-size: clamp(1rem, 2vw, 1.6rem);
+            opacity: 0.85;
+            margin-top: 0.5vh;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .slide-hospedagem .hosp-info .hosp-detalhes {
+            display: flex;
+            gap: 2vw;
+            margin-top: 1vh;
+            font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+            opacity: 0.75;
+        }
+
+        .slide-hospedagem .hosp-badge {
+            position: absolute;
+            top: 5vh;
+            right: 5vw;
+            display: flex;
+            align-items: center;
+            gap: 0.5vw;
+            background: rgba(14, 116, 144, 0.85);
+            color: #fff;
+            padding: 0.8vh 2vw;
+            border-radius: 0.5rem;
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            font-weight: 700;
+            z-index: 3;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Tipo: Voo Premium */
+        .slide-voo {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0c4a6e 100%);
+            flex-direction: column;
+            gap: 3vh;
+            padding: 6vh 5vw;
+            align-items: center;
+        }
+
+        .slide-voo .voo-badge {
+            background: linear-gradient(135deg, #b45309, #d97706);
+            color: #fff;
+            padding: 0.6vh 2vw;
+            border-radius: 0.4rem;
+            font-size: clamp(0.8rem, 1.3vw, 1.1rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .slide-voo h2 {
+            font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .slide-voo .voo-rota {
+            font-size: clamp(1.1rem, 2vw, 1.8rem);
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+        }
+
+        .slide-voo .voo-preco {
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 800;
+            color: #fbbf24;
+        }
+
+        .slide-voo .voo-parcelas {
+            font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: -1vh;
+        }
+
+        .slide-voo .voo-classe {
+            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+
+        /* Vertical orientation adjustments */
+        body.vertical .slide-imagem .caption {
+            bottom: 12vh;
+        }
+
+        body.vertical .slide-marca .brand-logo {
+            max-width: 60vw;
+        }
+
+        body.vertical .slide-contato .contact-items {
+            gap: 3vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <span>Carregando vitrine...</span>
+    </div>
+    <div id="error">
+        <div class="error-icon">📺</div>
+        <div>Sem itens disponíveis</div>
+        <div class="retry-text">Tentando novamente em alguns segundos...</div>
+    </div>
+    <div id="player"></div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            // Config
+            var POLL_INTERVAL = 60000;
+            var RETRY_DELAY = 10000;
+            var API_URL = '/api/trpc/xploreTv.playlist';
+
+            // State
+            var slides = []; // flattened slides [{type, data, durationMs}]
+            var currentIndex = -1;
+            var timer = null;
+            var player = document.getElementById('player');
+            var loadingEl = document.getElementById('loading');
+            var errorEl = document.getElementById('error');
+
+            // Orientation from query string
+            var params = new URLSearchParams(window.location.search);
+            var orientation = params.get('orientacao') || 'horizontal';
+            if (orientation === 'vertical') {
+                document.body.classList.add('vertical');
+            }
+
+            // SVG icons for contact section
+            var icons = {
+                phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+                email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+                whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+                instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>',
+                location: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>'
+            };
+
+            // Format currency BRL
+            function formatBRL(value) {
+                if (value == null) return '';
+                return 'R$ ' + Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            // Format date
+            function formatDate(dateStr) {
+                if (!dateStr) return '';
+                var d = new Date(dateStr);
+                return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            }
+
+            // Flatten sections into individual slides
+            function flattenSections(sections) {
+                var result = [];
+                for (var s = 0; s < sections.length; s++) {
+                    var secao = sections[s];
+                    var itens = secao.itens || [];
+
+                    for (var i = 0; i < itens.length; i++) {
+                        result.push({
+                            type: secao.codigo,
+                            data: itens[i],
+                            durationMs: secao.duracaoItemMs || 8000,
+                            transicao: secao.transicao || 'fade',
+                        });
+                    }
+                }
+                return result;
+            }
+
+            // Fetch playlist from API
+            function fetchPlaylist() {
+                var url = API_URL + '?input=' + encodeURIComponent(JSON.stringify({ json: { orientacao: orientation } }));
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.timeout = 10000;
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            var raw = response.result && response.result.data;
+                            var sections = Array.isArray(raw) ? raw : (raw && raw.json ? raw.json : []);
+                            var flat = flattenSections(sections);
+                            if (flat.length > 0) {
+                                slides = flat;
+                                hideLoading();
+                                hideError();
+                                if (currentIndex === -1) {
+                                    currentIndex = 0;
+                                    renderSlide(0);
+                                    startLoop();
+                                }
+                            } else {
+                                showError();
+                            }
+                        } catch (e) {
+                            console.warn('[XploreTV] Parse error:', e);
+                            showError();
+                        }
+                    } else {
+                        showError();
+                    }
+                };
+                xhr.onerror = function () { showError(); };
+                xhr.ontimeout = function () { showError(); };
+                xhr.send();
+            }
+
+            function hideLoading() {
+                loadingEl.classList.add('hidden');
+            }
+
+            function showError() {
+                hideLoading();
+                if (slides.length === 0) {
+                    errorEl.classList.add('visible');
+                    setTimeout(fetchPlaylist, RETRY_DELAY);
+                }
+            }
+
+            function hideError() {
+                errorEl.classList.remove('visible');
+            }
+
+            function escapeCSS(s) {
+                return s.replace(/['"\\()]/g, '\\$&');
+            }
+
+            // Build slide HTML based on section type
+            function buildSlide(slide) {
+                var el = document.createElement('div');
+                el.className = 'slide';
+                var d = slide.data;
+
+                switch (slide.type) {
+                    case 'slider': {
+                        // Hero slides: imageUrl, title, subtitle
+                        el.classList.add('slide-imagem');
+                        el.style.backgroundImage = 'url(' + escapeCSS(d.imageUrl || '') + ')';
+                        var overlay = document.createElement('div');
+                        overlay.className = 'overlay';
+                        el.appendChild(overlay);
+                        if (d.title || d.subtitle) {
+                            var caption = document.createElement('div');
+                            caption.className = 'caption';
+                            if (d.title) {
+                                var h2 = document.createElement('h2');
+                                h2.textContent = d.title;
+                                caption.appendChild(h2);
+                            }
+                            if (d.subtitle) {
+                                var p = document.createElement('p');
+                                p.textContent = d.subtitle;
+                                caption.appendChild(p);
+                            }
+                            el.appendChild(caption);
+                        }
+                        break;
+                    }
+
+                    case 'viagens': {
+                        // Viagens: titulo, imagemUrl, origem, valorTotal, quantidadeParcelas, valorParcela, dataIda, dataVolta
+                        el.classList.add('slide-viagem');
+                        el.style.backgroundImage = 'url(' + escapeCSS(d.imagemUrl || '') + ')';
+                        var ovl = document.createElement('div');
+                        ovl.className = 'overlay';
+                        el.appendChild(ovl);
+
+                        if (d.origem) {
+                            var badge = document.createElement('div');
+                            badge.className = 'viagem-badge';
+                            badge.textContent = 'Saindo de ' + d.origem;
+                            el.appendChild(badge);
+                        }
+
+                        var info = document.createElement('div');
+                        info.className = 'viagem-info';
+                        var h2v = document.createElement('h2');
+                        h2v.textContent = d.titulo || '';
+                        info.appendChild(h2v);
+
+                        var detalhes = document.createElement('div');
+                        detalhes.className = 'viagem-detalhes';
+
+                        if (d.valorTotal) {
+                            var preco = document.createElement('span');
+                            preco.className = 'viagem-preco';
+                            preco.textContent = formatBRL(d.valorTotal);
+                            detalhes.appendChild(preco);
+                        }
+                        if (d.quantidadeParcelas && d.valorParcela) {
+                            var parcelas = document.createElement('span');
+                            parcelas.className = 'viagem-parcelas';
+                            parcelas.textContent = d.quantidadeParcelas + 'x de ' + formatBRL(d.valorParcela) + (d.temJuros ? '' : ' s/ juros');
+                            detalhes.appendChild(parcelas);
+                        }
+                        info.appendChild(detalhes);
+
+                        if (d.dataIda) {
+                            var datas = document.createElement('div');
+                            datas.className = 'viagem-datas';
+                            datas.textContent = formatDate(d.dataIda) + (d.dataVolta ? ' → ' + formatDate(d.dataVolta) : '');
+                            info.appendChild(datas);
+                        }
+                        el.appendChild(info);
+                        break;
+                    }
+
+                    case 'hospedagens': {
+                        // Hospedagens: name, city, country, xp, max_guests, bedrooms, primary_image
+                        el.classList.add('slide-hospedagem');
+                        el.style.backgroundImage = 'url(' + escapeCSS(d.primary_image || '') + ')';
+                        var ovlH = document.createElement('div');
+                        ovlH.className = 'overlay';
+                        el.appendChild(ovlH);
+
+                        if (d.xp) {
+                            var badgeH = document.createElement('div');
+                            badgeH.className = 'hosp-badge';
+                            badgeH.textContent = d.xp + ' XP';
+                            el.appendChild(badgeH);
+                        }
+
+                        var infoH = document.createElement('div');
+                        infoH.className = 'hosp-info';
+                        var h2h = document.createElement('h2');
+                        h2h.textContent = d.name || '';
+                        infoH.appendChild(h2h);
+
+                        if (d.city || d.country) {
+                            var local = document.createElement('div');
+                            local.className = 'hosp-local';
+                            local.textContent = [d.city, d.country].filter(Boolean).join(', ');
+                            infoH.appendChild(local);
+                        }
+
+                        var detH = document.createElement('div');
+                        detH.className = 'hosp-detalhes';
+                        if (d.bedrooms) {
+                            var bedSpan = document.createElement('span');
+                            bedSpan.textContent = d.bedrooms + ' quarto' + (d.bedrooms > 1 ? 's' : '');
+                            detH.appendChild(bedSpan);
+                        }
+                        if (d.max_guests) {
+                            var guestSpan = document.createElement('span');
+                            guestSpan.textContent = 'até ' + d.max_guests + ' hóspede' + (d.max_guests > 1 ? 's' : '');
+                            detH.appendChild(guestSpan);
+                        }
+                        if (detH.children.length > 0) infoH.appendChild(detH);
+                        el.appendChild(infoH);
+                        break;
+                    }
+
+                    case 'voos_premium': {
+                        // Voos: titulo, origemPrincipal, destinosResumo, companhiaAerea, classe, preco, parcelas
+                        el.classList.add('slide-voo');
+
+                        var vooBadge = document.createElement('div');
+                        vooBadge.className = 'voo-badge';
+                        vooBadge.textContent = (d.companhiaAerea || 'Voo') + (d.classe ? ' • ' + d.classe : '');
+                        el.appendChild(vooBadge);
+
+                        var h2f = document.createElement('h2');
+                        h2f.textContent = d.titulo || 'Oferta de Voo';
+                        el.appendChild(h2f);
+
+                        if (d.origemPrincipal || d.destinosResumo) {
+                            var rota = document.createElement('div');
+                            rota.className = 'voo-rota';
+                            rota.textContent = (d.origemPrincipal || '') + (d.destinosResumo ? ' → ' + d.destinosResumo : '');
+                            el.appendChild(rota);
+                        }
+
+                        if (d.preco) {
+                            var precoF = document.createElement('div');
+                            precoF.className = 'voo-preco';
+                            precoF.textContent = formatBRL(d.preco);
+                            el.appendChild(precoF);
+                        }
+                        if (d.parcelas && d.parcelas > 1 && d.preco) {
+                            var parcF = document.createElement('div');
+                            parcF.className = 'voo-parcelas';
+                            parcF.textContent = 'ou ' + d.parcelas + 'x de ' + formatBRL(d.preco / d.parcelas);
+                            el.appendChild(parcF);
+                        }
+                        if (d.classe) {
+                            var classeEl = document.createElement('div');
+                            classeEl.className = 'voo-classe';
+                            classeEl.textContent = 'Classe ' + d.classe;
+                            el.appendChild(classeEl);
+                        }
+                        break;
+                    }
+
+                    case 'contato_empresa': {
+                        // Contact: companyName, phone, whatsapp, email, instagram
+                        el.classList.add('slide-contato');
+                        var h2c = document.createElement('h2');
+                        h2c.textContent = d.companyName || 'Entre em Contato';
+                        el.appendChild(h2c);
+                        var contactItems = document.createElement('div');
+                        contactItems.className = 'contact-items';
+                        var fields = [
+                            { key: 'phone', icon: 'phone', label: '' },
+                            { key: 'whatsapp', icon: 'whatsapp', label: '' },
+                            { key: 'email', icon: 'email', label: '' },
+                            { key: 'instagram', icon: 'instagram', label: '@' },
+                        ];
+                        fields.forEach(function (f) {
+                            if (d[f.key]) {
+                                var ci = document.createElement('div');
+                                ci.className = 'contact-item';
+                                var iconEl = document.createElement('div');
+                                iconEl.className = 'contact-icon';
+                                iconEl.innerHTML = icons[f.icon] || '';
+                                ci.appendChild(iconEl);
+                                var text = document.createElement('span');
+                                text.textContent = f.label + d[f.key];
+                                ci.appendChild(text);
+                                contactItems.appendChild(ci);
+                            }
+                        });
+                        el.appendChild(contactItems);
+                        break;
+                    }
+
+                    default: {
+                        el.style.background = '#111';
+                        el.style.color = '#fff';
+                        el.style.fontSize = '2rem';
+                        el.textContent = d.titulo || d.title || d.nome || 'Bloco';
+                    }
+                }
+
+                return el;
+            }
+
+            // Render a specific slide
+            function renderSlide(index) {
+                if (slides.length === 0) return;
+                var item = slides[index];
+                if (!item) return;
+
+                var existingSlides = player.querySelectorAll('.slide');
+                for (var i = 0; i < existingSlides.length; i++) {
+                    existingSlides[i].classList.remove('active');
+                    var videos = existingSlides[i].querySelectorAll('video');
+                    for (var v = 0; v < videos.length; v++) {
+                        try { videos[v].pause(); } catch (e) { }
+                    }
+                }
+
+                var slideEl = buildSlide(item);
+                player.appendChild(slideEl);
+
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        slideEl.classList.add('active');
+                        var vids = slideEl.querySelectorAll('video');
+                        for (var vi = 0; vi < vids.length; vi++) {
+                            try { vids[vi].play(); } catch (e) { }
+                        }
+                    });
+                });
+
+                setTimeout(function () {
+                    var old = player.querySelectorAll('.slide:not(.active)');
+                    for (var r = 0; r < old.length; r++) {
+                        try { player.removeChild(old[r]); } catch (e) { }
+                    }
+                }, 1200);
+            }
+
+            // Loop control
+            function startLoop() {
+                if (timer) clearTimeout(timer);
+                scheduleNext();
+            }
+
+            function scheduleNext() {
+                if (slides.length === 0) return;
+                var currentSlide = slides[currentIndex];
+                var duration = (currentSlide && currentSlide.durationMs) || 8000;
+
+                timer = setTimeout(function () {
+                    currentIndex = (currentIndex + 1) % slides.length;
+                    renderSlide(currentIndex);
+                    scheduleNext();
+                }, duration);
+            }
+
+            // Try fullscreen
+            function tryFullscreen() {
+                var el = document.documentElement;
+                var req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+                if (req) {
+                    try { req.call(el); } catch (e) { }
+                }
+            }
+
+            document.addEventListener('click', tryFullscreen, { once: true });
+            document.addEventListener('keydown', tryFullscreen, { once: true });
+
+            // Periodic playlist refresh
+            setInterval(fetchPlaylist, POLL_INTERVAL);
+
+            // Start
+            fetchPlaylist();
+        })();
+    </script>
+</body>
+
+</html>

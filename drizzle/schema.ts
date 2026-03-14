@@ -101,6 +101,8 @@ export const viagens = mysqlTable("viagens", {
   imagemUrl: text("imagemUrl").notNull(),
   dataExpiracao: date("data_expiracao"),
   ativo: boolean("ativo").default(true),
+  mostrarNoSite: boolean("mostrarNoSite").notNull().default(true),
+  mostrarNaTv: boolean("mostrarNaTv").notNull().default(false),
   criadoEm: timestamp("criadoEm").defaultNow(),
   atualizadoEm: timestamp("atualizadoEm").defaultNow().onUpdateNow(),
 });
@@ -224,6 +226,8 @@ export const heroSlides = mysqlTable("heroSlides", {
   subtitle: text("subtitle"),
   order: int("order").notNull().default(0),
   isActive: int("isActive").notNull().default(1), // 1 = active, 0 = inactive
+  mostrarNoSite: int("mostrarNoSite").notNull().default(1),
+  mostrarNaTv: int("mostrarNaTv").notNull().default(1),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -249,6 +253,8 @@ export const ofertasVoo = mysqlTable("ofertas_voo", {
   rotaIda: text("rota_ida"),
   rotaVolta: text("rota_volta"),
   ativo: int("ativo").notNull().default(1),
+  mostrarNoSite: int("mostrarNoSite").notNull().default(1),
+  mostrarNaTv: int("mostrarNaTv").notNull().default(0),
   criadoEm: timestamp("criado_em"),
 });
 
@@ -618,3 +624,48 @@ export const xpCodigosUsadosRelations = relations(xpCodigosUsados, ({ one }) => 
   codigo: one(xpCodigos, { fields: [xpCodigosUsados.idCodigo], references: [xpCodigos.id] }),
   cliente: one(clientes, { fields: [xpCodigosUsados.idCliente], references: [clientes.id] }),
 }));
+
+// ─────────────────────────────────────────────────────────────
+// XPLORE TV – Vitrine Digital para TV
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Xplore TV Itens – blocos individuais da playlist da vitrine (legado)
+ */
+export const xploreTvItens = mysqlTable("xplore_tv_itens", {
+  id: int("id").autoincrement().primaryKey(),
+  tipo: mysqlEnum("tipo", ["imagem", "video", "marca", "contato"]).notNull(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  ativo: boolean("ativo").notNull().default(true),
+  ordem: int("ordem").notNull().default(0),
+  duracaoMs: int("duracao_ms").notNull().default(8000),
+  transicao: mysqlEnum("transicao", ["fade", "slide"]).notNull().default("fade"),
+  orientacao: mysqlEnum("orientacao", ["horizontal", "vertical", "ambos"]).notNull().default("horizontal"),
+  // Payload JSON com dados específicos por tipo
+  payload: text("payload"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
+});
+
+export type XploreTvItem = typeof xploreTvItens.$inferSelect;
+export type InsertXploreTvItem = typeof xploreTvItens.$inferInsert;
+
+/**
+ * Xplore TV Seções – seções estáticas da vitrine digital
+ */
+export const xploreTvSecoes = mysqlTable("xplore_tv_secoes", {
+  id: int("id").autoincrement().primaryKey(),
+  codigo: varchar("codigo", { length: 50 }).notNull().unique(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  ativo: boolean("ativo").notNull().default(true),
+  ordem: int("ordem").notNull().default(0),
+  transicao: mysqlEnum("transicao", ["fade", "slide"]).notNull().default("fade"),
+  orientacao: mysqlEnum("orientacao", ["horizontal", "vertical", "ambos"]).notNull().default("ambos"),
+  duracaoSecaoMs: int("duracao_secao_ms").notNull().default(30000),
+  duracaoItemMs: int("duracao_item_ms").notNull().default(8000),
+  criadoEm: timestamp("criado_em").defaultNow(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
+});
+
+export type XploreTvSecao = typeof xploreTvSecoes.$inferSelect;
+export type InsertXploreTvSecao = typeof xploreTvSecoes.$inferInsert;

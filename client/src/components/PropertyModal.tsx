@@ -51,6 +51,8 @@ const initialFormData: PropertyFormData = {
     xp: 0,
     area_m2: undefined,
     is_featured: false,
+    mostrarNoSite: true,
+    mostrarNaTv: false,
 };
 
 export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
@@ -150,6 +152,8 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                     xp: property.xp ?? 0,
                     area_m2: property.area_m2 || undefined,
                     is_featured: property.is_featured || false,
+                    mostrarNoSite: property.mostrarNoSite ?? true,
+                    mostrarNaTv: property.mostrarNaTv ?? false,
                 });
 
                 // Carregar imagens existentes quando os detalhes da propriedade estiverem disponíveis
@@ -646,6 +650,32 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     />
                                     <Label htmlFor="is_featured" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                         Marcar como destaque na página inicial
+                                    </Label>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="mostrarNoSite"
+                                        checked={formData.mostrarNoSite ?? true}
+                                        onCheckedChange={(checked) =>
+                                            setFormData({ ...formData, mostrarNoSite: checked as boolean })
+                                        }
+                                    />
+                                    <Label htmlFor="mostrarNoSite" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        Mostrar no Site
+                                    </Label>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="mostrarNaTv"
+                                        checked={formData.mostrarNaTv ?? false}
+                                        onCheckedChange={(checked) =>
+                                            setFormData({ ...formData, mostrarNaTv: checked as boolean })
+                                        }
+                                    />
+                                    <Label htmlFor="mostrarNaTv" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        Mostrar na TV
                                     </Label>
                                 </div>
 

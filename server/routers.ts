@@ -106,6 +106,8 @@ export const appRouter = router({
           tipoQuarto: z.string().optional().nullable(),
           imagemUrl: z.string().optional().default(""),
           ativo: z.boolean().optional(),
+          mostrarNoSite: z.boolean().optional(),
+          mostrarNaTv: z.boolean().optional(),
           categoriaIds: z.array(z.number()).optional(),
           destaqueIds: z.array(z.number()).optional(),
           imagem: z.object({
@@ -154,6 +156,8 @@ export const appRouter = router({
           tipoQuarto: z.string().optional().nullable(),
           imagemUrl: z.string().optional(),
           ativo: z.boolean().optional(),
+          mostrarNoSite: z.boolean().optional(),
+          mostrarNaTv: z.boolean().optional(),
           categoriaIds: z.array(z.number()).optional(),
           destaqueIds: z.array(z.number()).optional(),
           imagem: z.object({
@@ -268,6 +272,8 @@ export const appRouter = router({
           subtitle: z.string().optional(),
           order: z.number().default(0),
           isActive: z.number().default(1),
+          mostrarNoSite: z.number().default(1),
+          mostrarNaTv: z.number().default(1),
         })
       )
       .mutation(async ({ input }) => {
@@ -282,6 +288,8 @@ export const appRouter = router({
           subtitle: z.string().optional(),
           order: z.number().optional(),
           isActive: z.number().optional(),
+          mostrarNoSite: z.number().optional(),
+          mostrarNaTv: z.number().optional(),
         })
       )
       .mutation(async ({ input }) => {
@@ -370,6 +378,8 @@ export const appRouter = router({
           rota_ida: z.string().optional(),
           rota_volta: z.string().optional(),
           ativo: z.boolean().default(true),
+          mostrarNoSite: z.boolean().default(true),
+          mostrarNaTv: z.boolean().default(false),
           datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
           datas_flexiveis: z.array(
             z.object({
@@ -402,6 +412,8 @@ export const appRouter = router({
           rota_ida: z.string().optional(),
           rota_volta: z.string().optional(),
           ativo: z.boolean(),
+          mostrarNoSite: z.boolean().optional(),
+          mostrarNaTv: z.boolean().optional(),
           datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
           datas_flexiveis: z.array(
             z.object({
@@ -801,6 +813,8 @@ export const appRouter = router({
           xp: z.number().optional(),
           area_m2: z.number().optional(),
           is_featured: z.boolean().optional(),
+          mostrarNoSite: z.boolean().optional(),
+          mostrarNaTv: z.boolean().optional(),
         })
       )
       .mutation(async ({ input }) => {
@@ -830,6 +844,8 @@ export const appRouter = router({
           xp: z.number().optional(),
           area_m2: z.number().optional(),
           is_featured: z.boolean().optional(),
+          mostrarNoSite: z.boolean().optional(),
+          mostrarNaTv: z.boolean().optional(),
         })
       )
       .mutation(async ({ input }) => {
@@ -1566,6 +1582,47 @@ export const appRouter = router({
   clienteAuth: clienteAuthRouter,
   cliente: clienteRouter,
   xp: xpRouter,
+
+  // Xplore TV – Vitrine Digital (Seções)
+  xploreTv: router({
+    playlist: publicProcedure
+      .input(z.object({ orientacao: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getHydratedTvPlaylist(input?.orientacao);
+      }),
+    listSecoes: adminProcedure.query(async () => {
+      return await db.getAllXploreTvSecoes();
+    }),
+    updateSecao: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          ativo: z.boolean().optional(),
+          ordem: z.number().optional(),
+          transicao: z.enum(["fade", "slide"]).optional(),
+          orientacao: z.enum(["horizontal", "vertical", "ambos"]).optional(),
+          duracaoSecaoMs: z.number().min(5000).optional(),
+          duracaoItemMs: z.number().min(1000).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateXploreTvSecao(id, data);
+        return { success: true };
+      }),
+    toggleSecao: adminProcedure
+      .input(z.object({ id: z.number(), ativo: z.boolean() }))
+      .mutation(async ({ input }) => {
+        await db.updateXploreTvSecao(input.id, { ativo: input.ativo });
+        return { success: true };
+      }),
+    reorderSecoes: adminProcedure
+      .input(z.object({ orderedIds: z.array(z.number()) }))
+      .mutation(async ({ input }) => {
+        await db.reorderXploreTvSecoes(input.orderedIds);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

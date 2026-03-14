@@ -38,6 +38,8 @@ interface OfertaVooPremium {
     rota_ida?: string;
     rota_volta?: string;
     ativo: boolean;
+    mostrarNoSite?: boolean;
+    mostrarNaTv?: boolean;
     datas_fixas?: DataFixa[];
     datas_flexiveis?: DataFlexivel[];
 }
@@ -87,6 +89,8 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
         classe_voo: 'PE',
         preco: 0,
         ativo: true,
+        mostrarNoSite: true,
+        mostrarNaTv: false,
         datas_fixas: [],
         datas_flexiveis: [],
     });
@@ -151,6 +155,8 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                 classe_voo: 'PE',
                 preco: 0,
                 ativo: true,
+                mostrarNoSite: true,
+                mostrarNaTv: false,
                 datas_fixas: [],
                 datas_flexiveis: [],
             });
@@ -635,6 +641,30 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         <Label htmlFor="ativo" className="text-sm font-medium cursor-pointer">
                             Oferta ativa (visível no site)
                         </Label>
+                    </div>
+
+                    {/* Visibilidade Site / TV */}
+                    <div className="flex gap-6">
+                        <div className="flex items-center space-x-3 p-4 bg-muted/30 rounded-lg flex-1">
+                            <Switch
+                                id="mostrarNoSite"
+                                checked={formData.mostrarNoSite ?? true}
+                                onCheckedChange={(checked) => setFormData({ ...formData, mostrarNoSite: checked })}
+                            />
+                            <Label htmlFor="mostrarNoSite" className="text-sm font-medium cursor-pointer">
+                                Mostrar no Site
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-3 p-4 bg-muted/30 rounded-lg flex-1">
+                            <Switch
+                                id="mostrarNaTv"
+                                checked={formData.mostrarNaTv ?? false}
+                                onCheckedChange={(checked) => setFormData({ ...formData, mostrarNaTv: checked })}
+                            />
+                            <Label htmlFor="mostrarNaTv" className="text-sm font-medium cursor-pointer">
+                                Mostrar na TV
+                            </Label>
+                        </div>
                     </div>
 
                     {/* Botões */}

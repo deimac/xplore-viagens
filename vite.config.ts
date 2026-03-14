@@ -52,6 +52,9 @@ export default defineConfig(({ mode }) => {
         '/api': 'http://localhost:3000',
         '/trpc': 'http://localhost:3000',
         '/uploads': 'http://localhost:3000',
+        '/xplore-tv': 'http://localhost:3000',
+        '/politica-de-privacidade': 'http://localhost:3000',
+        '/exclusao-de-dados': 'http://localhost:3000',
       },
       allowedHosts: [
         "localhost",

@@ -96,6 +96,9 @@ async function startServer() {
   app.get("/exclusao-de-dados", (_req, res) => {
     res.sendFile(path.join(staticDir, "delete-data.html"));
   });
+  app.get("/xplore-tv", (_req, res) => {
+    res.sendFile(path.join(staticDir, "xplore-tv.html"));
+  });
 
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

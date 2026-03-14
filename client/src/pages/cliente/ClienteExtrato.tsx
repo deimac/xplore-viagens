@@ -352,7 +352,12 @@ function FilterTag({ label, onRemove }: { label: string; onRemove: () => void })
     return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent/10 text-accent text-[11px] font-medium">
             {label}
-            <button onClick={onRemove} className="hover:text-accent/70 transition-colors">
+            <button
+                onClick={onRemove}
+                className="hover:text-accent/70 transition-colors"
+                aria-label={`Remover filtro ${label}`}
+                title={`Remover filtro ${label}`}
+            >
                 <X className="w-3 h-3" />
             </button>
         </span>

@@ -31,10 +31,10 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
     total_beds: totalBeds,
   };
 }
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
-import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes } from "../drizzle/schema";
+import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
@@ -415,6 +415,8 @@ function parseViagensRows(rows: any[]) {
     valorParcela: row.valorParcela != null ? parseFloat(row.valorParcela) : null,
     temJuros: !!row.temJuros,
     ativo: !!row.ativo,
+    mostrarNoSite: !!row.mostrarNoSite,
+    mostrarNaTv: !!row.mostrarNaTv,
     categorias: row.categorias_raw
       ? row.categorias_raw.split('|').map((s: string) => {
         const [id, ...rest] = s.split(':');
@@ -444,6 +446,7 @@ export async function getAllViagens() {
       LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
       LEFT JOIN destaques d ON vd.destaqueId = d.id
       WHERE v.ativo = TRUE
+        AND v.mostrarNoSite = TRUE
         AND v.dataIda IS NOT NULL
         AND DATE(v.dataIda) > CURDATE()
       GROUP BY v.id
@@ -491,8 +494,8 @@ export async function getViagemById(id: number) {
 
 export async function createViagem(data: any) {
   const result = await executeQuery<any>(`
-    INSERT INTO viagens (titulo, slug, descricao, tipo_viagem, origem, dataIda, dataVolta, quantidadePessoas, valorTotal, quantidadeParcelas, valorParcela, temJuros, xp, hospedagem, tipo_quarto, imagemUrl, data_expiracao, ativo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO viagens (titulo, slug, descricao, tipo_viagem, origem, dataIda, dataVolta, quantidadePessoas, valorTotal, quantidadeParcelas, valorParcela, temJuros, xp, hospedagem, tipo_quarto, imagemUrl, data_expiracao, ativo, mostrarNoSite, mostrarNaTv)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.titulo,
     data.slug,
@@ -512,6 +515,8 @@ export async function createViagem(data: any) {
     data.imagemUrl,
     normalizeDateColumn(data.dataExpiracao || data.data_expiracao || null),
     data.ativo !== false ? 1 : 0,
+    data.mostrarNoSite !== false ? 1 : 0,
+    data.mostrarNaTv ? 1 : 0,
   ]);
   const viagemId = result.insertId;
 
@@ -552,6 +557,8 @@ export async function updateViagem(id: number, data: any) {
     tipo_quarto: data.tipoQuarto,
     imagemUrl: data.imagemUrl,
     ativo: data.ativo !== undefined ? (data.ativo ? 1 : 0) : undefined,
+    mostrarNoSite: data.mostrarNoSite !== undefined ? (data.mostrarNoSite ? 1 : 0) : undefined,
+    mostrarNaTv: data.mostrarNaTv !== undefined ? (data.mostrarNaTv ? 1 : 0) : undefined,
   };
 
   for (const [key, value] of Object.entries(fieldMap)) {
@@ -677,7 +684,9 @@ export async function getAllHeroSlides() {
 export async function getActiveHeroSlides() {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.select().from(heroSlides).where(eq(heroSlides.isActive, 1)).orderBy(heroSlides.order);
+  const result = await db.select().from(heroSlides)
+    .where(and(eq(heroSlides.isActive, 1), eq(heroSlides.mostrarNoSite, 1)))
+    .orderBy(heroSlides.order);
   return result;
 }
 
@@ -878,9 +887,9 @@ export async function createProperty(data: any) {
       name, slug, description_short, description_full, property_type_id,
       address_street, address_number, address_complement, neighborhood,
       city, state_region, country, postal_code,
-      latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2, active, is_featured
+      latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2, active, is_featured, mostrarNoSite, mostrarNaTv
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.name,
     data.slug,
@@ -904,7 +913,9 @@ export async function createProperty(data: any) {
     data.xp ?? 0,
     data.area_m2 || null,
     data.active ?? true,
-    data.is_featured ?? false
+    data.is_featured ?? false,
+    data.mostrarNoSite !== false,
+    data.mostrarNaTv ?? false
   ]);
 
   return { id: result.insertId, ...data, latitude, longitude };
@@ -974,6 +985,8 @@ export async function updateProperty(id: number, data: any) {
   if (data.area_m2 !== undefined) { fields.push('area_m2 = ?'); values.push(data.area_m2); }
   if (data.active !== undefined) { fields.push('active = ?'); values.push(data.active); }
   if (data.is_featured !== undefined) { fields.push('is_featured = ?'); values.push(data.is_featured); }
+  if (data.mostrarNoSite !== undefined) { fields.push('mostrarNoSite = ?'); values.push(data.mostrarNoSite); }
+  if (data.mostrarNaTv !== undefined) { fields.push('mostrarNaTv = ?'); values.push(data.mostrarNaTv); }
 
   if (fields.length === 0) return { success: true };
 
@@ -1034,7 +1047,7 @@ export async function getActiveProperties() {
         NULL
       ) as primary_image
     FROM properties p
-    WHERE p.active = true
+    WHERE p.active = true AND p.mostrarNoSite = true
     ORDER BY p.city, p.name
   `);
 
@@ -1053,7 +1066,7 @@ export async function getFeaturedProperties() {
           FROM property_images pi2 
           WHERE pi2.property_id = p.id
         )
-      WHERE p.active = true AND p.is_featured = true
+      WHERE p.active = true AND p.mostrarNoSite = true AND p.is_featured = true
       ORDER BY RAND()
       LIMIT 6
     `);
@@ -1078,7 +1091,7 @@ export async function getFeaturedProperties() {
               FROM property_images pi2 
               WHERE pi2.property_id = p.id
             )
-          WHERE p.active = true
+          WHERE p.active = true AND p.mostrarNoSite = true
           ${notInClause}
           ORDER BY RAND()
           LIMIT ${safeLimit}
@@ -1095,7 +1108,7 @@ export async function getFeaturedProperties() {
               FROM property_images pi2 
               WHERE pi2.property_id = p.id
             )
-          WHERE p.active = true
+          WHERE p.active = true AND p.mostrarNoSite = true
           ORDER BY RAND()
           LIMIT ${safeLimit}
         `;
@@ -1120,7 +1133,7 @@ export async function getFeaturedProperties() {
               FROM property_images pi2
               WHERE pi2.property_id = p.id
             )
-          WHERE p.active = true
+          WHERE p.active = true AND p.mostrarNoSite = true
           ORDER BY p.updated_at DESC, p.created_at DESC
           LIMIT 6
         `
@@ -3217,5 +3230,190 @@ export async function reconciliarVencimentoXpCliente(clienteId: number): Promise
       });
     });
   });
+}
+
+// ─────────────────────────────────────────────────────────────
+// XPLORE TV – Vitrine Digital
+// ─────────────────────────────────────────────────────────────
+
+export async function getAllXploreTvItens() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(xploreTvItens).orderBy(xploreTvItens.ordem);
+}
+
+export async function getActiveXploreTvItens(orientacao?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const all = await db.select().from(xploreTvItens)
+    .where(eq(xploreTvItens.ativo, true))
+    .orderBy(xploreTvItens.ordem);
+  if (!orientacao || orientacao === 'ambos') return all;
+  return all.filter(item => item.orientacao === orientacao || item.orientacao === 'ambos');
+}
+
+export async function getXploreTvItemById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(xploreTvItens).where(eq(xploreTvItens.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createXploreTvItem(data: InsertXploreTvItem) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(xploreTvItens).values(data);
+  return { insertId: Number(result[0].insertId) };
+}
+
+export async function updateXploreTvItem(id: number, data: Partial<InsertXploreTvItem>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(xploreTvItens).set(data).where(eq(xploreTvItens.id, id));
+}
+
+export async function deleteXploreTvItem(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(xploreTvItens).where(eq(xploreTvItens.id, id));
+}
+
+export async function reorderXploreTvItens(orderedIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (let i = 0; i < orderedIds.length; i++) {
+    await db.update(xploreTvItens).set({ ordem: i }).where(eq(xploreTvItens.id, orderedIds[i]));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// XPLORE TV – Seções da Vitrine Digital
+// ─────────────────────────────────────────────────────────────
+
+export async function getAllXploreTvSecoes() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(xploreTvSecoes).orderBy(xploreTvSecoes.ordem);
+}
+
+export async function getActiveXploreTvSecoes(orientacao?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const all = await db.select().from(xploreTvSecoes)
+    .where(eq(xploreTvSecoes.ativo, true))
+    .orderBy(xploreTvSecoes.ordem);
+  if (!orientacao || orientacao === 'ambos') return all;
+  return all.filter(s => s.orientacao === orientacao || s.orientacao === 'ambos');
+}
+
+export async function updateXploreTvSecao(id: number, data: Partial<{ ativo: boolean; ordem: number; transicao: string; orientacao: string; duracaoSecaoMs: number; duracaoItemMs: number }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(xploreTvSecoes).set(data as any).where(eq(xploreTvSecoes.id, id));
+}
+
+export async function reorderXploreTvSecoes(orderedIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (let i = 0; i < orderedIds.length; i++) {
+    await db.update(xploreTvSecoes).set({ ordem: i }).where(eq(xploreTvSecoes.id, orderedIds[i]));
+  }
+}
+
+/**
+ * Hidrata a playlist do Xplore TV: retorna seções ativas com os itens reais das fontes.
+ */
+export async function getHydratedTvPlaylist(orientacao?: string) {
+  const secoes = await getActiveXploreTvSecoes(orientacao);
+  const result: any[] = [];
+
+  for (const secao of secoes) {
+    let itens: any[] = [];
+
+    switch (secao.codigo) {
+      case 'slider': {
+        const db = await getDb();
+        if (db) {
+          itens = await db.select().from(heroSlides)
+            .where(and(eq(heroSlides.isActive, 1), eq(heroSlides.mostrarNaTv, 1)))
+            .orderBy(heroSlides.order);
+        }
+        break;
+      }
+      case 'viagens': {
+        const rows = await executeQuery<any[]>(`
+          SELECT v.id, v.titulo, v.imagemUrl, v.origem, v.valorTotal, v.quantidadeParcelas, v.valorParcela, v.temJuros, v.dataIda, v.dataVolta
+          FROM viagens v
+          WHERE v.ativo = TRUE AND v.mostrarNaTv = TRUE
+            AND v.dataIda IS NOT NULL AND DATE(v.dataIda) > CURDATE()
+          ORDER BY v.criadoEm DESC
+        `);
+        itens = rows.map((r: any) => ({
+          ...r,
+          valorTotal: r.valorTotal != null ? parseFloat(r.valorTotal) : 0,
+          valorParcela: r.valorParcela != null ? parseFloat(r.valorParcela) : null,
+        }));
+        break;
+      }
+      case 'hospedagens': {
+        const rows = await executeQuery<any[]>(`
+          SELECT p.id, p.name, p.city, p.country, p.xp, p.max_guests, p.bedrooms,
+            (SELECT pi.image_url FROM property_images pi WHERE pi.property_id = p.id ORDER BY pi.sort_order ASC LIMIT 1) as primary_image
+          FROM properties p
+          WHERE p.active = true AND p.mostrarNaTv = true
+          ORDER BY p.created_at DESC
+        `);
+        itens = rows;
+        break;
+      }
+      case 'voos_premium': {
+        const db = await getDb();
+        if (db) {
+          const ofertas = await db.select().from(ofertasVoo)
+            .where(and(eq(ofertasVoo.ativo, 1), eq(ofertasVoo.mostrarNaTv, 1)))
+            .orderBy(desc(ofertasVoo.id));
+          itens = ofertas.map(o => ({
+            id: o.id,
+            titulo: o.titulo,
+            origemPrincipal: o.origemPrincipal,
+            destinosResumo: o.destinosResumo,
+            companhiaAerea: o.companhiaAerea,
+            classe: o.classe,
+            preco: o.preco,
+            parcelas: o.parcelas,
+          }));
+        }
+        break;
+      }
+      case 'contato_empresa': {
+        const settings = await getCompanySettings();
+        if (settings) {
+          itens = [{
+            companyName: settings.companyName,
+            phone: settings.phone,
+            whatsapp: settings.whatsapp,
+            email: settings.email,
+            instagram: settings.instagram,
+          }];
+        }
+        break;
+      }
+    }
+
+    if (itens.length > 0) {
+      result.push({
+        id: secao.id,
+        codigo: secao.codigo,
+        nome: secao.nome,
+        transicao: secao.transicao,
+        orientacao: secao.orientacao,
+        duracaoSecaoMs: secao.duracaoSecaoMs,
+        duracaoItemMs: secao.duracaoItemMs,
+        itens,
+      });
+    }
+  }
+
+  return result;
 }
 

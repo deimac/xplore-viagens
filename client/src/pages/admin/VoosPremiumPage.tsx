@@ -30,6 +30,8 @@ interface OfertaVooPremium {
     rota_ida?: string;
     rota_volta?: string;
     ativo: boolean;
+    mostrarNoSite?: boolean;
+    mostrarNaTv?: boolean;
     datas_fixas?: Array<{ datas_opcao: string }>;
     datas_flexiveis?: Array<{ tipo: 'IDA' | 'VOLTA'; mes_referencia: string; dias_disponiveis: string }>;
 }
@@ -128,7 +130,7 @@ export default function VoosPremiumPage() {
 
     const handleSave = (oferta: OfertaVooPremium) => {
         if (oferta.id) {
-            updateMutation.mutate(oferta);
+            updateMutation.mutate({ ...oferta, id: oferta.id });
         } else {
             createMutation.mutate(oferta);
         }

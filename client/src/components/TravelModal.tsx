@@ -33,6 +33,8 @@ export interface ViagemFormData {
   imagemUrl: string;
   dataExpiracao: string | null;
   ativo: boolean;
+  mostrarNoSite: boolean;
+  mostrarNaTv: boolean;
   categoriaIds: number[];
   destaqueIds: number[];
   /** Image file for upload (base64) */
@@ -133,6 +135,8 @@ const emptyForm: ViagemFormData = {
   imagemUrl: "",
   dataExpiracao: null,
   ativo: true,
+  mostrarNoSite: true,
+  mostrarNaTv: false,
   categoriaIds: [],
   destaqueIds: [],
   imagem: null,
@@ -179,6 +183,8 @@ export default function TravelModal({
         tipoQuarto: initialData.tipoQuarto || initialData.tipo_quarto || null,
         imagemUrl: initialData.imagemUrl || "",
         ativo: initialData.ativo !== undefined ? !!initialData.ativo : true,
+        mostrarNoSite: initialData.mostrarNoSite !== undefined ? !!initialData.mostrarNoSite : true,
+        mostrarNaTv: !!initialData.mostrarNaTv,
         categoriaIds: initialData.categorias?.map((c: any) => c.id) || [],
         destaqueIds: initialData.destaques?.map((d: any) => d.id) || [],
         imagem: null,
@@ -479,6 +485,26 @@ export default function TravelModal({
                 onCheckedChange={(v) => set("ativo", v)}
               />
               <Label htmlFor="ativo" className="text-accent text-sm cursor-pointer">Ativo</Label>
+            </div>
+          </div>
+
+          {/* === Publicação: Site / TV === */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="mostrarNoSite"
+                checked={formData.mostrarNoSite}
+                onCheckedChange={(v) => set("mostrarNoSite", v)}
+              />
+              <Label htmlFor="mostrarNoSite" className="text-accent text-sm cursor-pointer">Mostrar no Site</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="mostrarNaTv"
+                checked={formData.mostrarNaTv}
+                onCheckedChange={(v) => set("mostrarNaTv", v)}
+              />
+              <Label htmlFor="mostrarNaTv" className="text-accent text-sm cursor-pointer">Mostrar na TV</Label>
             </div>
           </div>
 

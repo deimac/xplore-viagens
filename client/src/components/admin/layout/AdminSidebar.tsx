@@ -16,6 +16,7 @@ import {
     Sparkles,
     List,
     Coins,
+    Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,11 @@ const menuItems: MenuItem[] = [
         icon: Coins,
         label: "XP Club",
         href: "/admin/xp-club",
+    },
+    {
+        icon: Monitor,
+        label: "Xplore TV",
+        href: "/admin/xplore-tv",
     },
 ];
 

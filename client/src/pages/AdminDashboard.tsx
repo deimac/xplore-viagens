@@ -41,6 +41,8 @@ interface HeroSlide {
   subtitle?: string | null;
   order: number;
   isActive: number;
+  mostrarNoSite: number;
+  mostrarNaTv: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -304,6 +306,8 @@ export default function AdminDashboard() {
         subtitle: slide.subtitle || undefined,
         order: slide.order,
         isActive: slide.isActive,
+        mostrarNoSite: slide.mostrarNoSite,
+        mostrarNaTv: slide.mostrarNaTv,
       });
     } else {
       createSlideMutation.mutate({
@@ -312,6 +316,8 @@ export default function AdminDashboard() {
         subtitle: slide.subtitle || undefined,
         order: slide.order,
         isActive: slide.isActive,
+        mostrarNoSite: slide.mostrarNoSite,
+        mostrarNaTv: slide.mostrarNaTv,
       });
     }
   };

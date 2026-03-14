@@ -17,6 +17,8 @@ export interface OfertaVooPremiumInput {
     rota_ida?: string;
     rota_volta?: string;
     ativo: boolean;
+    mostrarNoSite?: boolean;
+    mostrarNaTv?: boolean;
 }
 
 export interface DataFixaInput {
@@ -65,6 +67,8 @@ export async function listarOfertasPremium(): Promise<OfertaComDatas[]> {
             rota_ida: oferta.rotaIda || undefined,
             rota_volta: oferta.rotaVolta || undefined,
             ativo: oferta.ativo === 1,
+            mostrarNoSite: (oferta as any).mostrarNoSite === 1,
+            mostrarNaTv: (oferta as any).mostrarNaTv === 1,
         };
 
         // Buscar datas associadas
@@ -126,6 +130,8 @@ export async function buscarOfertaPorId(id: number): Promise<OfertaComDatas | nu
         rota_ida: oferta.rotaIda || undefined,
         rota_volta: oferta.rotaVolta || undefined,
         ativo: oferta.ativo === 1,
+        mostrarNoSite: (oferta as any).mostrarNoSite === 1,
+        mostrarNaTv: (oferta as any).mostrarNaTv === 1,
     };
 
     // Buscar datas associadas
@@ -205,6 +211,8 @@ export async function criarOfertaPremium(
         rotaIda: input.rota_ida || null,
         rotaVolta: input.rota_volta || null,
         ativo: input.ativo ? 1 : 0,
+        mostrarNoSite: input.mostrarNoSite !== false ? 1 : 0,
+        mostrarNaTv: input.mostrarNaTv ? 1 : 0,
     });
 
     const ofertaId = result.insertId;
@@ -284,6 +292,8 @@ export async function atualizarOfertaPremium(
             rotaIda: input.rota_ida || null,
             rotaVolta: input.rota_volta || null,
             ativo: input.ativo ? 1 : 0,
+            mostrarNoSite: input.mostrarNoSite !== false ? 1 : 0,
+            mostrarNaTv: input.mostrarNaTv ? 1 : 0,
         })
         .where(eq(ofertasVoo.id, id));
 
