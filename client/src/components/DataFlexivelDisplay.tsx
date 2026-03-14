@@ -108,10 +108,10 @@ export function DataFlexivelDisplay({
                     {ida.datasPorMes.map((grupo, idx) => (
                         <div
                             key={`ida-${idx}`}
-                            className="inline-flex items-center gap-1.5 bg-slate-50 rounded-md px-1.5 py-1 border-2 border-slate-200"
+                            className="inline-flex flex-wrap items-start gap-1.5 bg-slate-50 rounded-md px-1.5 py-1 border-2 border-slate-200 max-w-full"
                         >
                             <span className="text-[10px] font-bold text-slate-500 uppercase">{grupo.mes}:</span>
-                            <div className="flex gap-0.5">
+                            <div className="flex flex-wrap gap-0.5 max-w-full">
                                 {grupo.dias.map((dia, diaIdx) => {
                                     const dataAtual = { mes: grupo.mes, dia };
                                     const isSelected = isSameDate(selectedIda, dataAtual);
@@ -153,10 +153,10 @@ export function DataFlexivelDisplay({
                     {volta.datasPorMes.map((grupo, idx) => (
                         <div
                             key={`volta-${idx}`}
-                            className="inline-flex items-center gap-1.5 bg-slate-50 rounded-md px-1.5 py-1 border-2 border-slate-200"
+                            className="inline-flex flex-wrap items-start gap-1.5 bg-slate-50 rounded-md px-1.5 py-1 border-2 border-slate-200 max-w-full"
                         >
                             <span className="text-[10px] font-bold text-slate-500 uppercase">{grupo.mes}:</span>
-                            <div className="flex gap-0.5">
+                            <div className="flex flex-wrap gap-0.5 max-w-full">
                                 {grupo.dias.map((dia, diaIdx) => {
                                     const dataAtual = { mes: grupo.mes, dia };
                                     const isSelected = isSameDate(selectedVolta, dataAtual);
