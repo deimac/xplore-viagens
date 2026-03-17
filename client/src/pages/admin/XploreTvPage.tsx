@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
     Select,
     SelectContent,
@@ -59,9 +60,12 @@ interface TvSecao {
     orientacao: "horizontal" | "vertical" | "ambos";
     duracaoSecaoMs: number;
     duracaoItemMs: number;
+    fullScreen: boolean;
     criadoEm?: string | null;
     atualizadoEm?: string | null;
 }
+
+const FULL_SCREEN_ONLY = ['slider', 'contato_empresa', 'voos_premium'];
 
 export default function XploreTvPage() {
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -111,6 +115,7 @@ export default function XploreTvPage() {
             orientacao: secao.orientacao,
             duracaoSecaoMs: secao.duracaoSecaoMs,
             duracaoItemMs: secao.duracaoItemMs,
+            fullScreen: secao.fullScreen,
         });
     };
 
@@ -284,6 +289,8 @@ export default function XploreTvPage() {
                                                     <span>{Math.round(secao.duracaoSecaoMs / 1000)}s seção</span>
                                                     <span>&bull;</span>
                                                     <span>{Math.round(secao.duracaoItemMs / 1000)}s/item</span>
+                                                    <span>&bull;</span>
+                                                    <span>{secao.fullScreen ? 'Tela cheia' : 'Carrossel'}</span>
                                                 </div>
                                             </div>
 
@@ -357,6 +364,23 @@ export default function XploreTvPage() {
                                                             min={1}
                                                             value={Math.round((editForm.duracaoItemMs || 8000) / 1000)}
                                                             onChange={(e) => setEditForm({ ...editForm, duracaoItemMs: Math.max(1000, Number(e.target.value) * 1000) })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="mt-4">
+                                                    <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
+                                                        <div>
+                                                            <Label className="text-sm font-medium text-gray-700">Modo tela cheia</Label>
+                                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                                {FULL_SCREEN_ONLY.includes(secao.codigo)
+                                                                    ? 'Esta seção exibe apenas em tela cheia'
+                                                                    : 'Desativado: exibe carrossel composto. Ativado: exibe cada item em tela cheia.'}
+                                                            </p>
+                                                        </div>
+                                                        <Switch
+                                                            checked={editForm.fullScreen ?? false}
+                                                            onCheckedChange={(v) => setEditForm({ ...editForm, fullScreen: v })}
+                                                            disabled={FULL_SCREEN_ONLY.includes(secao.codigo)}
                                                         />
                                                     </div>
                                                 </div>

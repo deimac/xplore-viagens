@@ -3306,7 +3306,7 @@ export async function getActiveXploreTvSecoes(orientacao?: string) {
   return all.filter(s => s.orientacao === orientacao || s.orientacao === 'ambos');
 }
 
-export async function updateXploreTvSecao(id: number, data: Partial<{ ativo: boolean; ordem: number; transicao: string; orientacao: string; duracaoSecaoMs: number; duracaoItemMs: number }>) {
+export async function updateXploreTvSecao(id: number, data: Partial<{ ativo: boolean; ordem: number; transicao: string; orientacao: string; duracaoSecaoMs: number; duracaoItemMs: number; fullScreen: boolean }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(xploreTvSecoes).set(data as any).where(eq(xploreTvSecoes.id, id));
@@ -3409,6 +3409,7 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
         orientacao: secao.orientacao,
         duracaoSecaoMs: secao.duracaoSecaoMs,
         duracaoItemMs: secao.duracaoItemMs,
+        fullScreen: secao.fullScreen,
         itens,
       });
     }

@@ -1603,6 +1603,7 @@ export const appRouter = router({
           orientacao: z.enum(["horizontal", "vertical", "ambos"]).optional(),
           duracaoSecaoMs: z.number().min(5000).optional(),
           duracaoItemMs: z.number().min(1000).optional(),
+          fullScreen: z.boolean().optional(),
         })
       )
       .mutation(async ({ input }) => {

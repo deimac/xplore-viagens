@@ -436,6 +436,222 @@
         body.vertical .slide-contato .contact-items {
             gap: 3vh;
         }
+
+        /* ── Composed Section (non-full-screen carousel) ── */
+        .composed-section {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .composed-section.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        .composed-section .section-title {
+            padding: 4vh 5vw 1vh;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 1vw;
+        }
+
+        .composed-section .section-accent {
+            display: inline-block;
+            width: 5px;
+            height: 1.2em;
+            background: #22d3ee;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* Carousel container */
+        .composed-carousel {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Carousel card base */
+        .carousel-card {
+            position: absolute;
+            width: 52vw;
+            height: 62vh;
+            border-radius: 1.2rem;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: transform, opacity;
+        }
+
+        .carousel-card.card-active {
+            z-index: 10;
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }
+
+        .carousel-card.card-prev {
+            z-index: 5;
+            opacity: 0.45;
+            transform: translateX(-40vw) scale(0.78);
+        }
+
+        .carousel-card.card-next {
+            z-index: 5;
+            opacity: 0.45;
+            transform: translateX(40vw) scale(0.78);
+        }
+
+        .carousel-card.card-hidden {
+            z-index: 0;
+            opacity: 0;
+            transform: scale(0.6);
+            pointer-events: none;
+        }
+
+        .carousel-card .card-image {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .carousel-card .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 65%);
+        }
+
+        .carousel-card .card-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 3vh 2.5vw;
+            color: #fff;
+            z-index: 2;
+        }
+
+        .carousel-card .card-content h3 {
+            font-size: clamp(1.3rem, 2.5vw, 2.2rem);
+            font-weight: 700;
+            line-height: 1.2;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            margin-bottom: 0.5vh;
+        }
+
+        .carousel-card .card-price {
+            font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+            font-weight: 800;
+            color: #22d3ee;
+        }
+
+        .carousel-card .card-parcelas {
+            font-size: clamp(0.8rem, 1.2vw, 1rem);
+            opacity: 0.8;
+            margin-top: 0.3vh;
+        }
+
+        .carousel-card .card-dates {
+            font-size: clamp(0.7rem, 1vw, 0.9rem);
+            opacity: 0.7;
+            margin-top: 0.3vh;
+        }
+
+        .carousel-card .card-badge {
+            position: absolute;
+            top: 2vh;
+            left: 2vw;
+            background: rgba(14, 116, 144, 0.85);
+            color: #fff;
+            padding: 0.5vh 1.5vw;
+            border-radius: 0.4rem;
+            font-size: clamp(0.7rem, 1vw, 0.9rem);
+            font-weight: 600;
+            z-index: 3;
+            backdrop-filter: blur(4px);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .carousel-card .card-location {
+            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            opacity: 0.85;
+        }
+
+        .carousel-card .card-details {
+            display: flex;
+            gap: 1.5vw;
+            font-size: clamp(0.7rem, 1vw, 0.9rem);
+            opacity: 0.7;
+            margin-top: 0.5vh;
+        }
+
+        .carousel-card .card-xp {
+            position: absolute;
+            top: 2vh;
+            right: 2vw;
+            display: flex;
+            align-items: center;
+            gap: 0.3vw;
+            background: rgba(14, 116, 144, 0.85);
+            color: #fff;
+            padding: 0.5vh 1.5vw;
+            border-radius: 0.4rem;
+            font-size: clamp(0.8rem, 1.3vw, 1.1rem);
+            font-weight: 700;
+            z-index: 3;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Dots indicator */
+        .composed-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.6vw;
+            padding: 2vh 0 3vh;
+        }
+
+        .composed-dots .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            transition: all 0.35s ease;
+        }
+
+        .composed-dots .dot.dot-active {
+            background: #22d3ee;
+            width: 28px;
+            border-radius: 4px;
+        }
+
+        /* Vertical adjustments for composed */
+        body.vertical .carousel-card {
+            width: 70vw;
+            height: 50vh;
+        }
+
+        body.vertical .carousel-card.card-prev {
+            transform: translateX(-52vw) scale(0.78);
+        }
+
+        body.vertical .carousel-card.card-next {
+            transform: translateX(52vw) scale(0.78);
+        }
     </style>
 </head>
 
@@ -459,11 +675,13 @@
             var POLL_INTERVAL = 60000;
             var RETRY_DELAY = 10000;
             var API_URL = '/api/trpc/xploreTv.playlist';
+            var FORCE_FULL_SCREEN = ['slider', 'contato_empresa', 'voos_premium'];
 
             // State
-            var slides = []; // flattened slides [{type, data, durationMs}]
+            var entries = [];
             var currentIndex = -1;
             var timer = null;
+            var innerTimer = null;
             var player = document.getElementById('player');
             var loadingEl = document.getElementById('loading');
             var errorEl = document.getElementById('error');
@@ -497,19 +715,39 @@
                 return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
             }
 
-            // Flatten sections into individual slides
-            function flattenSections(sections) {
+            // ── Process sections into playlist entries ──
+            function processPlaylist(sections) {
                 var result = [];
                 for (var s = 0; s < sections.length; s++) {
                     var secao = sections[s];
                     var itens = secao.itens || [];
+                    if (itens.length === 0) continue;
 
-                    for (var i = 0; i < itens.length; i++) {
+                    var isFullScreen = secao.fullScreen || FORCE_FULL_SCREEN.indexOf(secao.codigo) >= 0;
+
+                    if (isFullScreen) {
+                        for (var i = 0; i < itens.length; i++) {
+                            result.push({
+                                type: 'fullscreen',
+                                slide: {
+                                    type: secao.codigo,
+                                    data: itens[i],
+                                    durationMs: secao.duracaoItemMs || 8000,
+                                    transicao: secao.transicao || 'fade',
+                                }
+                            });
+                        }
+                    } else {
                         result.push({
-                            type: secao.codigo,
-                            data: itens[i],
-                            durationMs: secao.duracaoItemMs || 8000,
-                            transicao: secao.transicao || 'fade',
+                            type: 'composed',
+                            section: {
+                                codigo: secao.codigo,
+                                nome: secao.nome,
+                                itens: itens,
+                                duracaoSecaoMs: secao.duracaoSecaoMs || 30000,
+                                duracaoItemMs: secao.duracaoItemMs || 8000,
+                                transicao: secao.transicao || 'fade',
+                            }
                         });
                     }
                 }
@@ -528,14 +766,14 @@
                             var response = JSON.parse(xhr.responseText);
                             var raw = response.result && response.result.data;
                             var sections = Array.isArray(raw) ? raw : (raw && raw.json ? raw.json : []);
-                            var flat = flattenSections(sections);
-                            if (flat.length > 0) {
-                                slides = flat;
+                            var processed = processPlaylist(sections);
+                            if (processed.length > 0) {
+                                entries = processed;
                                 hideLoading();
                                 hideError();
                                 if (currentIndex === -1) {
                                     currentIndex = 0;
-                                    renderSlide(0);
+                                    renderEntry(0);
                                     startLoop();
                                 }
                             } else {
@@ -560,7 +798,7 @@
 
             function showError() {
                 hideLoading();
-                if (slides.length === 0) {
+                if (entries.length === 0) {
                     errorEl.classList.add('visible');
                     setTimeout(fetchPlaylist, RETRY_DELAY);
                 }
@@ -574,7 +812,7 @@
                 return s.replace(/['"\\()]/g, '\\$&');
             }
 
-            // Build slide HTML based on section type
+            // ── Full-screen slide builder (existing section types) ──
             function buildSlide(slide) {
                 var el = document.createElement('div');
                 el.className = 'slide';
@@ -582,7 +820,6 @@
 
                 switch (slide.type) {
                     case 'slider': {
-                        // Hero slides: imageUrl, title, subtitle
                         el.classList.add('slide-imagem');
                         el.style.backgroundImage = 'url(' + escapeCSS(d.imageUrl || '') + ')';
                         var overlay = document.createElement('div');
@@ -607,29 +844,24 @@
                     }
 
                     case 'viagens': {
-                        // Viagens: titulo, imagemUrl, origem, valorTotal, quantidadeParcelas, valorParcela, dataIda, dataVolta
                         el.classList.add('slide-viagem');
                         el.style.backgroundImage = 'url(' + escapeCSS(d.imagemUrl || '') + ')';
                         var ovl = document.createElement('div');
                         ovl.className = 'overlay';
                         el.appendChild(ovl);
-
                         if (d.origem) {
                             var badge = document.createElement('div');
                             badge.className = 'viagem-badge';
                             badge.textContent = 'Saindo de ' + d.origem;
                             el.appendChild(badge);
                         }
-
                         var info = document.createElement('div');
                         info.className = 'viagem-info';
                         var h2v = document.createElement('h2');
                         h2v.textContent = d.titulo || '';
                         info.appendChild(h2v);
-
                         var detalhes = document.createElement('div');
                         detalhes.className = 'viagem-detalhes';
-
                         if (d.valorTotal) {
                             var preco = document.createElement('span');
                             preco.className = 'viagem-preco';
@@ -643,11 +875,10 @@
                             detalhes.appendChild(parcelas);
                         }
                         info.appendChild(detalhes);
-
                         if (d.dataIda) {
                             var datas = document.createElement('div');
                             datas.className = 'viagem-datas';
-                            datas.textContent = formatDate(d.dataIda) + (d.dataVolta ? ' → ' + formatDate(d.dataVolta) : '');
+                            datas.textContent = formatDate(d.dataIda) + (d.dataVolta ? ' \u2192 ' + formatDate(d.dataVolta) : '');
                             info.appendChild(datas);
                         }
                         el.appendChild(info);
@@ -655,33 +886,28 @@
                     }
 
                     case 'hospedagens': {
-                        // Hospedagens: name, city, country, xp, max_guests, bedrooms, primary_image
                         el.classList.add('slide-hospedagem');
                         el.style.backgroundImage = 'url(' + escapeCSS(d.primary_image || '') + ')';
                         var ovlH = document.createElement('div');
                         ovlH.className = 'overlay';
                         el.appendChild(ovlH);
-
                         if (d.xp) {
                             var badgeH = document.createElement('div');
                             badgeH.className = 'hosp-badge';
                             badgeH.textContent = d.xp + ' XP';
                             el.appendChild(badgeH);
                         }
-
                         var infoH = document.createElement('div');
                         infoH.className = 'hosp-info';
                         var h2h = document.createElement('h2');
                         h2h.textContent = d.name || '';
                         infoH.appendChild(h2h);
-
                         if (d.city || d.country) {
                             var local = document.createElement('div');
                             local.className = 'hosp-local';
                             local.textContent = [d.city, d.country].filter(Boolean).join(', ');
                             infoH.appendChild(local);
                         }
-
                         var detH = document.createElement('div');
                         detH.className = 'hosp-detalhes';
                         if (d.bedrooms) {
@@ -691,7 +917,7 @@
                         }
                         if (d.max_guests) {
                             var guestSpan = document.createElement('span');
-                            guestSpan.textContent = 'até ' + d.max_guests + ' hóspede' + (d.max_guests > 1 ? 's' : '');
+                            guestSpan.textContent = 'at\u00e9 ' + d.max_guests + ' h\u00f3spede' + (d.max_guests > 1 ? 's' : '');
                             detH.appendChild(guestSpan);
                         }
                         if (detH.children.length > 0) infoH.appendChild(detH);
@@ -700,25 +926,20 @@
                     }
 
                     case 'voos_premium': {
-                        // Voos: titulo, origemPrincipal, destinosResumo, companhiaAerea, classe, preco, parcelas
                         el.classList.add('slide-voo');
-
                         var vooBadge = document.createElement('div');
                         vooBadge.className = 'voo-badge';
-                        vooBadge.textContent = (d.companhiaAerea || 'Voo') + (d.classe ? ' • ' + d.classe : '');
+                        vooBadge.textContent = (d.companhiaAerea || 'Voo') + (d.classe ? ' \u2022 ' + d.classe : '');
                         el.appendChild(vooBadge);
-
                         var h2f = document.createElement('h2');
                         h2f.textContent = d.titulo || 'Oferta de Voo';
                         el.appendChild(h2f);
-
                         if (d.origemPrincipal || d.destinosResumo) {
                             var rota = document.createElement('div');
                             rota.className = 'voo-rota';
-                            rota.textContent = (d.origemPrincipal || '') + (d.destinosResumo ? ' → ' + d.destinosResumo : '');
+                            rota.textContent = (d.origemPrincipal || '') + (d.destinosResumo ? ' \u2192 ' + d.destinosResumo : '');
                             el.appendChild(rota);
                         }
-
                         if (d.preco) {
                             var precoF = document.createElement('div');
                             precoF.className = 'voo-preco';
@@ -741,7 +962,6 @@
                     }
 
                     case 'contato_empresa': {
-                        // Contact: companyName, phone, whatsapp, email, instagram
                         el.classList.add('slide-contato');
                         var h2c = document.createElement('h2');
                         h2c.textContent = d.companyName || 'Entre em Contato';
@@ -783,56 +1003,286 @@
                 return el;
             }
 
-            // Render a specific slide
-            function renderSlide(index) {
-                if (slides.length === 0) return;
-                var item = slides[index];
-                if (!item) return;
+            // ── Composed section card builders ──
 
-                var existingSlides = player.querySelectorAll('.slide');
-                for (var i = 0; i < existingSlides.length; i++) {
-                    existingSlides[i].classList.remove('active');
-                    var videos = existingSlides[i].querySelectorAll('video');
+            function buildViagemCard(d) {
+                var card = document.createElement('div');
+                card.className = 'carousel-card';
+
+                var img = document.createElement('div');
+                img.className = 'card-image';
+                img.style.backgroundImage = 'url(' + escapeCSS(d.imagemUrl || '') + ')';
+                card.appendChild(img);
+
+                var overlay = document.createElement('div');
+                overlay.className = 'card-overlay';
+                card.appendChild(overlay);
+
+                if (d.origem) {
+                    var badge = document.createElement('div');
+                    badge.className = 'card-badge';
+                    badge.textContent = 'Saindo de ' + d.origem;
+                    card.appendChild(badge);
+                }
+
+                var content = document.createElement('div');
+                content.className = 'card-content';
+
+                var h3 = document.createElement('h3');
+                h3.textContent = d.titulo || '';
+                content.appendChild(h3);
+
+                if (d.valorTotal) {
+                    var price = document.createElement('div');
+                    price.className = 'card-price';
+                    price.textContent = formatBRL(d.valorTotal);
+                    content.appendChild(price);
+                }
+                if (d.quantidadeParcelas && d.valorParcela) {
+                    var parcelas = document.createElement('div');
+                    parcelas.className = 'card-parcelas';
+                    parcelas.textContent = d.quantidadeParcelas + 'x de ' + formatBRL(d.valorParcela) + (d.temJuros ? '' : ' s/ juros');
+                    content.appendChild(parcelas);
+                }
+                if (d.dataIda) {
+                    var dates = document.createElement('div');
+                    dates.className = 'card-dates';
+                    dates.textContent = formatDate(d.dataIda) + (d.dataVolta ? ' \u2192 ' + formatDate(d.dataVolta) : '');
+                    content.appendChild(dates);
+                }
+
+                card.appendChild(content);
+                return card;
+            }
+
+            function buildHospedagemCard(d) {
+                var card = document.createElement('div');
+                card.className = 'carousel-card';
+
+                var img = document.createElement('div');
+                img.className = 'card-image';
+                img.style.backgroundImage = 'url(' + escapeCSS(d.primary_image || '') + ')';
+                card.appendChild(img);
+
+                var overlay = document.createElement('div');
+                overlay.className = 'card-overlay';
+                card.appendChild(overlay);
+
+                if (d.xp) {
+                    var badge = document.createElement('div');
+                    badge.className = 'card-xp';
+                    badge.textContent = d.xp + ' XP';
+                    card.appendChild(badge);
+                }
+
+                var content = document.createElement('div');
+                content.className = 'card-content';
+
+                var h3 = document.createElement('h3');
+                h3.textContent = d.name || '';
+                content.appendChild(h3);
+
+                if (d.city || d.country) {
+                    var loc = document.createElement('div');
+                    loc.className = 'card-location';
+                    loc.textContent = [d.city, d.country].filter(Boolean).join(', ');
+                    content.appendChild(loc);
+                }
+
+                var details = document.createElement('div');
+                details.className = 'card-details';
+                if (d.bedrooms) {
+                    var bed = document.createElement('span');
+                    bed.textContent = d.bedrooms + ' quarto' + (d.bedrooms > 1 ? 's' : '');
+                    details.appendChild(bed);
+                }
+                if (d.max_guests) {
+                    var guests = document.createElement('span');
+                    guests.textContent = 'at\u00e9 ' + d.max_guests + ' h\u00f3spede' + (d.max_guests > 1 ? 's' : '');
+                    details.appendChild(guests);
+                }
+                if (details.children.length > 0) content.appendChild(details);
+
+                card.appendChild(content);
+                return card;
+            }
+
+            // ── Build composed section (carousel of cards) ──
+
+            function buildComposedSection(section) {
+                var container = document.createElement('div');
+                container.className = 'composed-section';
+
+                // Title
+                var titleEl = document.createElement('div');
+                titleEl.className = 'section-title';
+                var accent = document.createElement('span');
+                accent.className = 'section-accent';
+                titleEl.appendChild(accent);
+                titleEl.appendChild(document.createTextNode(section.nome));
+                container.appendChild(titleEl);
+
+                // Carousel
+                var carousel = document.createElement('div');
+                carousel.className = 'composed-carousel';
+
+                for (var i = 0; i < section.itens.length; i++) {
+                    var card;
+                    if (section.codigo === 'viagens') {
+                        card = buildViagemCard(section.itens[i]);
+                    } else if (section.codigo === 'hospedagens') {
+                        card = buildHospedagemCard(section.itens[i]);
+                    } else {
+                        card = document.createElement('div');
+                        card.className = 'carousel-card';
+                        card.style.background = '#1e293b';
+                        card.style.display = 'flex';
+                        card.style.alignItems = 'center';
+                        card.style.justifyContent = 'center';
+                        card.style.color = '#fff';
+                        card.style.fontSize = '1.5rem';
+                        card.textContent = section.itens[i].titulo || section.itens[i].name || '';
+                    }
+                    card.dataset.cardIndex = String(i);
+                    carousel.appendChild(card);
+                }
+
+                container.appendChild(carousel);
+
+                // Dots
+                if (section.itens.length > 1) {
+                    var dots = document.createElement('div');
+                    dots.className = 'composed-dots';
+                    for (var d = 0; d < section.itens.length; d++) {
+                        var dot = document.createElement('div');
+                        dot.className = 'dot' + (d === 0 ? ' dot-active' : '');
+                        dots.appendChild(dot);
+                    }
+                    container.appendChild(dots);
+                }
+
+                // Set initial card positions
+                updateCarouselPositions(carousel, container.querySelector('.composed-dots'), 0, section.itens.length);
+
+                return container;
+            }
+
+            // ── Inner carousel management ──
+
+            function clearInnerCarousel() {
+                if (innerTimer) {
+                    clearInterval(innerTimer);
+                    innerTimer = null;
+                }
+            }
+
+            function startInnerCarousel(container, section) {
+                var activeIdx = 0;
+                var carousel = container.querySelector('.composed-carousel');
+                var dots = container.querySelector('.composed-dots');
+                var count = section.itens.length;
+
+                if (count <= 1) return;
+
+                innerTimer = setInterval(function () {
+                    activeIdx = (activeIdx + 1) % count;
+                    updateCarouselPositions(carousel, dots, activeIdx, count);
+                }, section.duracaoItemMs);
+            }
+
+            function updateCarouselPositions(carousel, dots, activeIdx, count) {
+                var cards = carousel.querySelectorAll('.carousel-card');
+                for (var i = 0; i < cards.length; i++) {
+                    cards[i].classList.remove('card-active', 'card-prev', 'card-next', 'card-hidden');
+                    if (i === activeIdx) {
+                        cards[i].classList.add('card-active');
+                    } else if (i === (activeIdx - 1 + count) % count) {
+                        cards[i].classList.add('card-prev');
+                    } else if (i === (activeIdx + 1) % count) {
+                        cards[i].classList.add('card-next');
+                    } else {
+                        cards[i].classList.add('card-hidden');
+                    }
+                }
+                if (dots) {
+                    var dotEls = dots.querySelectorAll('.dot');
+                    for (var d = 0; d < dotEls.length; d++) {
+                        dotEls[d].classList.toggle('dot-active', d === activeIdx);
+                    }
+                }
+            }
+
+            // ── Render an entry (full-screen slide or composed section) ──
+
+            function renderEntry(index) {
+                if (entries.length === 0) return;
+                var entry = entries[index];
+                if (!entry) return;
+
+                // Stop any inner carousel from previous composed section
+                clearInnerCarousel();
+
+                // Fade out existing elements
+                var existing = player.querySelectorAll('.slide, .composed-section');
+                for (var i = 0; i < existing.length; i++) {
+                    existing[i].classList.remove('active');
+                    var videos = existing[i].querySelectorAll('video');
                     for (var v = 0; v < videos.length; v++) {
                         try { videos[v].pause(); } catch (e) { }
                     }
                 }
 
-                var slideEl = buildSlide(item);
-                player.appendChild(slideEl);
+                var el;
+                if (entry.type === 'composed') {
+                    el = buildComposedSection(entry.section);
+                } else {
+                    el = buildSlide(entry.slide);
+                }
+
+                player.appendChild(el);
 
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
-                        slideEl.classList.add('active');
-                        var vids = slideEl.querySelectorAll('video');
+                        el.classList.add('active');
+                        if (entry.type === 'composed') {
+                            startInnerCarousel(el, entry.section);
+                        }
+                        var vids = el.querySelectorAll('video');
                         for (var vi = 0; vi < vids.length; vi++) {
                             try { vids[vi].play(); } catch (e) { }
                         }
                     });
                 });
 
+                // Remove old elements after transition
                 setTimeout(function () {
-                    var old = player.querySelectorAll('.slide:not(.active)');
+                    var old = player.querySelectorAll('.slide:not(.active), .composed-section:not(.active)');
                     for (var r = 0; r < old.length; r++) {
                         try { player.removeChild(old[r]); } catch (e) { }
                     }
                 }, 1200);
             }
 
-            // Loop control
+            // ── Loop control ──
+
             function startLoop() {
                 if (timer) clearTimeout(timer);
                 scheduleNext();
             }
 
             function scheduleNext() {
-                if (slides.length === 0) return;
-                var currentSlide = slides[currentIndex];
-                var duration = (currentSlide && currentSlide.durationMs) || 8000;
+                if (entries.length === 0) return;
+                var entry = entries[currentIndex];
+                var duration;
+                if (entry && entry.type === 'composed') {
+                    duration = entry.section.duracaoSecaoMs;
+                } else {
+                    duration = (entry && entry.slide && entry.slide.durationMs) || 8000;
+                }
 
                 timer = setTimeout(function () {
-                    currentIndex = (currentIndex + 1) % slides.length;
-                    renderSlide(currentIndex);
+                    currentIndex = (currentIndex + 1) % entries.length;
+                    renderEntry(currentIndex);
                     scheduleNext();
                 }, duration);
             }

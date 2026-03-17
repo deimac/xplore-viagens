@@ -663,6 +663,7 @@ export const xploreTvSecoes = mysqlTable("xplore_tv_secoes", {
   orientacao: mysqlEnum("orientacao", ["horizontal", "vertical", "ambos"]).notNull().default("ambos"),
   duracaoSecaoMs: int("duracao_secao_ms").notNull().default(30000),
   duracaoItemMs: int("duracao_item_ms").notNull().default(8000),
+  fullScreen: boolean("full_screen").notNull().default(false),
   criadoEm: timestamp("criado_em").defaultNow(),
   atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
 });
