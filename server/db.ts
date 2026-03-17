@@ -3344,7 +3344,7 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
         const rows = await executeQuery<any[]>(`
           SELECT v.id, v.titulo, v.imagemUrl, v.origem, v.valorTotal, v.quantidadeParcelas,
             v.valorParcela, v.temJuros, v.dataIda, v.dataVolta, v.quantidadePessoas,
-            v.tipoViagem, v.hospedagem, v.tipoQuarto, v.xp,
+            v.tipo_viagem as tipoViagem, v.hospedagem, v.tipo_quarto as tipoQuarto, v.xp,
             GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
           FROM viagens v
           LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
