@@ -437,13 +437,13 @@
             gap: 3vh;
         }
 
-        /* ── Composed Section (non-full-screen carousel) ── */
+        /* ── Composed Section (non-full-screen — matches site layout) ── */
         .composed-section {
             position: absolute;
             inset: 0;
             display: flex;
             flex-direction: column;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            background: #f7f7f7;
             opacity: 0;
             transition: opacity 0.8s ease;
             z-index: 1;
@@ -455,24 +455,27 @@
             z-index: 2;
         }
 
-        .composed-section .section-title {
-            padding: 4vh 5vw 1vh;
-            font-size: clamp(1.5rem, 3vw, 2.5rem);
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.02em;
-            display: flex;
-            align-items: center;
-            gap: 1vw;
+        /* Section title — replicates SectionTitle component */
+        .composed-header {
+            padding: 4vh 5vw 2vh;
+            text-align: center;
         }
 
-        .composed-section .section-accent {
-            display: inline-block;
-            width: 5px;
-            height: 1.2em;
-            background: #22d3ee;
-            border-radius: 3px;
-            flex-shrink: 0;
+        .composed-header h2 {
+            font-size: clamp(1.8rem, 3.5vw, 3rem);
+            font-weight: 300;
+            color: #0e7490;
+            line-height: 1.2;
+        }
+
+        .composed-header h2 strong {
+            font-weight: 600;
+        }
+
+        .composed-header p {
+            font-size: clamp(0.8rem, 1.4vw, 1.1rem);
+            color: #64748b;
+            margin-top: 0.8vh;
         }
 
         /* Carousel container */
@@ -483,18 +486,22 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            padding: 0 2vw;
         }
 
-        /* Carousel card base */
+        /* ── Card base (site-matching white card with image top + info bottom) ── */
         .carousel-card {
             position: absolute;
-            width: 52vw;
-            height: 62vh;
-            border-radius: 1.2rem;
+            width: 26vw;
+            height: 68vh;
+            border-radius: 1rem;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            background: #fff;
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.25), 0 10px 20px -5px rgba(0, 0, 0, 0.12);
             transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform, opacity;
+            display: flex;
+            flex-direction: column;
         }
 
         .carousel-card.card-active {
@@ -505,152 +512,250 @@
 
         .carousel-card.card-prev {
             z-index: 5;
-            opacity: 0.45;
-            transform: translateX(-40vw) scale(0.78);
+            opacity: 0.6;
+            transform: translateX(-60%) scale(0.75);
         }
 
         .carousel-card.card-next {
             z-index: 5;
-            opacity: 0.45;
-            transform: translateX(40vw) scale(0.78);
+            opacity: 0.6;
+            transform: translateX(60%) scale(0.75);
+        }
+
+        .carousel-card.card-far-prev {
+            z-index: 3;
+            opacity: 0.3;
+            transform: translateX(-100%) scale(0.6);
+        }
+
+        .carousel-card.card-far-next {
+            z-index: 3;
+            opacity: 0.3;
+            transform: translateX(100%) scale(0.6);
         }
 
         .carousel-card.card-hidden {
             z-index: 0;
             opacity: 0;
-            transform: scale(0.6);
+            transform: scale(0.5);
             pointer-events: none;
         }
 
-        .carousel-card .card-image {
-            position: absolute;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
+        /* ── Card image section (top ~54%) ── */
+        .card-image-section {
+            position: relative;
+            height: 54%;
+            overflow: hidden;
         }
 
-        .carousel-card .card-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 65%);
+        .card-image-section img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .carousel-card .card-content {
+        .card-image-section .card-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.25) 40%, transparent 60%);
+        }
+
+        /* Badges on image — amber badges (destaques) */
+        .card-badges {
+            position: absolute;
+            top: 1.5vh;
+            left: 1.2vw;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4vw;
+            z-index: 2;
+        }
+
+        .card-badge-destaque {
+            background: #f59e0b;
+            color: #fff;
+            padding: 0.4vh 0.8vw;
+            border-radius: 999px;
+            font-size: clamp(0.55rem, 0.9vw, 0.8rem);
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Premium badge for hospedagens */
+        .card-badge-premium {
+            background: #f59e0b;
+            color: #fff;
+            padding: 0.4vh 0.8vw;
+            border-radius: 0.3rem;
+            font-size: clamp(0.55rem, 0.9vw, 0.8rem);
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Caption overlaid at bottom of image (title + origin) */
+        .card-image-caption {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 3vh 2.5vw;
+            padding: 1.5vh 1.4vw 1.2vh;
             color: #fff;
             z-index: 2;
         }
 
-        .carousel-card .card-content h3 {
-            font-size: clamp(1.3rem, 2.5vw, 2.2rem);
+        .card-image-caption h3 {
+            font-size: clamp(0.9rem, 1.6vw, 1.4rem);
             font-weight: 700;
             line-height: 1.2;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-            margin-bottom: 0.5vh;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
-        .carousel-card .card-price {
-            font-size: clamp(1.2rem, 2.2vw, 1.8rem);
-            font-weight: 800;
-            color: #22d3ee;
-        }
-
-        .carousel-card .card-parcelas {
-            font-size: clamp(0.8rem, 1.2vw, 1rem);
-            opacity: 0.8;
-            margin-top: 0.3vh;
-        }
-
-        .carousel-card .card-dates {
-            font-size: clamp(0.7rem, 1vw, 0.9rem);
-            opacity: 0.7;
-            margin-top: 0.3vh;
-        }
-
-        .carousel-card .card-badge {
-            position: absolute;
-            top: 2vh;
-            left: 2vw;
-            background: rgba(14, 116, 144, 0.85);
-            color: #fff;
-            padding: 0.5vh 1.5vw;
-            border-radius: 0.4rem;
-            font-size: clamp(0.7rem, 1vw, 0.9rem);
-            font-weight: 600;
-            z-index: 3;
-            backdrop-filter: blur(4px);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .carousel-card .card-location {
-            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
-            opacity: 0.85;
-        }
-
-        .carousel-card .card-details {
-            display: flex;
-            gap: 1.5vw;
-            font-size: clamp(0.7rem, 1vw, 0.9rem);
-            opacity: 0.7;
-            margin-top: 0.5vh;
-        }
-
-        .carousel-card .card-xp {
-            position: absolute;
-            top: 2vh;
-            right: 2vw;
+        .card-image-caption .card-origin {
             display: flex;
             align-items: center;
-            gap: 0.3vw;
-            background: rgba(14, 116, 144, 0.85);
-            color: #fff;
-            padding: 0.5vh 1.5vw;
-            border-radius: 0.4rem;
-            font-size: clamp(0.8rem, 1.3vw, 1.1rem);
+            gap: 0.4vw;
+            font-size: clamp(0.65rem, 1.1vw, 0.95rem);
+            opacity: 0.9;
+            margin-top: 0.3vh;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-image-caption .card-origin svg {
+            width: clamp(0.75rem, 1.1vw, 1rem);
+            height: clamp(0.75rem, 1.1vw, 1rem);
+            flex-shrink: 0;
+        }
+
+        /* ── Card info section (bottom ~46%) ── */
+        .card-info-section {
+            height: 46%;
+            padding: 1.8vh 1.4vw 1.5vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Detail rows (icon + text) matching site grid */
+        .card-detail-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6vh;
+        }
+
+        .card-detail-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5vw;
+            font-size: clamp(0.6rem, 1.1vw, 0.95rem);
+            color: #64748b;
+            min-width: 0;
+        }
+
+        .card-detail-row svg {
+            width: clamp(0.8rem, 1.1vw, 1rem);
+            height: clamp(0.8rem, 1.1vw, 1rem);
+            color: #0e7490;
+            flex-shrink: 0;
+        }
+
+        .card-detail-row span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-divider {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 1.2vh 0;
+        }
+
+        /* Price section at bottom */
+        .card-price-section {
+            margin-top: auto;
+        }
+
+        .card-price-label {
+            font-size: clamp(0.55rem, 0.9vw, 0.8rem);
+            color: #64748b;
+        }
+
+        .card-price-value {
+            font-size: clamp(0.95rem, 1.6vw, 1.4rem);
             font-weight: 700;
-            z-index: 3;
-            backdrop-filter: blur(4px);
+            color: #0e7490;
+            line-height: 1.3;
+        }
+
+        .card-installments {
+            font-size: clamp(0.5rem, 0.85vw, 0.75rem);
+            color: #64748b;
+        }
+
+        .card-xp-info {
+            font-size: clamp(0.5rem, 0.85vw, 0.75rem);
+            font-weight: 600;
+            color: #d97706;
+            margin-top: 0.2vh;
+        }
+
+        /* ── Hospedagem card info (simpler: name, location, guests) ── */
+        .card-hosp-content {
+            height: 46%;
+            padding: 1.5vh 1.4vw;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8vh;
+        }
+
+        .card-hosp-content h3 {
+            font-size: clamp(0.85rem, 1.4vw, 1.25rem);
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         /* Dots indicator */
         .composed-dots {
             display: flex;
             justify-content: center;
-            gap: 0.6vw;
-            padding: 2vh 0 3vh;
+            gap: 0.5vw;
+            padding: 1.5vh 0 2.5vh;
         }
 
         .composed-dots .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.25);
+            background: #cbd5e1;
             transition: all 0.35s ease;
         }
 
         .composed-dots .dot.dot-active {
-            background: #22d3ee;
+            background: #0e7490;
             width: 28px;
             border-radius: 4px;
         }
 
         /* Vertical adjustments for composed */
         body.vertical .carousel-card {
-            width: 70vw;
-            height: 50vh;
+            width: 55vw;
+            height: 55vh;
         }
 
         body.vertical .carousel-card.card-prev {
-            transform: translateX(-52vw) scale(0.78);
+            transform: translateX(-52vw) scale(0.75);
         }
 
         body.vertical .carousel-card.card-next {
-            transform: translateX(52vw) scale(0.78);
+            transform: translateX(52vw) scale(0.75);
         }
     </style>
 </head>
@@ -693,13 +798,19 @@
                 document.body.classList.add('vertical');
             }
 
-            // SVG icons for contact section
+            // SVG icons for contact section + card detail rows
             var icons = {
                 phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
                 email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
                 whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
                 instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>',
-                location: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>'
+                location: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+                mapPin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+                moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+                users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+                bed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>',
+                building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>',
+                star: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
             };
 
             // Format currency BRL
@@ -714,6 +825,21 @@
                 var d = new Date(dateStr);
                 return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
             }
+
+            // Calculate nights between two dates
+            function calculateNights(dataIda, dataVolta) {
+                if (!dataIda || !dataVolta) return 0;
+                var ida = new Date(dataIda);
+                var volta = new Date(dataVolta);
+                var diff = volta.getTime() - ida.getTime();
+                return Math.max(0, Math.round(diff / (1000 * 60 * 60 * 24)));
+            }
+
+            // Section title/subtitle map (matches site SectionTitle)
+            var SECTION_TITLES = {
+                viagens: { title: 'Ofertas de ', highlight: 'Destinos', subtitle: 'Pacotes exclusivos para você viver experiências inesquecíveis' },
+                hospedagens: { title: 'Lugares Únicos para ', highlight: 'Se Hospedar', subtitle: 'Descubra acomodações especiais em destinos incríveis' }
+            };
 
             // ── Process sections into playlist entries ──
             function processPlaylist(sections) {
@@ -1003,55 +1129,171 @@
                 return el;
             }
 
-            // ── Composed section card builders ──
+            // ── Composed section card builders (match site layout) ──
+
+            function createSvgIcon(key) {
+                var span = document.createElement('span');
+                span.style.display = 'inline-flex';
+                span.style.flexShrink = '0';
+                span.innerHTML = icons[key] || '';
+                return span;
+            }
 
             function buildViagemCard(d) {
                 var card = document.createElement('div');
                 card.className = 'carousel-card';
 
-                var img = document.createElement('div');
-                img.className = 'card-image';
-                img.style.backgroundImage = 'url(' + escapeCSS(d.imagemUrl || '') + ')';
-                card.appendChild(img);
+                // ── Image section (top 54%) ──
+                var imgSection = document.createElement('div');
+                imgSection.className = 'card-image-section';
 
-                var overlay = document.createElement('div');
-                overlay.className = 'card-overlay';
-                card.appendChild(overlay);
+                var img = document.createElement('img');
+                img.src = d.imagemUrl || '';
+                img.alt = d.titulo || '';
+                img.loading = 'lazy';
+                imgSection.appendChild(img);
 
-                if (d.origem) {
-                    var badge = document.createElement('div');
-                    badge.className = 'card-badge';
-                    badge.textContent = 'Saindo de ' + d.origem;
-                    card.appendChild(badge);
+                var gradient = document.createElement('div');
+                gradient.className = 'card-gradient';
+                imgSection.appendChild(gradient);
+
+                // Destaques badges (amber, top-left — like site)
+                if (d.destaques && d.destaques.length > 0) {
+                    var badges = document.createElement('div');
+                    badges.className = 'card-badges';
+                    for (var b = 0; b < d.destaques.length; b++) {
+                        var badge = document.createElement('span');
+                        badge.className = 'card-badge-destaque';
+                        badge.textContent = d.destaques[b].nome;
+                        badges.appendChild(badge);
+                    }
+                    imgSection.appendChild(badges);
                 }
 
-                var content = document.createElement('div');
-                content.className = 'card-content';
+                // Caption at bottom of image (title + origin)
+                var caption = document.createElement('div');
+                caption.className = 'card-image-caption';
 
                 var h3 = document.createElement('h3');
                 h3.textContent = d.titulo || '';
-                content.appendChild(h3);
+                caption.appendChild(h3);
+
+                if (d.tipoViagem === 'hospedagem') {
+                    if (d.hospedagem) {
+                        var hospEl = document.createElement('div');
+                        hospEl.className = 'card-origin';
+                        var bIcon = createSvgIcon('building');
+                        hospEl.appendChild(bIcon);
+                        var bText = document.createElement('span');
+                        bText.textContent = d.hospedagem;
+                        hospEl.appendChild(bText);
+                        caption.appendChild(hospEl);
+                    }
+                } else if (d.origem) {
+                    var originEl = document.createElement('div');
+                    originEl.className = 'card-origin';
+                    var mIcon = createSvgIcon('mapPin');
+                    originEl.appendChild(mIcon);
+                    var mText = document.createElement('span');
+                    mText.textContent = 'Saindo de ' + d.origem;
+                    originEl.appendChild(mText);
+                    caption.appendChild(originEl);
+                }
+
+                imgSection.appendChild(caption);
+                card.appendChild(imgSection);
+
+                // ── Info section (bottom 46%) ──
+                var info = document.createElement('div');
+                info.className = 'card-info-section';
+
+                var rows = document.createElement('div');
+                rows.className = 'card-detail-rows';
+
+                // Row 1: Nights + dates
+                var nights = calculateNights(d.dataIda, d.dataVolta);
+                var row1 = document.createElement('div');
+                row1.className = 'card-detail-row';
+                row1.appendChild(createSvgIcon('moon'));
+                var span1 = document.createElement('span');
+                if (nights > 0) {
+                    span1.textContent = nights + (nights === 1 ? ' noite' : ' noites') + ' \u00B7 ' + formatDate(d.dataIda) + ' a ' + formatDate(d.dataVolta);
+                } else {
+                    span1.textContent = formatDate(d.dataIda) || 'Data não informada';
+                }
+                row1.appendChild(span1);
+                rows.appendChild(row1);
+
+                // Row 2: Travelers
+                var row2 = document.createElement('div');
+                row2.className = 'card-detail-row';
+                row2.appendChild(createSvgIcon('users'));
+                var span2 = document.createElement('span');
+                var qty = d.quantidadePessoas || 1;
+                if (d.tipoViagem === 'hospedagem') {
+                    span2.textContent = qty + (qty === 1 ? ' hóspede' : ' hóspedes');
+                } else {
+                    span2.textContent = qty + (qty === 1 ? ' viajante' : ' viajantes');
+                }
+                row2.appendChild(span2);
+                rows.appendChild(row2);
+
+                // Row 3: Room type or accommodation
+                var row3 = document.createElement('div');
+                row3.className = 'card-detail-row';
+                if (d.tipoViagem === 'hospedagem') {
+                    row3.appendChild(createSvgIcon('bed'));
+                    var span3 = document.createElement('span');
+                    span3.textContent = d.tipoQuarto || 'Tipo de quarto não informado';
+                    row3.appendChild(span3);
+                } else {
+                    row3.appendChild(createSvgIcon('building'));
+                    var span3b = document.createElement('span');
+                    span3b.textContent = d.hospedagem || 'Hospedagem não informada';
+                    row3.appendChild(span3b);
+                }
+                rows.appendChild(row3);
+
+                info.appendChild(rows);
+
+                // Divider
+                var divider = document.createElement('hr');
+                divider.className = 'card-divider';
+                info.appendChild(divider);
+
+                // Price section
+                var priceSection = document.createElement('div');
+                priceSection.className = 'card-price-section';
 
                 if (d.valorTotal) {
+                    var label = document.createElement('div');
+                    label.className = 'card-price-label';
+                    label.textContent = 'A partir de';
+                    priceSection.appendChild(label);
+
                     var price = document.createElement('div');
-                    price.className = 'card-price';
+                    price.className = 'card-price-value';
                     price.textContent = formatBRL(d.valorTotal);
-                    content.appendChild(price);
-                }
-                if (d.quantidadeParcelas && d.valorParcela) {
-                    var parcelas = document.createElement('div');
-                    parcelas.className = 'card-parcelas';
-                    parcelas.textContent = d.quantidadeParcelas + 'x de ' + formatBRL(d.valorParcela) + (d.temJuros ? '' : ' s/ juros');
-                    content.appendChild(parcelas);
-                }
-                if (d.dataIda) {
-                    var dates = document.createElement('div');
-                    dates.className = 'card-dates';
-                    dates.textContent = formatDate(d.dataIda) + (d.dataVolta ? ' \u2192 ' + formatDate(d.dataVolta) : '');
-                    content.appendChild(dates);
+                    priceSection.appendChild(price);
                 }
 
-                card.appendChild(content);
+                if (d.quantidadeParcelas && d.valorParcela) {
+                    var parcelas = document.createElement('div');
+                    parcelas.className = 'card-installments';
+                    parcelas.textContent = 'ou ' + d.quantidadeParcelas + 'x de ' + formatBRL(d.valorParcela) + (d.temJuros ? ' com juros' : ' sem juros');
+                    priceSection.appendChild(parcelas);
+                }
+
+                if (d.xp && d.xp > 0) {
+                    var xpEl = document.createElement('div');
+                    xpEl.className = 'card-xp-info';
+                    xpEl.textContent = 'Acumule +' + Number(d.xp).toLocaleString('pt-BR') + ' pontos XP';
+                    priceSection.appendChild(xpEl);
+                }
+
+                info.appendChild(priceSection);
+                card.appendChild(info);
+
                 return card;
             }
 
@@ -1059,49 +1301,58 @@
                 var card = document.createElement('div');
                 card.className = 'carousel-card';
 
-                var img = document.createElement('div');
-                img.className = 'card-image';
-                img.style.backgroundImage = 'url(' + escapeCSS(d.primary_image || '') + ')';
-                card.appendChild(img);
+                // ── Image section (top 54%) ──
+                var imgSection = document.createElement('div');
+                imgSection.className = 'card-image-section';
 
-                var overlay = document.createElement('div');
-                overlay.className = 'card-overlay';
-                card.appendChild(overlay);
+                var img = document.createElement('img');
+                img.src = d.primary_image || '';
+                img.alt = d.name || '';
+                img.loading = 'lazy';
+                imgSection.appendChild(img);
 
-                if (d.xp) {
-                    var badge = document.createElement('div');
-                    badge.className = 'card-xp';
-                    badge.textContent = d.xp + ' XP';
-                    card.appendChild(badge);
+                // XP badge (top-right, like site's premium badge position)
+                if (d.xp && d.xp > 0) {
+                    var badges = document.createElement('div');
+                    badges.className = 'card-badges';
+                    var xpBadge = document.createElement('span');
+                    xpBadge.className = 'card-badge-destaque';
+                    xpBadge.textContent = '+' + Number(d.xp).toLocaleString('pt-BR') + ' XP';
+                    badges.appendChild(xpBadge);
+                    imgSection.appendChild(badges);
                 }
 
+                card.appendChild(imgSection);
+
+                // ── Content section (bottom 46%) ──
                 var content = document.createElement('div');
-                content.className = 'card-content';
+                content.className = 'card-hosp-content';
 
                 var h3 = document.createElement('h3');
                 h3.textContent = d.name || '';
                 content.appendChild(h3);
 
+                // Location row with MapPin icon
                 if (d.city || d.country) {
-                    var loc = document.createElement('div');
-                    loc.className = 'card-location';
-                    loc.textContent = [d.city, d.country].filter(Boolean).join(', ');
-                    content.appendChild(loc);
+                    var locRow = document.createElement('div');
+                    locRow.className = 'card-detail-row';
+                    locRow.appendChild(createSvgIcon('mapPin'));
+                    var locText = document.createElement('span');
+                    locText.textContent = [d.city, d.country].filter(Boolean).join(', ');
+                    locRow.appendChild(locText);
+                    content.appendChild(locRow);
                 }
 
-                var details = document.createElement('div');
-                details.className = 'card-details';
-                if (d.bedrooms) {
-                    var bed = document.createElement('span');
-                    bed.textContent = d.bedrooms + ' quarto' + (d.bedrooms > 1 ? 's' : '');
-                    details.appendChild(bed);
-                }
+                // Guests row with Users icon
                 if (d.max_guests) {
-                    var guests = document.createElement('span');
-                    guests.textContent = 'at\u00e9 ' + d.max_guests + ' h\u00f3spede' + (d.max_guests > 1 ? 's' : '');
-                    details.appendChild(guests);
+                    var guestRow = document.createElement('div');
+                    guestRow.className = 'card-detail-row';
+                    guestRow.appendChild(createSvgIcon('users'));
+                    var guestText = document.createElement('span');
+                    guestText.textContent = 'Até ' + d.max_guests + ' hóspede' + (d.max_guests > 1 ? 's' : '');
+                    guestRow.appendChild(guestText);
+                    content.appendChild(guestRow);
                 }
-                if (details.children.length > 0) content.appendChild(details);
 
                 card.appendChild(content);
                 return card;
@@ -1113,14 +1364,23 @@
                 var container = document.createElement('div');
                 container.className = 'composed-section';
 
-                // Title
-                var titleEl = document.createElement('div');
-                titleEl.className = 'section-title';
-                var accent = document.createElement('span');
-                accent.className = 'section-accent';
-                titleEl.appendChild(accent);
-                titleEl.appendChild(document.createTextNode(section.nome));
-                container.appendChild(titleEl);
+                // Section title (matches site SectionTitle component)
+                var header = document.createElement('div');
+                header.className = 'composed-header';
+                var h2 = document.createElement('h2');
+                var titleData = SECTION_TITLES[section.codigo];
+                if (titleData) {
+                    h2.innerHTML = titleData.title + '<strong>' + titleData.highlight + '</strong>';
+                } else {
+                    h2.textContent = section.nome;
+                }
+                header.appendChild(h2);
+                if (titleData && titleData.subtitle) {
+                    var subtitle = document.createElement('p');
+                    subtitle.textContent = titleData.subtitle;
+                    header.appendChild(subtitle);
+                }
+                container.appendChild(header);
 
                 // Carousel
                 var carousel = document.createElement('div');
@@ -1135,11 +1395,11 @@
                     } else {
                         card = document.createElement('div');
                         card.className = 'carousel-card';
-                        card.style.background = '#1e293b';
+                        card.style.background = '#fff';
                         card.style.display = 'flex';
                         card.style.alignItems = 'center';
                         card.style.justifyContent = 'center';
-                        card.style.color = '#fff';
+                        card.style.color = '#0f172a';
                         card.style.fontSize = '1.5rem';
                         card.textContent = section.itens[i].titulo || section.itens[i].name || '';
                     }
@@ -1161,7 +1421,7 @@
                     container.appendChild(dots);
                 }
 
-                // Set initial card positions
+                // Set initial card positions (5-card layout like site)
                 updateCarouselPositions(carousel, container.querySelector('.composed-dots'), 0, section.itens.length);
 
                 return container;
@@ -1193,13 +1453,17 @@
             function updateCarouselPositions(carousel, dots, activeIdx, count) {
                 var cards = carousel.querySelectorAll('.carousel-card');
                 for (var i = 0; i < cards.length; i++) {
-                    cards[i].classList.remove('card-active', 'card-prev', 'card-next', 'card-hidden');
+                    cards[i].classList.remove('card-active', 'card-prev', 'card-next', 'card-far-prev', 'card-far-next', 'card-hidden');
                     if (i === activeIdx) {
                         cards[i].classList.add('card-active');
                     } else if (i === (activeIdx - 1 + count) % count) {
                         cards[i].classList.add('card-prev');
                     } else if (i === (activeIdx + 1) % count) {
                         cards[i].classList.add('card-next');
+                    } else if (i === (activeIdx - 2 + count) % count && count > 3) {
+                        cards[i].classList.add('card-far-prev');
+                    } else if (i === (activeIdx + 2) % count && count > 3) {
+                        cards[i].classList.add('card-far-next');
                     } else {
                         cards[i].classList.add('card-hidden');
                     }

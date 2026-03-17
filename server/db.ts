@@ -3342,16 +3342,30 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
       }
       case 'viagens': {
         const rows = await executeQuery<any[]>(`
-          SELECT v.id, v.titulo, v.imagemUrl, v.origem, v.valorTotal, v.quantidadeParcelas, v.valorParcela, v.temJuros, v.dataIda, v.dataVolta
+          SELECT v.id, v.titulo, v.imagemUrl, v.origem, v.valorTotal, v.quantidadeParcelas,
+            v.valorParcela, v.temJuros, v.dataIda, v.dataVolta, v.quantidadePessoas,
+            v.tipoViagem, v.hospedagem, v.tipoQuarto, v.xp,
+            GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
           FROM viagens v
+          LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
+          LEFT JOIN destaques d ON vd.destaqueId = d.id
           WHERE v.ativo = TRUE AND v.mostrarNaTv = TRUE
             AND v.dataIda IS NOT NULL AND DATE(v.dataIda) > CURDATE()
+          GROUP BY v.id
           ORDER BY v.criadoEm DESC
         `);
         itens = rows.map((r: any) => ({
           ...r,
           valorTotal: r.valorTotal != null ? parseFloat(r.valorTotal) : 0,
           valorParcela: r.valorParcela != null ? parseFloat(r.valorParcela) : null,
+          tipoViagem: r.tipoViagem || 'pacote',
+          destaques: r.destaques_raw
+            ? r.destaques_raw.split('|').map((s: string) => {
+              const [id, ...rest] = s.split(':');
+              return { id: parseInt(id), nome: rest.join(':') };
+            })
+            : [],
+          destaques_raw: undefined,
         }));
         break;
       }
