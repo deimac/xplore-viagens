@@ -711,21 +711,21 @@
         .card-detail-rows {
             display: flex;
             flex-direction: column;
-            gap: 1vh;
+            gap: 1.2vh;
         }
 
         .card-detail-row {
             display: flex;
             align-items: center;
             gap: 0.6vw;
-            font-size: clamp(0.8rem, 1.3vw, 1.15rem);
+            font-size: clamp(0.9rem, 1.5vw, 1.3rem);
             color: #475569;
             min-width: 0;
         }
 
         .card-detail-row svg {
-            width: clamp(1rem, 1.3vw, 1.2rem);
-            height: clamp(1rem, 1.3vw, 1.2rem);
+            width: clamp(1.1rem, 1.5vw, 1.35rem);
+            height: clamp(1.1rem, 1.5vw, 1.35rem);
             color: #0e7490;
             flex-shrink: 0;
         }
@@ -744,28 +744,29 @@
 
         /* Price section at bottom */
         .card-price-section {
-            margin-top: auto;
+            margin-top: 0;
         }
 
         .card-price-label {
-            font-size: clamp(0.7rem, 1.1vw, 1rem);
+            font-size: clamp(0.85rem, 1.3vw, 1.15rem);
             color: #64748b;
         }
 
         .card-price-value {
-            font-size: clamp(1.2rem, 2vw, 1.8rem);
+            font-size: clamp(1.6rem, 2.8vw, 2.4rem);
             font-weight: 700;
             color: #0e7490;
-            line-height: 1.3;
+            line-height: 1.2;
         }
 
         .card-installments {
-            font-size: clamp(0.65rem, 1vw, 0.9rem);
+            font-size: clamp(0.8rem, 1.2vw, 1.05rem);
             color: #64748b;
+            margin-top: 0.3vh;
         }
 
         .card-xp-info {
-            font-size: clamp(0.65rem, 1vw, 0.9rem);
+            font-size: clamp(0.8rem, 1.2vw, 1.05rem);
             font-weight: 600;
             color: #d97706;
             margin-top: 0.3vh;
@@ -774,14 +775,14 @@
         /* ── Hospedagem card info (simpler: name, location, guests) ── */
         .card-hosp-content {
             height: 46%;
-            padding: 1.5vh 1.4vw;
+            padding: 2.2vh 1.8vw 2vh;
             display: flex;
             flex-direction: column;
-            gap: 0.8vh;
+            gap: 1.2vh;
         }
 
         .card-hosp-content h3 {
-            font-size: clamp(0.85rem, 1.4vw, 1.25rem);
+            font-size: clamp(1.1rem, 2vw, 1.8rem);
             font-weight: 600;
             color: #0f172a;
             line-height: 1.3;
@@ -1504,6 +1505,19 @@
                     guestText.textContent = 'Até ' + d.max_guests + ' hóspede' + (d.max_guests > 1 ? 's' : '');
                     guestRow.appendChild(guestText);
                     content.appendChild(guestRow);
+                }
+
+                // Divider
+                var divider = document.createElement('hr');
+                divider.className = 'card-divider';
+                content.appendChild(divider);
+
+                // XP info
+                if (d.xp && d.xp > 0) {
+                    var xpEl = document.createElement('div');
+                    xpEl.className = 'card-xp-info';
+                    xpEl.textContent = 'Acumule +' + Number(d.xp).toLocaleString('pt-BR') + ' pontos XP';
+                    content.appendChild(xpEl);
                 }
 
                 card.appendChild(content);
