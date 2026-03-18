@@ -93,14 +93,14 @@ export function SectionTitle({
   return (
     <div className={cn(alignClass, "mb-12 md:mb-16", className)}>
       {/* Título Principal */}
-      <h2 className={cn("text-4xl font-light text-accent mb-2", titleClassName)}>
+      <h2 className={cn("text-4xl font-light text-muted-foreground mb-2", titleClassName)}>
         {fullTitle ? (
           // Título completo sem destaque
           fullTitle
         ) : (
           // Título com palavra em destaque
           <>
-            {title} <span className="font-semibold">{highlight}</span>
+            {title} <span className="font-semibold text-[#1A2B4C]">{highlight}</span>
           </>
         )}
       </h2>
