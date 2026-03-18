@@ -154,13 +154,40 @@
             width: auto;
             object-fit: contain;
             filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3));
-            margin-bottom: 4vh;
+            margin-bottom: 5vh;
         }
 
-        .slide-contato .empresa-info {
+        .slide-contato .empresa-columns {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            width: 80%;
+            max-width: 70vw;
+        }
+
+        .slide-contato .empresa-col-left {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            gap: 3vh;
+        }
+
+        .slide-contato .empresa-col-divider {
+            width: 2px;
+            height: 28vh;
+            background: rgba(255, 255, 255, 0.25);
+            margin: 0 4vw;
+            flex-shrink: 0;
+        }
+
+        .slide-contato .empresa-col-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             gap: 2.5vh;
         }
 
@@ -180,21 +207,6 @@
             flex-shrink: 0;
         }
 
-        .slide-contato .empresa-divider {
-            width: 25vw;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.25);
-            margin: 3vh 0;
-        }
-
-        .slide-contato .empresa-site-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2.5vh;
-            margin-top: 1vh;
-        }
-
         .slide-contato .empresa-site-label {
             display: flex;
             align-items: center;
@@ -211,8 +223,8 @@
         }
 
         .slide-contato .empresa-qr {
-            width: clamp(10rem, 18vh, 16rem);
-            height: clamp(10rem, 18vh, 16rem);
+            width: clamp(12rem, 22vh, 18rem);
+            height: clamp(12rem, 22vh, 18rem);
             background: #fff;
             border-radius: 1rem;
             padding: 0.8rem;
@@ -901,7 +913,7 @@
             var icons = {
                 phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
                 email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
-                whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+                whatsapp: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
                 instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>',
                 location: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
                 mapPin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
@@ -1196,18 +1208,23 @@
                         logoImg.className = 'empresa-logo';
                         el.appendChild(logoImg);
 
-                        // Info: telefone + instagram
-                        var infoDiv = document.createElement('div');
-                        infoDiv.className = 'empresa-info';
+                        // 2 colunas
+                        var columns = document.createElement('div');
+                        columns.className = 'empresa-columns';
 
-                        if (d.phone) {
+                        // Coluna esquerda: whatsapp + instagram
+                        var colLeft = document.createElement('div');
+                        colLeft.className = 'empresa-col-left';
+
+                        var phoneNumber = d.phone || d.whatsapp;
+                        if (phoneNumber) {
                             var phoneRow = document.createElement('div');
                             phoneRow.className = 'empresa-row';
                             phoneRow.innerHTML = icons.whatsapp;
                             var phoneText = document.createElement('span');
-                            phoneText.textContent = d.phone;
+                            phoneText.textContent = phoneNumber;
                             phoneRow.appendChild(phoneText);
-                            infoDiv.appendChild(phoneRow);
+                            colLeft.appendChild(phoneRow);
                         }
 
                         if (d.instagram) {
@@ -1218,19 +1235,19 @@
                             var igHandle = d.instagram.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/+$/, '');
                             igText.textContent = igHandle;
                             igRow.appendChild(igText);
-                            infoDiv.appendChild(igRow);
+                            colLeft.appendChild(igRow);
                         }
 
-                        el.appendChild(infoDiv);
+                        columns.appendChild(colLeft);
 
-                        // Divisor
+                        // Divisor vertical
                         var divLine = document.createElement('div');
-                        divLine.className = 'empresa-divider';
-                        el.appendChild(divLine);
+                        divLine.className = 'empresa-col-divider';
+                        columns.appendChild(divLine);
 
-                        // Seção site + QR code
-                        var siteSection = document.createElement('div');
-                        siteSection.className = 'empresa-site-section';
+                        // Coluna direita: acesse nosso site + QR code
+                        var colRight = document.createElement('div');
+                        colRight.className = 'empresa-col-right';
 
                         var siteLabel = document.createElement('div');
                         siteLabel.className = 'empresa-site-label';
@@ -1238,7 +1255,7 @@
                         var siteLabelText = document.createElement('span');
                         siteLabelText.textContent = 'Acesse nosso site';
                         siteLabel.appendChild(siteLabelText);
-                        siteSection.appendChild(siteLabel);
+                        colRight.appendChild(siteLabel);
 
                         var qrContainer = document.createElement('div');
                         qrContainer.className = 'empresa-qr';
@@ -1246,9 +1263,10 @@
                         qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://xploreviagens.com.br';
                         qrImg.alt = 'QR Code - xploreviagens.com.br';
                         qrContainer.appendChild(qrImg);
-                        siteSection.appendChild(qrContainer);
+                        colRight.appendChild(qrContainer);
 
-                        el.appendChild(siteSection);
+                        columns.appendChild(colRight);
+                        el.appendChild(columns);
                         break;
                     }
 
