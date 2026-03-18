@@ -139,40 +139,90 @@
             font-weight: 300;
         }
 
-        /* Tipo: Contato */
+        /* Tipo: Empresa */
         .slide-contato {
-            background: linear-gradient(135deg, #0c4a6e 0%, #164e63 50%, #0e7490 100%);
+            background: linear-gradient(160deg, #1a2b4c 0%, #1e3a5f 40%, #1a2b4c 100%);
             flex-direction: column;
-            gap: 3vh;
-            padding: 5vh 5vw;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: 4vh 5vw;
         }
 
-        .slide-contato h2 {
-            font-size: clamp(2rem, 4vw, 3.5rem);
-            font-weight: 700;
-            color: #fff;
-            text-align: center;
+        .slide-contato .empresa-logo {
+            height: 22vh;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3));
+            margin-bottom: 4vh;
         }
 
-        .slide-contato .contact-items {
+        .slide-contato .empresa-info {
             display: flex;
             flex-direction: column;
-            gap: 2vh;
             align-items: center;
+            gap: 2.5vh;
         }
 
-        .slide-contato .contact-item {
+        .slide-contato .empresa-row {
             display: flex;
             align-items: center;
-            gap: 1.5vw;
+            gap: 1.2vw;
             color: #fff;
-            font-size: clamp(1.2rem, 2.5vw, 2rem);
+            font-size: clamp(1.4rem, 2.8vw, 2.4rem);
+            font-weight: 500;
         }
 
-        .slide-contato .contact-icon {
-            width: clamp(2rem, 3vw, 3rem);
-            height: clamp(2rem, 3vw, 3rem);
-            opacity: 0.85;
+        .slide-contato .empresa-row svg {
+            width: clamp(1.8rem, 3vw, 2.6rem);
+            height: clamp(1.8rem, 3vw, 2.6rem);
+            opacity: 0.9;
+            flex-shrink: 0;
+        }
+
+        .slide-contato .empresa-divider {
+            width: 25vw;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.25);
+            margin: 3vh 0;
+        }
+
+        .slide-contato .empresa-site-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5vh;
+            margin-top: 1vh;
+        }
+
+        .slide-contato .empresa-site-label {
+            display: flex;
+            align-items: center;
+            gap: 0.8vw;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: clamp(1rem, 2vw, 1.6rem);
+            font-weight: 400;
+        }
+
+        .slide-contato .empresa-site-label svg {
+            width: clamp(1.4rem, 2.2vw, 2rem);
+            height: clamp(1.4rem, 2.2vw, 2rem);
+            flex-shrink: 0;
+        }
+
+        .slide-contato .empresa-qr {
+            width: clamp(10rem, 18vh, 16rem);
+            height: clamp(10rem, 18vh, 16rem);
+            background: #fff;
+            border-radius: 1rem;
+            padding: 0.8rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .slide-contato .empresa-qr img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         /* Loading state */
@@ -1138,32 +1188,67 @@
 
                     case 'contato_empresa': {
                         el.classList.add('slide-contato');
-                        var h2c = document.createElement('h2');
-                        h2c.textContent = d.companyName || 'Entre em Contato';
-                        el.appendChild(h2c);
-                        var contactItems = document.createElement('div');
-                        contactItems.className = 'contact-items';
-                        var fields = [
-                            { key: 'phone', icon: 'phone', label: '' },
-                            { key: 'whatsapp', icon: 'whatsapp', label: '' },
-                            { key: 'email', icon: 'email', label: '' },
-                            { key: 'instagram', icon: 'instagram', label: '@' },
-                        ];
-                        fields.forEach(function (f) {
-                            if (d[f.key]) {
-                                var ci = document.createElement('div');
-                                ci.className = 'contact-item';
-                                var iconEl = document.createElement('div');
-                                iconEl.className = 'contact-icon';
-                                iconEl.innerHTML = icons[f.icon] || '';
-                                ci.appendChild(iconEl);
-                                var text = document.createElement('span');
-                                text.textContent = f.label + d[f.key];
-                                ci.appendChild(text);
-                                contactItems.appendChild(ci);
-                            }
-                        });
-                        el.appendChild(contactItems);
+
+                        // Logo grande no topo
+                        var logoImg = document.createElement('img');
+                        logoImg.src = '/logo.png';
+                        logoImg.alt = d.companyName || 'Xplore Viagens';
+                        logoImg.className = 'empresa-logo';
+                        el.appendChild(logoImg);
+
+                        // Info: telefone + instagram
+                        var infoDiv = document.createElement('div');
+                        infoDiv.className = 'empresa-info';
+
+                        if (d.phone) {
+                            var phoneRow = document.createElement('div');
+                            phoneRow.className = 'empresa-row';
+                            phoneRow.innerHTML = icons.whatsapp;
+                            var phoneText = document.createElement('span');
+                            phoneText.textContent = d.phone;
+                            phoneRow.appendChild(phoneText);
+                            infoDiv.appendChild(phoneRow);
+                        }
+
+                        if (d.instagram) {
+                            var igRow = document.createElement('div');
+                            igRow.className = 'empresa-row';
+                            igRow.innerHTML = icons.instagram;
+                            var igText = document.createElement('span');
+                            var igHandle = d.instagram.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/+$/, '');
+                            igText.textContent = igHandle;
+                            igRow.appendChild(igText);
+                            infoDiv.appendChild(igRow);
+                        }
+
+                        el.appendChild(infoDiv);
+
+                        // Divisor
+                        var divLine = document.createElement('div');
+                        divLine.className = 'empresa-divider';
+                        el.appendChild(divLine);
+
+                        // Seção site + QR code
+                        var siteSection = document.createElement('div');
+                        siteSection.className = 'empresa-site-section';
+
+                        var siteLabel = document.createElement('div');
+                        siteLabel.className = 'empresa-site-label';
+                        siteLabel.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>';
+                        var siteLabelText = document.createElement('span');
+                        siteLabelText.textContent = 'Acesse nosso site';
+                        siteLabel.appendChild(siteLabelText);
+                        siteSection.appendChild(siteLabel);
+
+                        var qrContainer = document.createElement('div');
+                        qrContainer.className = 'empresa-qr';
+                        var qrImg = document.createElement('img');
+                        qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://xploreviagens.com.br';
+                        qrImg.alt = 'QR Code - xploreviagens.com.br';
+                        qrContainer.appendChild(qrImg);
+                        siteSection.appendChild(qrContainer);
+
+                        el.appendChild(siteSection);
                         break;
                     }
 

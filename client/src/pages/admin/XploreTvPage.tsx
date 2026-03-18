@@ -36,7 +36,7 @@ const SECAO_META: Record<string, { label: string; icon: any; color: string }> = 
     viagens: { label: "Viagens", icon: MapPin, color: "from-emerald-500 to-teal-500" },
     hospedagens: { label: "Hospedagens", icon: Building2, color: "from-amber-500 to-orange-500" },
     voos_premium: { label: "Voos Premium", icon: Plane, color: "from-purple-500 to-pink-500" },
-    contato_empresa: { label: "Contato da Empresa", icon: Phone, color: "from-green-500 to-emerald-500" },
+    contato_empresa: { label: "Empresa", icon: Phone, color: "from-green-500 to-emerald-500" },
 };
 
 const TRANSICAO_LABELS: Record<string, string> = {
