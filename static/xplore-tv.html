@@ -1513,12 +1513,10 @@
                 content.appendChild(divider);
 
                 // XP info
-                if (d.xp && d.xp > 0) {
-                    var xpEl = document.createElement('div');
-                    xpEl.className = 'card-xp-info';
-                    xpEl.textContent = 'Acumule +' + Number(d.xp).toLocaleString('pt-BR') + ' pontos XP';
-                    content.appendChild(xpEl);
-                }
+                var xpEl = document.createElement('div');
+                xpEl.className = 'card-xp-info';
+                xpEl.textContent = 'Acumule pontos XP';
+                content.appendChild(xpEl);
 
                 card.appendChild(content);
                 return card;
