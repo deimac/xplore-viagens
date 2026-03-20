@@ -40,6 +40,7 @@ interface OfertaVooPremium {
     ativo: boolean;
     mostrarNoSite?: boolean;
     mostrarNaTv?: boolean;
+    data_expiracao?: string | null;
     datas_fixas?: DataFixa[];
     datas_flexiveis?: DataFlexivel[];
 }
@@ -91,6 +92,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
         ativo: true,
         mostrarNoSite: true,
         mostrarNaTv: false,
+        data_expiracao: null,
         datas_fixas: [],
         datas_flexiveis: [],
     });
@@ -157,6 +159,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                 ativo: true,
                 mostrarNoSite: true,
                 mostrarNaTv: false,
+                data_expiracao: null,
                 datas_fixas: [],
                 datas_flexiveis: [],
             });
@@ -279,7 +282,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
             }
         }
 
-        onSave(formData);
+        onSave({ ...formData, ativo: formData.mostrarNoSite ?? true });
     };
 
     const datasIda = formData.datas_flexiveis?.filter(d => d.tipo === 'IDA') || [];
@@ -631,16 +634,20 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         )}
                     </div>
 
-                    {/* Status */}
-                    <div className="flex items-center space-x-3 p-4 bg-muted/30 rounded-lg">
-                        <Switch
-                            id="ativo"
-                            checked={formData.ativo}
-                            onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
-                        />
-                        <Label htmlFor="ativo" className="text-sm font-medium cursor-pointer">
-                            Oferta ativa (visível no site)
+                    {/* Data de Expiração */}
+                    <div className="space-y-2">
+                        <Label htmlFor="data_expiracao" className="text-sm font-medium">
+                            Data de Expiração
                         </Label>
+                        <Input
+                            id="data_expiracao"
+                            type="date"
+                            value={formData.data_expiracao || ''}
+                            onChange={(e) => setFormData({ ...formData, data_expiracao: e.target.value || null })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Após essa data a oferta não será mais exibida. Deixe vazio para não expirar.
+                        </p>
                     </div>
 
                     {/* Visibilidade Site / TV */}

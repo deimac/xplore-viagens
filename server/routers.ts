@@ -380,6 +380,7 @@ export const appRouter = router({
           ativo: z.boolean().default(true),
           mostrarNoSite: z.boolean().default(true),
           mostrarNaTv: z.boolean().default(false),
+          data_expiracao: z.string().nullable().optional(),
           datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
           datas_flexiveis: z.array(
             z.object({
@@ -414,6 +415,7 @@ export const appRouter = router({
           ativo: z.boolean(),
           mostrarNoSite: z.boolean().optional(),
           mostrarNaTv: z.boolean().optional(),
+          data_expiracao: z.string().nullable().optional(),
           datas_fixas: z.array(z.object({ datas_opcao: z.string() })).optional(),
           datas_flexiveis: z.array(
             z.object({

@@ -31,7 +31,7 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
     total_beds: totalBeds,
   };
 }
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, or, isNull, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
 import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes } from "../drizzle/schema";
@@ -720,10 +720,14 @@ export async function deleteHeroSlide(id: number) {
 export async function getActiveOfertasVoo() {
   const db = await getDb();
   if (!db) return [];
+  const hoje = new Date().toISOString().slice(0, 10);
   return await db
     .select()
     .from(ofertasVoo)
-    .where(eq(ofertasVoo.ativo, 1))
+    .where(and(
+      eq(ofertasVoo.ativo, 1),
+      or(isNull(ofertasVoo.dataExpiracao), gte(ofertasVoo.dataExpiracao, hoje))
+    ))
     .orderBy(desc(ofertasVoo.id));
 }
 

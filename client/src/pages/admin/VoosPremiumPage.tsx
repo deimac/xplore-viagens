@@ -32,6 +32,7 @@ interface OfertaVooPremium {
     ativo: boolean;
     mostrarNoSite?: boolean;
     mostrarNaTv?: boolean;
+    data_expiracao?: string | null;
     datas_fixas?: Array<{ datas_opcao: string }>;
     datas_flexiveis?: Array<{ tipo: 'IDA' | 'VOLTA'; mes_referencia: string; dias_disponiveis: string }>;
 }

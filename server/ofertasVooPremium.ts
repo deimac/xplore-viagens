@@ -19,6 +19,7 @@ export interface OfertaVooPremiumInput {
     ativo: boolean;
     mostrarNoSite?: boolean;
     mostrarNaTv?: boolean;
+    data_expiracao?: string | null;
 }
 
 export interface DataFixaInput {
@@ -69,6 +70,7 @@ export async function listarOfertasPremium(): Promise<OfertaComDatas[]> {
             ativo: oferta.ativo === 1,
             mostrarNoSite: (oferta as any).mostrarNoSite === 1,
             mostrarNaTv: (oferta as any).mostrarNaTv === 1,
+            data_expiracao: (oferta as any).dataExpiracao || null,
         };
 
         // Buscar datas associadas
@@ -132,6 +134,7 @@ export async function buscarOfertaPorId(id: number): Promise<OfertaComDatas | nu
         ativo: oferta.ativo === 1,
         mostrarNoSite: (oferta as any).mostrarNoSite === 1,
         mostrarNaTv: (oferta as any).mostrarNaTv === 1,
+        data_expiracao: (oferta as any).dataExpiracao || null,
     };
 
     // Buscar datas associadas
@@ -213,6 +216,7 @@ export async function criarOfertaPremium(
         ativo: input.ativo ? 1 : 0,
         mostrarNoSite: input.mostrarNoSite !== false ? 1 : 0,
         mostrarNaTv: input.mostrarNaTv ? 1 : 0,
+        dataExpiracao: input.data_expiracao || null,
     });
 
     const ofertaId = result.insertId;
@@ -294,6 +298,7 @@ export async function atualizarOfertaPremium(
             ativo: input.ativo ? 1 : 0,
             mostrarNoSite: input.mostrarNoSite !== false ? 1 : 0,
             mostrarNaTv: input.mostrarNaTv ? 1 : 0,
+            dataExpiracao: input.data_expiracao || null,
         })
         .where(eq(ofertasVoo.id, id));
 

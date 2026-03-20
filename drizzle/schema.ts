@@ -255,6 +255,7 @@ export const ofertasVoo = mysqlTable("ofertas_voo", {
   ativo: int("ativo").notNull().default(1),
   mostrarNoSite: int("mostrarNoSite").notNull().default(1),
   mostrarNaTv: int("mostrarNaTv").notNull().default(0),
+  dataExpiracao: varchar("data_expiracao", { length: 10 }),
   criadoEm: timestamp("criado_em"),
 });
 
