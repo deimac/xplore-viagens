@@ -858,151 +858,168 @@ export default function XpClubPage() {
                                 <CardTitle className="text-lg">Lançar pontos manualmente</CardTitle>
                                 <CardDescription>Selecione o cliente, o tipo e a quantidade de XP. O valor da compra fica como referência opcional.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid gap-3 md:grid-cols-2">
+                            <CardContent className="space-y-5">
+                                {/* Cliente — campo principal, destaque total */}
+                                <div>
+                                    <Label>Cliente</Label>
+                                    <SearchableSelect
+                                        options={clientesLimitados.map((c: any) => ({
+                                            id: c.id,
+                                            nome: c.nome || "",
+                                            detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP • Resgatável: ${Number(c.saldo_resgatavel || 0)} XP`,
+                                        }))}
+                                        value={compraClienteId ? String(compraClienteId) : ""}
+                                        onChange={(id) => setCompraClienteId(Number(id))}
+                                        onSearchChange={setClienteSearch}
+                                        placeholder="Selecionar cliente"
+                                        searchPlaceholder="Buscar cliente por nome, email ou CPF..."
+                                        emptyMessage="Nenhum cliente encontrado."
+                                    />
+                                </div>
+
+                                {/* Tipo + Quantidade lado a lado */}
+                                <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <Label>Cliente</Label>
-                                        <SearchableSelect
-                                            options={clientesLimitados.map((c: any) => ({
-                                                id: c.id,
-                                                nome: c.nome || "",
-                                                detail: `${c.email || "sem email"} • CPF: ${c.cpf || "-"} • Saldo: ${Number(c.saldo_xp || 0)} XP • Resgatável: ${Number(c.saldo_resgatavel || 0)} XP`,
-                                            }))}
-                                            value={compraClienteId ? String(compraClienteId) : ""}
-                                            onChange={(id) => setCompraClienteId(Number(id))}
-                                            onSearchChange={setClienteSearch}
-                                            placeholder="Selecionar cliente"
-                                            searchPlaceholder="Buscar cliente por nome, email ou CPF..."
-                                            emptyMessage="Nenhum cliente encontrado."
+                                        <Label>Tipo de movimentação</Label>
+                                        <Select
+                                            value={compraTipoMovimentacaoId}
+                                            onValueChange={(value) => setCompraTipoMovimentacaoId(value)}
+                                        >
+                                            <SelectTrigger title="Selecionar tipo de movimentação">
+                                                <SelectValue placeholder="Selecionar" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">Selecione</SelectItem>
+                                                {tiposMovimentacaoManual.map((tipo: any) => (
+                                                    <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                        {tipo.nome} ({tipo.tipo_operacao})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="xpCompra">Quantidade de XP</Label>
+                                        <Input
+                                            id="xpCompra"
+                                            value={compraXpInput}
+                                            onChange={(e) => {
+                                                const next = e.target.value.replace(/\D/g, "");
+                                                if (tipoSelecionado?.tipo_operacao === "debito") {
+                                                    const max = saldoResgatavelSelecionado;
+                                                    const nextNumber = Number(next || 0);
+                                                    setCompraXpInput(String(Math.min(max, nextNumber)));
+                                                    return;
+                                                }
+                                                setCompraXpInput(next);
+                                            }}
+                                            placeholder={
+                                                tipoSelecionado?.tipo_operacao === "debito"
+                                                    ? `Max: ${saldoResgatavelSelecionado.toLocaleString("pt-BR")} XP`
+                                                    : "Ex: 1500"
+                                            }
+                                            title="Quantidade de XP"
                                         />
                                     </div>
+                                </div>
 
-                                    <div className="space-y-3">
-                                        <div>
-                                            <Label>Tipo de movimentação</Label>
-                                            <Select
-                                                value={compraTipoMovimentacaoId}
-                                                onValueChange={(value) => setCompraTipoMovimentacaoId(value)}
-                                            >
-                                                <SelectTrigger title="Selecionar tipo de movimentação">
-                                                    <SelectValue placeholder="Selecionar" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">Selecione</SelectItem>
-                                                    {tiposMovimentacaoManual.map((tipo: any) => (
-                                                        <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                                            {tipo.nome} ({tipo.tipo_operacao})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        {tipoSelecionado?.tipo_operacao === "debito" && (
-                                            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-2">
-                                                <p>Atencao: este tipo debita XP do cliente. O valor informado sera subtraido do saldo.</p>
-                                                <p>Disponível para débito (resgatável): {saldoResgatavelSelecionado.toLocaleString("pt-BR")} XP</p>
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center justify-between text-[11px] text-amber-900">
-                                                        <span>0%</span>
-                                                        <span>{debitoPercent}%</span>
-                                                        <span>100%</span>
-                                                    </div>
-                                                    <input
-                                                        type="range"
-                                                        min={0}
-                                                        max={100}
-                                                        step={1}
-                                                        value={debitoPercent}
-                                                        onChange={(e) => {
-                                                            const percent = Number(e.target.value);
-                                                            const xpValue = Math.round((saldoResgatavelSelecionado * percent) / 100);
-                                                            setCompraXpInput(String(xpValue));
-                                                        }}
-                                                        className="w-full"
-                                                        disabled={saldoResgatavelSelecionado <= 0}
-                                                        title="Percentual do saldo resgatável para débito"
-                                                        aria-label="Percentual do saldo resgatável para débito"
-                                                    />
-                                                </div>
+                                {/* Alerta de débito */}
+                                {tipoSelecionado?.tipo_operacao === "debito" && (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 space-y-2">
+                                        <p>Atenção: este tipo debita XP do cliente. O valor informado será subtraído do saldo.</p>
+                                        <p>Disponível para débito (resgatável): <strong>{saldoResgatavelSelecionado.toLocaleString("pt-BR")} XP</strong></p>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between text-[11px] text-amber-900">
+                                                <span>0%</span>
+                                                <span>{debitoPercent}%</span>
+                                                <span>100%</span>
                                             </div>
-                                        )}
-                                        <div>
-                                            <Label htmlFor="xpCompra">Quantidade de XP</Label>
-                                            <Input
-                                                id="xpCompra"
-                                                value={compraXpInput}
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={100}
+                                                step={1}
+                                                value={debitoPercent}
                                                 onChange={(e) => {
-                                                    const next = e.target.value.replace(/\D/g, "");
-                                                    if (tipoSelecionado?.tipo_operacao === "debito") {
-                                                        const max = saldoResgatavelSelecionado;
-                                                        const nextNumber = Number(next || 0);
-                                                        setCompraXpInput(String(Math.min(max, nextNumber)));
-                                                        return;
-                                                    }
-                                                    setCompraXpInput(next);
+                                                    const percent = Number(e.target.value);
+                                                    const xpValue = Math.round((saldoResgatavelSelecionado * percent) / 100);
+                                                    setCompraXpInput(String(xpValue));
                                                 }}
-                                                placeholder={
-                                                    tipoSelecionado?.tipo_operacao === "debito"
-                                                        ? `Max: ${saldoResgatavelSelecionado.toLocaleString("pt-BR")} XP`
-                                                        : "Ex: 1500"
-                                                }
-                                                title="Quantidade de XP"
+                                                className="w-full"
+                                                disabled={saldoResgatavelSelecionado <= 0}
+                                                title="Percentual do saldo resgatável para débito"
+                                                aria-label="Percentual do saldo resgatável para débito"
                                             />
                                         </div>
-                                        <div>
-                                            <Label htmlFor="valorCompra">Valor da compra (R$) - opcional</Label>
-                                            <Input
-                                                id="valorCompra"
-                                                value={compraValorInput}
-                                                onChange={(e) => setCompraValorInput(maskCurrencyInput(e.target.value))}
-                                                placeholder="R$ 0,00"
-                                                title="Valor da compra"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="dataCompra">Data da compra (opcional)</Label>
-                                            <Input
-                                                id="dataCompra"
-                                                type="date"
-                                                value={compraDataCompra}
-                                                onChange={(e) => setCompraDataCompra(e.target.value)}
-                                                title="Data da compra"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="codigoRef">Código de referência (opcional)</Label>
-                                            <Input
-                                                id="codigoRef"
-                                                value={compraCodigoRef}
-                                                onChange={(e) => setCompraCodigoRef(e.target.value)}
-                                                placeholder="Ex: CRM-12345"
-                                                maxLength={30}
-                                                title="Código de referência"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="descricaoCompra">Descrição (opcional)</Label>
-                                            <Textarea
-                                                id="descricaoCompra"
-                                                value={compraDescricao}
-                                                onChange={(e) => setCompraDescricao(e.target.value)}
-                                                placeholder="Ex: Compra presencial em parceiro"
-                                                title="Descrição da compra"
-                                            />
-                                        </div>
-                                        <div className="rounded-lg border p-3 text-sm">
-                                            <p><span className="text-muted-foreground">Cliente selecionado:</span> {clienteSelecionado ? clienteSelecionado.nome : "nenhum"}</p>
-                                            <p><span className="text-muted-foreground">Tipo:</span> {compraTipoMovimentacaoId === "none" ? "-" : tiposMovimentacao.find((t: any) => String(t.id) === compraTipoMovimentacaoId)?.nome || "-"}</p>
-                                            <p><span className="text-muted-foreground">XP:</span> {compraXpInput || "0"}</p>
-                                            <p><span className="text-muted-foreground">Valor:</span> {compraValorInput || "R$ 0,00"}</p>
-                                            <p><span className="text-muted-foreground">Data compra:</span> {compraDataCompra || "-"}</p>
-                                            <p><span className="text-muted-foreground">Código ref:</span> {compraCodigoRef || "-"}</p>
-                                        </div>
-                                        <Button onClick={handleRegistrarCompra} disabled={compraMutation.isPending} className="w-full" title="Registrar compra manual">
-                                            {compraMutation.isPending ? "Registrando..." : "Registrar compra e creditar XP"}
-                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* Valor + Data lado a lado */}
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <Label htmlFor="valorCompra">Valor da compra (R$) <span className="text-muted-foreground font-normal">— opcional</span></Label>
+                                        <Input
+                                            id="valorCompra"
+                                            value={compraValorInput}
+                                            onChange={(e) => setCompraValorInput(maskCurrencyInput(e.target.value))}
+                                            placeholder="R$ 0,00"
+                                            title="Valor da compra"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="dataCompra">Data da compra <span className="text-muted-foreground font-normal">— opcional</span></Label>
+                                        <Input
+                                            id="dataCompra"
+                                            type="date"
+                                            value={compraDataCompra}
+                                            onChange={(e) => setCompraDataCompra(e.target.value)}
+                                            title="Data da compra"
+                                        />
                                     </div>
                                 </div>
+
+                                {/* Código + Descrição lado a lado */}
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <Label htmlFor="codigoRef">Código de referência <span className="text-muted-foreground font-normal">— opcional</span></Label>
+                                        <Input
+                                            id="codigoRef"
+                                            value={compraCodigoRef}
+                                            onChange={(e) => setCompraCodigoRef(e.target.value)}
+                                            placeholder="Ex: CRM-12345"
+                                            maxLength={30}
+                                            title="Código de referência"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="descricaoCompra">Descrição <span className="text-muted-foreground font-normal">— opcional</span></Label>
+                                        <Textarea
+                                            id="descricaoCompra"
+                                            value={compraDescricao}
+                                            onChange={(e) => setCompraDescricao(e.target.value)}
+                                            placeholder="Ex: Compra presencial em parceiro"
+                                            rows={1}
+                                            title="Descrição da compra"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Resumo compacto */}
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Resumo do lançamento</p>
+                                    <div className="grid gap-x-6 gap-y-1 text-sm md:grid-cols-3">
+                                        <p><span className="text-muted-foreground">Cliente:</span> {clienteSelecionado ? clienteSelecionado.nome : "—"}</p>
+                                        <p><span className="text-muted-foreground">Tipo:</span> {compraTipoMovimentacaoId === "none" ? "—" : tiposMovimentacao.find((t: any) => String(t.id) === compraTipoMovimentacaoId)?.nome || "—"}</p>
+                                        <p><span className="text-muted-foreground">XP:</span> <strong>{compraXpInput || "0"}</strong></p>
+                                        <p><span className="text-muted-foreground">Valor:</span> {compraValorInput || "R$ 0,00"}</p>
+                                        <p><span className="text-muted-foreground">Data compra:</span> {compraDataCompra || "—"}</p>
+                                        <p><span className="text-muted-foreground">Código ref:</span> {compraCodigoRef || "—"}</p>
+                                    </div>
+                                </div>
+
+                                <Button onClick={handleRegistrarCompra} disabled={compraMutation.isPending} className="w-full" size="lg" title="Registrar compra manual">
+                                    {compraMutation.isPending ? "Registrando..." : "Registrar compra e creditar XP"}
+                                </Button>
                             </CardContent>
                         </Card>
                     </TabsContent>
