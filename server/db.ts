@@ -3291,6 +3291,47 @@ export async function reorderXploreTvItens(orderedIds: number[]) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// XPLORE TV – Vídeo da Vitrine Digital
+// ─────────────────────────────────────────────────────────────
+
+export async function getXploreTvVideo() {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(xploreTvItens)
+    .where(eq(xploreTvItens.tipo, 'video'))
+    .orderBy(desc(xploreTvItens.id))
+    .limit(1);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function upsertXploreTvVideo(data: { titulo: string; videoUrl: string; ativo: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getXploreTvVideo();
+  const payload = JSON.stringify({ url: data.videoUrl });
+  if (existing) {
+    await db.update(xploreTvItens).set({
+      titulo: data.titulo,
+      ativo: data.ativo,
+      payload,
+    }).where(eq(xploreTvItens.id, existing.id));
+    return existing.id;
+  } else {
+    const result = await db.insert(xploreTvItens).values({
+      tipo: 'video',
+      titulo: data.titulo || 'Vídeo',
+      ativo: data.ativo,
+      ordem: 0,
+      duracaoMs: 30000,
+      transicao: 'fade',
+      orientacao: 'ambos',
+      payload,
+    });
+    return Number(result[0].insertId);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // XPLORE TV – Seções da Vitrine Digital
 // ─────────────────────────────────────────────────────────────
 
@@ -3423,6 +3464,21 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
             email: settings.email,
             instagram: settings.instagram,
           }];
+        }
+        break;
+      }
+      case 'video': {
+        const video = await getXploreTvVideo();
+        if (video && video.ativo) {
+          let payload: any = {};
+          try { payload = video.payload ? JSON.parse(video.payload) : {}; } catch { }
+          if (payload.url) {
+            itens = [{
+              id: video.id,
+              titulo: video.titulo,
+              videoUrl: payload.url,
+            }];
+          }
         }
         break;
       }

@@ -1089,7 +1089,7 @@
             var POLL_INTERVAL = 60000;
             var RETRY_DELAY = 10000;
             var API_URL = '/api/trpc/xploreTv.playlist';
-            var FORCE_FULL_SCREEN = ['slider', 'contato_empresa', 'voos_premium'];
+            var FORCE_FULL_SCREEN = ['slider', 'contato_empresa', 'voos_premium', 'video'];
 
             // State
             var entries = [];
@@ -1551,6 +1551,24 @@
                             classeEl.textContent = 'Classe ' + d.classe;
                             el.appendChild(classeEl);
                         }
+                        break;
+                    }
+
+                    case 'video': {
+                        el.classList.add('slide-video');
+                        var vid = document.createElement('video');
+                        vid.src = d.videoUrl || '';
+                        vid.autoplay = true;
+                        vid.muted = true;
+                        vid.playsInline = true;
+                        vid.preload = 'auto';
+                        vid.controls = false;
+                        vid.setAttribute('playsinline', '');
+                        vid.setAttribute('muted', '');
+                        vid.style.width = '100%';
+                        vid.style.height = '100%';
+                        vid.style.objectFit = 'cover';
+                        el.appendChild(vid);
                         break;
                     }
 
@@ -2080,6 +2098,30 @@
                     duration = entry.section.duracaoSecaoMs;
                 } else {
                     duration = (entry && entry.slide && entry.slide.durationMs) || 8000;
+                }
+
+                // For video slides, wait for the video to end instead of fixed timer
+                var isVideoSlide = entry && entry.type === 'fullscreen' && entry.slide && entry.slide.type === 'video';
+                if (isVideoSlide) {
+                    var videoEl = player.querySelector('.slide-video video');
+                    if (videoEl) {
+                        var advanced = false;
+                        var advanceToNext = function () {
+                            if (advanced) return;
+                            advanced = true;
+                            videoEl.removeEventListener('ended', advanceToNext);
+                            videoEl.removeEventListener('error', advanceToNext);
+                            if (timer) { clearTimeout(timer); timer = null; }
+                            currentIndex = (currentIndex + 1) % entries.length;
+                            renderEntry(currentIndex);
+                            scheduleNext();
+                        };
+                        videoEl.addEventListener('ended', advanceToNext);
+                        videoEl.addEventListener('error', advanceToNext);
+                        // Fallback: if video doesn't fire ended within 2 minutes, advance anyway
+                        timer = setTimeout(advanceToNext, Math.max(duration * 3, 120000));
+                        return;
+                    }
                 }
 
                 timer = setTimeout(function () {

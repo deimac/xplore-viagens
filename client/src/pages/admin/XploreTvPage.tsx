@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,10 @@ import {
     Building2,
     Phone,
     MapPin,
+    Video,
+    Upload,
+    Trash2,
+    Film,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -37,6 +41,7 @@ const SECAO_META: Record<string, { label: string; icon: any; color: string }> = 
     hospedagens: { label: "Hospedagens", icon: Building2, color: "from-amber-500 to-orange-500" },
     voos_premium: { label: "Voos Premium", icon: Plane, color: "from-purple-500 to-pink-500" },
     contato_empresa: { label: "Empresa", icon: Phone, color: "from-green-500 to-emerald-500" },
+    video: { label: "Vídeo", icon: Video, color: "from-rose-500 to-red-500" },
 };
 
 const TRANSICAO_LABELS: Record<string, string> = {
@@ -65,11 +70,14 @@ interface TvSecao {
     atualizadoEm?: string | null;
 }
 
-const FULL_SCREEN_ONLY = ['slider', 'contato_empresa', 'voos_premium'];
+const FULL_SCREEN_ONLY = ['slider', 'contato_empresa', 'voos_premium', 'video'];
 
 export default function XploreTvPage() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<Partial<TvSecao>>({});
+    const [videoManageId, setVideoManageId] = useState<number | null>(null);
+    const [videoUploading, setVideoUploading] = useState(false);
+    const videoInputRef = useRef<HTMLInputElement>(null);
 
     const secoesQuery = trpc.xploreTv.listSecoes.useQuery(undefined);
 
@@ -101,6 +109,70 @@ export default function XploreTvPage() {
             toast.error("Erro ao reordenar seções");
         },
     });
+
+    // Video management
+    const videoQuery = trpc.xploreTv.getVideo.useQuery(undefined);
+    const uploadVideoMutation = trpc.xploreTv.uploadVideo.useMutation();
+    const saveVideoMutation = trpc.xploreTv.saveVideo.useMutation({
+        onSuccess: () => {
+            videoQuery.refetch();
+            toast.success("Vídeo salvo");
+        },
+        onError: () => {
+            toast.error("Erro ao salvar vídeo");
+        },
+    });
+    const deleteVideoMutation = trpc.xploreTv.deleteVideo.useMutation({
+        onSuccess: () => {
+            videoQuery.refetch();
+            toast.success("Vídeo removido");
+        },
+        onError: () => {
+            toast.error("Erro ao remover vídeo");
+        },
+    });
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const maxSize = 200 * 1024 * 1024;
+        if (file.size > maxSize) {
+            toast.error("Arquivo muito grande. Máximo 200 MB.");
+            return;
+        }
+        const allowed = ['video/mp4', 'video/webm', 'video/ogg'];
+        if (!allowed.includes(file.type)) {
+            toast.error("Formato não suportado. Use MP4, WebM ou OGG.");
+            return;
+        }
+        setVideoUploading(true);
+        try {
+            const reader = new FileReader();
+            const base64 = await new Promise<string>((resolve, reject) => {
+                reader.onload = () => {
+                    const result = reader.result as string;
+                    resolve(result.split(',')[1]);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            const { url } = await uploadVideoMutation.mutateAsync({
+                fileName: file.name,
+                fileData: base64,
+                mimeType: file.type,
+            });
+            await saveVideoMutation.mutateAsync({
+                titulo: file.name.replace(/\.[^/.]+$/, ''),
+                videoUrl: url,
+                ativo: true,
+            });
+        } catch (err: any) {
+            toast.error(err?.message || "Erro ao fazer upload");
+        } finally {
+            setVideoUploading(false);
+            if (videoInputRef.current) videoInputRef.current.value = '';
+        }
+    };
 
     const secoes: TvSecao[] = (secoesQuery.data as TvSecao[]) || [];
 
@@ -310,6 +382,15 @@ export default function XploreTvPage() {
                                                 >
                                                     {isEditing ? <X className="w-5 h-5" /> : <Settings2 className="w-5 h-5" />}
                                                 </button>
+                                                {secao.codigo === 'video' && (
+                                                    <button
+                                                        onClick={() => setVideoManageId(videoManageId === secao.id ? null : secao.id)}
+                                                        className={`p-2 rounded-lg transition-colors ${videoManageId === secao.id ? "text-rose-600 bg-rose-50" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`}
+                                                        title="Gerenciar vídeo"
+                                                    >
+                                                        <Film className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 
@@ -397,6 +478,94 @@ export default function XploreTvPage() {
                                                         Salvar
                                                     </Button>
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Video Management Panel */}
+                                        {secao.codigo === 'video' && videoManageId === secao.id && (
+                                            <div className="px-5 pb-5 pt-3 bg-rose-50/50 border-t border-rose-100">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Film className="w-4 h-4 text-rose-600" />
+                                                    <h4 className="text-sm font-medium text-rose-700">Gerenciar Vídeo</h4>
+                                                </div>
+
+                                                {videoQuery.isLoading ? (
+                                                    <p className="text-sm text-gray-500">Carregando...</p>
+                                                ) : videoQuery.data ? (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <Video className="w-8 h-8 text-rose-500 shrink-0" />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-sm font-medium text-gray-900 truncate">{videoQuery.data.titulo}</p>
+                                                                    <p className="text-xs text-gray-500 truncate">{videoQuery.data.videoUrl}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => {
+                                                                        if (confirm("Remover o vídeo atual?")) {
+                                                                            deleteVideoMutation.mutate();
+                                                                        }
+                                                                    }}
+                                                                    disabled={deleteVideoMutation.isPending}
+                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <input
+                                                                ref={videoInputRef}
+                                                                type="file"
+                                                                accept="video/mp4,video/webm,video/ogg"
+                                                                className="hidden"
+                                                                onChange={handleVideoUpload}
+                                                                title="Selecionar vídeo"
+                                                            />
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => videoInputRef.current?.click()}
+                                                                disabled={videoUploading}
+                                                                className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                                                            >
+                                                                <Upload className="w-4 h-4 mr-2" />
+                                                                {videoUploading ? 'Enviando...' : 'Substituir vídeo'}
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center justify-center p-6 rounded-lg border-2 border-dashed border-gray-300 bg-white">
+                                                            <div className="text-center">
+                                                                <Video className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                                                                <p className="text-sm text-gray-500 mb-3">Nenhum vídeo cadastrado</p>
+                                                                <input
+                                                                    ref={videoInputRef}
+                                                                    type="file"
+                                                                    accept="video/mp4,video/webm,video/ogg"
+                                                                    className="hidden"
+                                                                    onChange={handleVideoUpload}
+                                                                    title="Selecionar vídeo"
+                                                                />
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => videoInputRef.current?.click()}
+                                                                    disabled={videoUploading}
+                                                                    className="bg-gradient-to-r from-rose-500 to-red-500 text-white"
+                                                                >
+                                                                    <Upload className="w-4 h-4 mr-2" />
+                                                                    {videoUploading ? 'Enviando...' : 'Enviar vídeo'}
+                                                                </Button>
+                                                                <p className="text-xs text-gray-400 mt-2">MP4, WebM ou OGG · Máximo 200 MB</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

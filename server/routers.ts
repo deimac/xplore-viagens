@@ -1625,6 +1625,76 @@ export const appRouter = router({
         await db.reorderXploreTvSecoes(input.orderedIds);
         return { success: true };
       }),
+    // Video management
+    getVideo: adminProcedure.query(async () => {
+      const video = await db.getXploreTvVideo();
+      if (!video) return null;
+      let payload: any = {};
+      try { payload = video.payload ? JSON.parse(video.payload) : {}; } catch { }
+      return { id: video.id, titulo: video.titulo, ativo: video.ativo, videoUrl: payload.url || null };
+    }),
+    uploadVideo: adminProcedure
+      .input(z.object({
+        fileName: z.string(),
+        fileData: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const allowed = ['video/mp4', 'video/webm', 'video/ogg'];
+        if (!allowed.includes(input.mimeType)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Formato de vídeo não suportado. Use MP4, WebM ou OGG.' });
+        }
+        const buffer = Buffer.from(input.fileData, 'base64');
+        const maxSize = 200 * 1024 * 1024; // 200 MB
+        if (buffer.length > maxSize) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Arquivo muito grande. Máximo 200 MB.' });
+        }
+        // Delete previous video file if exists
+        const existing = await db.getXploreTvVideo();
+        if (existing && existing.payload) {
+          try {
+            const oldPayload = JSON.parse(existing.payload);
+            if (oldPayload.url) {
+              const oldKey = oldPayload.url.replace(/^\/uploads\//, '');
+              const { storageDelete } = await import('./storage');
+              await storageDelete(oldKey);
+            }
+          } catch { }
+        }
+        const ext = input.fileName.split('.').pop() || 'mp4';
+        const randomSuffix = crypto.randomBytes(8).toString('hex');
+        const fileKey = `xplore-tv/video/${randomSuffix}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        return { url };
+      }),
+    saveVideo: adminProcedure
+      .input(z.object({
+        titulo: z.string().default('Vídeo'),
+        videoUrl: z.string(),
+        ativo: z.boolean().default(true),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.upsertXploreTvVideo(input);
+        return { success: true, id };
+      }),
+    deleteVideo: adminProcedure
+      .mutation(async () => {
+        const existing = await db.getXploreTvVideo();
+        if (existing) {
+          if (existing.payload) {
+            try {
+              const oldPayload = JSON.parse(existing.payload);
+              if (oldPayload.url) {
+                const oldKey = oldPayload.url.replace(/^\/uploads\//, '');
+                const { storageDelete } = await import('./storage');
+                await storageDelete(oldKey);
+              }
+            } catch { }
+          }
+          await db.deleteXploreTvItem(existing.id);
+        }
+        return { success: true };
+      }),
   }),
 });
 
