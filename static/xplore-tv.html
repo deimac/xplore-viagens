@@ -311,54 +311,50 @@
         .slide-viagem .overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 40%, transparent 60%);
+            background: linear-gradient(to right,
+                    rgba(0, 0, 0, 0.82) 0%,
+                    rgba(0, 0, 0, 0.6) 38%,
+                    rgba(0, 0, 0, 0.15) 65%,
+                    transparent 100%), linear-gradient(to top,
+                    rgba(0, 0, 0, 0.5) 0%,
+                    transparent 35%);
         }
 
-        .slide-viagem .viagem-info {
+        /* Badges row (destaques + categorias) */
+        .slide-viagem .viagem-badges {
             position: absolute;
-            bottom: 8vh;
+            top: 5vh;
             left: 5vw;
-            right: 5vw;
-            color: #fff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6vw;
             z-index: 3;
         }
 
-        .slide-viagem .viagem-info h2 {
-            font-size: clamp(2rem, 3.5vw, 3.5rem);
+        .slide-viagem .viagem-badge-destaque {
+            background: rgba(245, 158, 11, 0.9);
+            color: #fff;
+            padding: 0.5vh 1.2vw;
+            border-radius: 999px;
+            font-size: clamp(0.75rem, 1.2vw, 1.05rem);
             font-weight: 700;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-            line-height: 1.15;
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.02em;
         }
 
-        .slide-viagem .viagem-info .viagem-detalhes {
-            display: flex;
-            align-items: baseline;
-            gap: 2vw;
-            margin-top: 1vh;
-            flex-wrap: wrap;
+        .slide-viagem .viagem-badge-categoria {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 0.5vh 1.2vw;
+            border-radius: 999px;
+            font-size: clamp(0.75rem, 1.2vw, 1.05rem);
+            font-weight: 500;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
         }
 
-        .slide-viagem .viagem-preco {
-            font-size: clamp(1.5rem, 3vw, 2.8rem);
-            font-weight: 800;
-            color: #22d3ee;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .slide-viagem .viagem-parcelas {
-            font-size: clamp(0.9rem, 1.8vw, 1.5rem);
-            opacity: 0.85;
-            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
-        }
-
-        .slide-viagem .viagem-datas {
-            font-size: clamp(0.9rem, 1.5vw, 1.3rem);
-            opacity: 0.75;
-            margin-top: 0.5vh;
-            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
-        }
-
-        .slide-viagem .viagem-badge {
+        /* Origin badge (top-right) */
+        .slide-viagem .viagem-origin-badge {
             position: absolute;
             top: 5vh;
             right: 5vw;
@@ -374,6 +370,114 @@
             letter-spacing: 0.05em;
         }
 
+        /* Info panel (left side, vertically centered) */
+        .slide-viagem .viagem-panel {
+            position: absolute;
+            bottom: 6vh;
+            left: 5vw;
+            width: 42vw;
+            color: #fff;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 1.8vh;
+        }
+
+        .slide-viagem .viagem-panel h2 {
+            font-size: clamp(2.2rem, 3.8vw, 3.8rem);
+            font-weight: 800;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+        }
+
+        .slide-viagem .viagem-hospedagem {
+            display: flex;
+            align-items: center;
+            gap: 0.6vw;
+            font-size: clamp(1rem, 1.8vw, 1.5rem);
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .slide-viagem .viagem-hospedagem svg {
+            width: clamp(1.1rem, 1.6vw, 1.4rem);
+            height: clamp(1.1rem, 1.6vw, 1.4rem);
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
+        /* Meta row: noites · datas · viajantes */
+        .slide-viagem .viagem-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5vw;
+        }
+
+        .slide-viagem .viagem-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4vw;
+            font-size: clamp(0.9rem, 1.5vw, 1.25rem);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .slide-viagem .viagem-meta-item svg {
+            width: clamp(1rem, 1.4vw, 1.25rem);
+            height: clamp(1rem, 1.4vw, 1.25rem);
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
+
+        .slide-viagem .viagem-meta-divider {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+            align-self: center;
+        }
+
+        /* Divider line */
+        .slide-viagem .viagem-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Price block */
+        .slide-viagem .viagem-price-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4vh;
+        }
+
+        .slide-viagem .viagem-price-label {
+            font-size: clamp(0.85rem, 1.3vw, 1.1rem);
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .slide-viagem .viagem-price-value {
+            font-size: clamp(2rem, 3.8vw, 3.4rem);
+            font-weight: 800;
+            color: #22d3ee;
+            text-shadow: 0 2px 12px rgba(34, 211, 238, 0.3);
+            line-height: 1.1;
+        }
+
+        .slide-viagem .viagem-price-parcelas {
+            font-size: clamp(0.95rem, 1.6vw, 1.35rem);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .slide-viagem .viagem-xp-info {
+            font-size: clamp(0.85rem, 1.3vw, 1.1rem);
+            font-weight: 600;
+            color: #fbbf24;
+            margin-top: 0.2vh;
+        }
+
         /* Tipo: Hospedagem */
         .slide-hospedagem {
             background-size: cover;
@@ -384,40 +488,17 @@
         .slide-hospedagem .overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 65%);
+            background: linear-gradient(to right,
+                    rgba(0, 0, 0, 0.82) 0%,
+                    rgba(0, 0, 0, 0.6) 38%,
+                    rgba(0, 0, 0, 0.15) 65%,
+                    transparent 100%), linear-gradient(to top,
+                    rgba(0, 0, 0, 0.5) 0%,
+                    transparent 35%);
         }
 
-        .slide-hospedagem .hosp-info {
-            position: absolute;
-            bottom: 8vh;
-            left: 5vw;
-            right: 5vw;
-            color: #fff;
-            z-index: 3;
-        }
-
-        .slide-hospedagem .hosp-info h2 {
-            font-size: clamp(1.8rem, 3.5vw, 3.2rem);
-            font-weight: 700;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-        }
-
-        .slide-hospedagem .hosp-info .hosp-local {
-            font-size: clamp(1rem, 2vw, 1.6rem);
-            opacity: 0.85;
-            margin-top: 0.5vh;
-            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        .slide-hospedagem .hosp-info .hosp-detalhes {
-            display: flex;
-            gap: 2vw;
-            margin-top: 1vh;
-            font-size: clamp(0.9rem, 1.5vw, 1.3rem);
-            opacity: 0.75;
-        }
-
-        .slide-hospedagem .hosp-badge {
+        /* XP badge (top-right) */
+        .slide-hospedagem .hosp-xp-badge {
             position: absolute;
             top: 5vh;
             right: 5vw;
@@ -432,6 +513,94 @@
             font-weight: 700;
             z-index: 3;
             backdrop-filter: blur(4px);
+        }
+
+        /* Info panel (left side) */
+        .slide-hospedagem .hosp-panel {
+            position: absolute;
+            bottom: 6vh;
+            left: 5vw;
+            width: 42vw;
+            color: #fff;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 1.8vh;
+        }
+
+        .slide-hospedagem .hosp-panel h2 {
+            font-size: clamp(2.2rem, 3.8vw, 3.8rem);
+            font-weight: 800;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+        }
+
+        .slide-hospedagem .hosp-location {
+            display: flex;
+            align-items: center;
+            gap: 0.6vw;
+            font-size: clamp(1rem, 1.8vw, 1.5rem);
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .slide-hospedagem .hosp-location svg {
+            width: clamp(1.1rem, 1.6vw, 1.4rem);
+            height: clamp(1.1rem, 1.6vw, 1.4rem);
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
+        /* Meta row: quartos · hóspedes */
+        .slide-hospedagem .hosp-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5vw;
+        }
+
+        .slide-hospedagem .hosp-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4vw;
+            font-size: clamp(0.9rem, 1.5vw, 1.25rem);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .slide-hospedagem .hosp-meta-item svg {
+            width: clamp(1rem, 1.4vw, 1.25rem);
+            height: clamp(1rem, 1.4vw, 1.25rem);
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
+
+        .slide-hospedagem .hosp-meta-divider {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+            align-self: center;
+        }
+
+        /* Divider line */
+        .slide-hospedagem .hosp-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* XP highlight at bottom */
+        .slide-hospedagem .hosp-xp-highlight {
+            display: flex;
+            align-items: center;
+            gap: 0.6vw;
+            font-size: clamp(1rem, 1.6vw, 1.35rem);
+            font-weight: 600;
+            color: #fbbf24;
+        }
+
+        .slide-hospedagem .hosp-xp-highlight svg {
+            width: clamp(1.1rem, 1.6vw, 1.4rem);
+            height: clamp(1.1rem, 1.6vw, 1.4rem);
+            flex-shrink: 0;
         }
 
         /* Tipo: Voo Premium */
@@ -497,6 +666,33 @@
 
         body.vertical .slide-contato .contact-items {
             gap: 3vh;
+        }
+
+        /* Vertical: viagem + hospedagem panels go full-width bottom */
+        body.vertical .slide-viagem .overlay {
+            background: linear-gradient(to top,
+                    rgba(0, 0, 0, 0.85) 0%,
+                    rgba(0, 0, 0, 0.55) 45%,
+                    rgba(0, 0, 0, 0.15) 65%,
+                    transparent 100%);
+        }
+
+        body.vertical .slide-viagem .viagem-panel {
+            width: 85vw;
+            bottom: 5vh;
+        }
+
+        body.vertical .slide-hospedagem .overlay {
+            background: linear-gradient(to top,
+                    rgba(0, 0, 0, 0.85) 0%,
+                    rgba(0, 0, 0, 0.55) 45%,
+                    rgba(0, 0, 0, 0.15) 65%,
+                    transparent 100%);
+        }
+
+        body.vertical .slide-hospedagem .hosp-panel {
+            width: 85vw;
+            bottom: 5vh;
         }
 
         /* ── Composed Section (non-full-screen — matches site layout) ── */
@@ -1086,82 +1282,228 @@
                     case 'viagens': {
                         el.classList.add('slide-viagem');
                         el.style.backgroundImage = 'url(' + escapeCSS(d.imagemUrl || '') + ')';
+
+                        // Overlay
                         var ovl = document.createElement('div');
                         ovl.className = 'overlay';
                         el.appendChild(ovl);
-                        if (d.origem) {
-                            var badge = document.createElement('div');
-                            badge.className = 'viagem-badge';
-                            badge.textContent = 'Saindo de ' + d.origem;
-                            el.appendChild(badge);
+
+                        // Badges row (destaques + categorias) — top-left
+                        var hasBadges = (d.destaques && d.destaques.length > 0) || (d.categorias && d.categorias.length > 0);
+                        if (hasBadges) {
+                            var badgesRow = document.createElement('div');
+                            badgesRow.className = 'viagem-badges';
+                            if (d.destaques) {
+                                for (var bd = 0; bd < d.destaques.length; bd++) {
+                                    var bde = document.createElement('span');
+                                    bde.className = 'viagem-badge-destaque';
+                                    bde.textContent = d.destaques[bd].nome;
+                                    badgesRow.appendChild(bde);
+                                }
+                            }
+                            if (d.categorias) {
+                                for (var bc = 0; bc < d.categorias.length; bc++) {
+                                    var bce = document.createElement('span');
+                                    bce.className = 'viagem-badge-categoria';
+                                    bce.textContent = d.categorias[bc].nome;
+                                    badgesRow.appendChild(bce);
+                                }
+                            }
+                            el.appendChild(badgesRow);
                         }
-                        var info = document.createElement('div');
-                        info.className = 'viagem-info';
+
+                        // Origin badge — top-right
+                        if (d.origem) {
+                            var originBadge = document.createElement('div');
+                            originBadge.className = 'viagem-origin-badge';
+                            originBadge.textContent = 'Saindo de ' + d.origem;
+                            el.appendChild(originBadge);
+                        }
+
+                        // Info panel — bottom-left
+                        var panel = document.createElement('div');
+                        panel.className = 'viagem-panel';
+
+                        // Title
                         var h2v = document.createElement('h2');
                         h2v.textContent = d.titulo || '';
-                        info.appendChild(h2v);
-                        var detalhes = document.createElement('div');
-                        detalhes.className = 'viagem-detalhes';
-                        if (d.valorTotal) {
-                            var preco = document.createElement('span');
-                            preco.className = 'viagem-preco';
-                            preco.textContent = formatBRL(d.valorTotal);
-                            detalhes.appendChild(preco);
+                        panel.appendChild(h2v);
+
+                        // Hospedagem name
+                        if (d.hospedagem) {
+                            var hospRow = document.createElement('div');
+                            hospRow.className = 'viagem-hospedagem';
+                            hospRow.innerHTML = icons.building;
+                            var hospText = document.createElement('span');
+                            hospText.textContent = d.hospedagem;
+                            hospRow.appendChild(hospText);
+                            panel.appendChild(hospRow);
                         }
-                        if (d.quantidadeParcelas && d.valorParcela) {
-                            var parcelas = document.createElement('span');
-                            parcelas.className = 'viagem-parcelas';
-                            parcelas.textContent = d.quantidadeParcelas + 'x de ' + formatBRL(d.valorParcela) + (d.temJuros ? '' : ' s/ juros');
-                            detalhes.appendChild(parcelas);
+
+                        // Meta row: noites · datas · viajantes
+                        var metaRow = document.createElement('div');
+                        metaRow.className = 'viagem-meta';
+                        var metaItems = [];
+
+                        var nights = calculateNights(d.dataIda, d.dataVolta);
+                        if (nights > 0) {
+                            metaItems.push({ icon: 'moon', text: nights + (nights === 1 ? ' noite' : ' noites') });
                         }
-                        info.appendChild(detalhes);
                         if (d.dataIda) {
-                            var datas = document.createElement('div');
-                            datas.className = 'viagem-datas';
-                            datas.textContent = formatDate(d.dataIda) + (d.dataVolta ? ' \u2192 ' + formatDate(d.dataVolta) : '');
-                            info.appendChild(datas);
+                            var dateText = formatDate(d.dataIda) + (d.dataVolta ? ' a ' + formatDate(d.dataVolta) : '');
+                            metaItems.push({ icon: null, text: dateText });
                         }
-                        el.appendChild(info);
+                        var qty = d.quantidadePessoas || 1;
+                        if (d.tipoViagem === 'hospedagem') {
+                            metaItems.push({ icon: 'users', text: qty + (qty === 1 ? ' hóspede' : ' hóspedes') });
+                        } else {
+                            metaItems.push({ icon: 'users', text: qty + (qty === 1 ? ' viajante' : ' viajantes') });
+                        }
+
+                        for (var mi = 0; mi < metaItems.length; mi++) {
+                            if (mi > 0) {
+                                var sep = document.createElement('span');
+                                sep.className = 'viagem-meta-divider';
+                                sep.textContent = '·';
+                                metaRow.appendChild(sep);
+                            }
+                            var metaEl = document.createElement('span');
+                            metaEl.className = 'viagem-meta-item';
+                            if (metaItems[mi].icon) {
+                                metaEl.innerHTML = icons[metaItems[mi].icon] || '';
+                            }
+                            var metaSpan = document.createElement('span');
+                            metaSpan.textContent = metaItems[mi].text;
+                            metaEl.appendChild(metaSpan);
+                            metaRow.appendChild(metaEl);
+                        }
+                        if (metaItems.length > 0) panel.appendChild(metaRow);
+
+                        // Divider
+                        var divLine = document.createElement('div');
+                        divLine.className = 'viagem-divider';
+                        panel.appendChild(divLine);
+
+                        // Price block
+                        var priceBlock = document.createElement('div');
+                        priceBlock.className = 'viagem-price-block';
+
+                        if (d.valorTotal) {
+                            var pLabel = document.createElement('div');
+                            pLabel.className = 'viagem-price-label';
+                            pLabel.textContent = 'A partir de';
+                            priceBlock.appendChild(pLabel);
+
+                            var pValue = document.createElement('div');
+                            pValue.className = 'viagem-price-value';
+                            pValue.textContent = formatBRL(d.valorTotal);
+                            priceBlock.appendChild(pValue);
+                        }
+
+                        if (d.quantidadeParcelas && d.valorParcela) {
+                            var pParcelas = document.createElement('div');
+                            pParcelas.className = 'viagem-price-parcelas';
+                            pParcelas.textContent = 'ou ' + d.quantidadeParcelas + 'x de ' + formatBRL(d.valorParcela) + (d.temJuros ? ' com juros' : ' sem juros');
+                            priceBlock.appendChild(pParcelas);
+                        }
+
+                        if (d.xp && d.xp > 0) {
+                            var xpEl = document.createElement('div');
+                            xpEl.className = 'viagem-xp-info';
+                            xpEl.textContent = 'Acumule +' + Number(d.xp).toLocaleString('pt-BR') + ' pontos XP';
+                            priceBlock.appendChild(xpEl);
+                        }
+
+                        panel.appendChild(priceBlock);
+                        el.appendChild(panel);
                         break;
                     }
 
                     case 'hospedagens': {
                         el.classList.add('slide-hospedagem');
                         el.style.backgroundImage = 'url(' + escapeCSS(d.primary_image || '') + ')';
+
+                        // Overlay
                         var ovlH = document.createElement('div');
                         ovlH.className = 'overlay';
                         el.appendChild(ovlH);
-                        if (d.xp) {
-                            var badgeH = document.createElement('div');
-                            badgeH.className = 'hosp-badge';
-                            badgeH.textContent = d.xp + ' XP';
-                            el.appendChild(badgeH);
+
+                        // XP badge — top-right
+                        if (d.xp && d.xp > 0) {
+                            var xpBadgeH = document.createElement('div');
+                            xpBadgeH.className = 'hosp-xp-badge';
+                            xpBadgeH.textContent = '+' + Number(d.xp).toLocaleString('pt-BR') + ' XP';
+                            el.appendChild(xpBadgeH);
                         }
-                        var infoH = document.createElement('div');
-                        infoH.className = 'hosp-info';
+
+                        // Info panel — bottom-left
+                        var panelH = document.createElement('div');
+                        panelH.className = 'hosp-panel';
+
+                        // Name
                         var h2h = document.createElement('h2');
                         h2h.textContent = d.name || '';
-                        infoH.appendChild(h2h);
+                        panelH.appendChild(h2h);
+
+                        // Location
                         if (d.city || d.country) {
-                            var local = document.createElement('div');
-                            local.className = 'hosp-local';
-                            local.textContent = [d.city, d.country].filter(Boolean).join(', ');
-                            infoH.appendChild(local);
+                            var locRow = document.createElement('div');
+                            locRow.className = 'hosp-location';
+                            locRow.innerHTML = icons.location;
+                            var locText = document.createElement('span');
+                            locText.textContent = [d.city, d.country].filter(Boolean).join(', ');
+                            locRow.appendChild(locText);
+                            panelH.appendChild(locRow);
                         }
-                        var detH = document.createElement('div');
-                        detH.className = 'hosp-detalhes';
+
+                        // Meta row: quartos · hóspedes
+                        var metaRowH = document.createElement('div');
+                        metaRowH.className = 'hosp-meta';
+                        var metaItemsH = [];
+
                         if (d.bedrooms) {
-                            var bedSpan = document.createElement('span');
-                            bedSpan.textContent = d.bedrooms + ' quarto' + (d.bedrooms > 1 ? 's' : '');
-                            detH.appendChild(bedSpan);
+                            metaItemsH.push({ icon: 'bed', text: d.bedrooms + ' quarto' + (d.bedrooms > 1 ? 's' : '') });
                         }
                         if (d.max_guests) {
-                            var guestSpan = document.createElement('span');
-                            guestSpan.textContent = 'at\u00e9 ' + d.max_guests + ' h\u00f3spede' + (d.max_guests > 1 ? 's' : '');
-                            detH.appendChild(guestSpan);
+                            metaItemsH.push({ icon: 'users', text: 'Até ' + d.max_guests + ' hóspede' + (d.max_guests > 1 ? 's' : '') });
                         }
-                        if (detH.children.length > 0) infoH.appendChild(detH);
-                        el.appendChild(infoH);
+
+                        for (var mih = 0; mih < metaItemsH.length; mih++) {
+                            if (mih > 0) {
+                                var sepH = document.createElement('span');
+                                sepH.className = 'hosp-meta-divider';
+                                sepH.textContent = '·';
+                                metaRowH.appendChild(sepH);
+                            }
+                            var metaElH = document.createElement('span');
+                            metaElH.className = 'hosp-meta-item';
+                            if (metaItemsH[mih].icon) {
+                                metaElH.innerHTML = icons[metaItemsH[mih].icon] || '';
+                            }
+                            var metaSpanH = document.createElement('span');
+                            metaSpanH.textContent = metaItemsH[mih].text;
+                            metaElH.appendChild(metaSpanH);
+                            metaRowH.appendChild(metaElH);
+                        }
+                        if (metaItemsH.length > 0) panelH.appendChild(metaRowH);
+
+                        // Divider
+                        var divLineH = document.createElement('div');
+                        divLineH.className = 'hosp-divider';
+                        panelH.appendChild(divLineH);
+
+                        // XP highlight
+                        if (d.xp && d.xp > 0) {
+                            var xpHighlight = document.createElement('div');
+                            xpHighlight.className = 'hosp-xp-highlight';
+                            xpHighlight.innerHTML = icons.star;
+                            var xpTextH = document.createElement('span');
+                            xpTextH.textContent = 'Acumule +' + Number(d.xp).toLocaleString('pt-BR') + ' pontos XP';
+                            xpHighlight.appendChild(xpTextH);
+                            panelH.appendChild(xpHighlight);
+                        }
+
+                        el.appendChild(panelH);
                         break;
                     }
 

@@ -632,9 +632,9 @@ export default function XpClubPage() {
                         </div>
                         <div className="flex items-center gap-1.5 ml-auto">
                             <div className={`h-2 w-2 rounded-full ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "bg-blue-500" : "bg-red-500"}`} />
-                            <span className="text-muted-foreground text-xs">Saldo período</span>
-                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[200px] text-xs">Diferença entre créditos e débitos no período selecionado.</TooltipContent></Tooltip>
-                            <span className={`font-semibold tabular-nums ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "text-blue-600" : "text-red-600"}`}>{Number(periodo.saldoLiquidoPeriodo || 0).toLocaleString("pt-BR")}</span>
+                            <span className="text-muted-foreground text-xs">Fluxo líquido</span>
+                            <Tooltip><TooltipTrigger asChild><CircleHelp className="h-3 w-3 text-muted-foreground/50 cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-[230px] text-xs">Créditos menos débitos no período selecionado. Pode ficar negativo quando há mais resgates/débitos do que entradas.</TooltipContent></Tooltip>
+                            <span className={`font-semibold tabular-nums ${Number(periodo.saldoLiquidoPeriodo || 0) >= 0 ? "text-blue-600" : "text-red-600"}`}>{Number(periodo.saldoLiquidoPeriodo || 0) > 0 ? "+" : ""}{Number(periodo.saldoLiquidoPeriodo || 0).toLocaleString("pt-BR")}</span>
                         </div>
                     </div>
                 </div>

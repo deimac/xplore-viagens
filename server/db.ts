@@ -3349,10 +3349,13 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
           SELECT v.id, v.titulo, v.imagemUrl, v.origem, v.valorTotal, v.quantidadeParcelas,
             v.valorParcela, v.temJuros, v.dataIda, v.dataVolta, v.quantidadePessoas,
             v.tipo_viagem as tipoViagem, v.hospedagem, v.tipo_quarto as tipoQuarto, v.xp,
-            GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw
+            GROUP_CONCAT(DISTINCT CONCAT(d.id, ':', d.nome) SEPARATOR '|') as destaques_raw,
+            GROUP_CONCAT(DISTINCT CONCAT(c.id, ':', c.nome) SEPARATOR '|') as categorias_raw
           FROM viagens v
           LEFT JOIN viagemDestaques vd ON v.id = vd.viagemId
           LEFT JOIN destaques d ON vd.destaqueId = d.id
+          LEFT JOIN viagemCategorias vc ON v.id = vc.viagemId
+          LEFT JOIN categorias c ON vc.categoriaId = c.id
           WHERE v.ativo = TRUE AND v.mostrarNaTv = TRUE
             AND v.dataIda IS NOT NULL AND DATE(v.dataIda) > CURDATE()
           GROUP BY v.id
@@ -3369,7 +3372,14 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
               return { id: parseInt(id), nome: rest.join(':') };
             })
             : [],
+          categorias: r.categorias_raw
+            ? r.categorias_raw.split('|').map((s: string) => {
+              const [id, ...rest] = s.split(':');
+              return { id: parseInt(id), nome: rest.join(':') };
+            })
+            : [],
           destaques_raw: undefined,
+          categorias_raw: undefined,
         }));
         break;
       }
