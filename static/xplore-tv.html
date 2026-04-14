@@ -1340,6 +1340,17 @@
                             panel.appendChild(hospRow);
                         }
 
+                        // Room type (tipo de quarto)
+                        if (d.tipoQuarto) {
+                            var roomRow = document.createElement('div');
+                            roomRow.className = 'viagem-hospedagem';
+                            roomRow.innerHTML = icons.bed;
+                            var roomText = document.createElement('span');
+                            roomText.textContent = d.tipoQuarto;
+                            roomRow.appendChild(roomText);
+                            panel.appendChild(roomRow);
+                        }
+
                         // Meta row: noites · datas · viajantes
                         var metaRow = document.createElement('div');
                         metaRow.className = 'viagem-meta';
@@ -1655,14 +1666,25 @@
                 imgSection.appendChild(gradient);
 
                 // Destaques badges (amber, top-left — like site)
-                if (d.destaques && d.destaques.length > 0) {
+                var hasCardBadges = (d.destaques && d.destaques.length > 0) || (d.categorias && d.categorias.length > 0);
+                if (hasCardBadges) {
                     var badges = document.createElement('div');
                     badges.className = 'card-badges';
-                    for (var b = 0; b < d.destaques.length; b++) {
-                        var badge = document.createElement('span');
-                        badge.className = 'card-badge-destaque';
-                        badge.textContent = d.destaques[b].nome;
-                        badges.appendChild(badge);
+                    if (d.destaques) {
+                        for (var b = 0; b < d.destaques.length; b++) {
+                            var badge = document.createElement('span');
+                            badge.className = 'card-badge-destaque';
+                            badge.textContent = d.destaques[b].nome;
+                            badges.appendChild(badge);
+                        }
+                    }
+                    if (d.categorias) {
+                        for (var bc2 = 0; bc2 < d.categorias.length; bc2++) {
+                            var catBadge = document.createElement('span');
+                            catBadge.className = 'card-badge-categoria';
+                            catBadge.textContent = d.categorias[bc2].nome;
+                            badges.appendChild(catBadge);
+                        }
                     }
                     imgSection.appendChild(badges);
                 }

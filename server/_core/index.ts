@@ -97,6 +97,9 @@ async function startServer() {
     res.sendFile(path.join(staticDir, "delete-data.html"));
   });
   app.get("/xplore-tv", (_req, res) => {
+    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
     res.sendFile(path.join(staticDir, "xplore-tv.html"));
   });
 
