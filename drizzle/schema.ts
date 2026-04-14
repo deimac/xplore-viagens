@@ -671,3 +671,21 @@ export const xploreTvSecoes = mysqlTable("xplore_tv_secoes", {
 
 export type XploreTvSecao = typeof xploreTvSecoes.$inferSelect;
 export type InsertXploreTvSecao = typeof xploreTvSecoes.$inferInsert;
+
+/**
+ * Xplore TV Vídeos – seções de vídeo independentes
+ */
+export const xploreTvVideos = mysqlTable("xplore_tv_videos", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull().default("Vídeo"),
+  videoUrl: varchar("video_url", { length: 500 }).notNull(),
+  ativo: boolean("ativo").notNull().default(true),
+  ordem: int("ordem").notNull().default(0),
+  transicao: mysqlEnum("transicao", ["fade", "slide"]).notNull().default("fade"),
+  orientacao: mysqlEnum("orientacao", ["horizontal", "vertical", "ambos"]).notNull().default("ambos"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
+});
+
+export type XploreTvVideo = typeof xploreTvVideos.$inferSelect;
+export type InsertXploreTvVideo = typeof xploreTvVideos.$inferInsert;

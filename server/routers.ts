@@ -1625,14 +1625,61 @@ export const appRouter = router({
         await db.reorderXploreTvSecoes(input.orderedIds);
         return { success: true };
       }),
-    // Video management
-    getVideo: adminProcedure.query(async () => {
-      const video = await db.getXploreTvVideo();
-      if (!video) return null;
-      let payload: any = {};
-      try { payload = video.payload ? JSON.parse(video.payload) : {}; } catch { }
-      return { id: video.id, titulo: video.titulo, ativo: video.ativo, videoUrl: payload.url || null };
+    // Unified reorder (sections + videos)
+    reorderUnified: adminProcedure
+      .input(z.object({ items: z.array(z.object({ type: z.enum(['secao', 'video']), id: z.number() })) }))
+      .mutation(async ({ input }) => {
+        await db.reorderUnifiedTvPlaylist(input.items);
+        return { success: true };
+      }),
+    // Multi-video management
+    listVideos: adminProcedure.query(async () => {
+      return await db.getAllXploreTvVideos();
     }),
+    createVideoSection: adminProcedure
+      .input(z.object({
+        nome: z.string().default('Vídeo'),
+        videoUrl: z.string(),
+        ativo: z.boolean().default(true),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.createXploreTvVideo(input);
+        return { success: true, id };
+      }),
+    updateVideoSection: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        nome: z.string().optional(),
+        videoUrl: z.string().optional(),
+        ativo: z.boolean().optional(),
+        transicao: z.enum(["fade", "slide"]).optional(),
+        orientacao: z.enum(["horizontal", "vertical", "ambos"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateXploreTvVideo(id, data);
+        return { success: true };
+      }),
+    deleteVideoSection: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const existing = await db.getXploreTvVideoById(input.id);
+        if (existing && existing.videoUrl) {
+          try {
+            const oldKey = existing.videoUrl.replace(/^\/uploads\//, '');
+            const { storageDelete } = await import('./storage');
+            await storageDelete(oldKey);
+          } catch { }
+        }
+        await db.deleteXploreTvVideo(input.id);
+        return { success: true };
+      }),
+    toggleVideoSection: adminProcedure
+      .input(z.object({ id: z.number(), ativo: z.boolean() }))
+      .mutation(async ({ input }) => {
+        await db.updateXploreTvVideo(input.id, { ativo: input.ativo });
+        return { success: true };
+      }),
     uploadVideo: adminProcedure
       .input(z.object({
         fileName: z.string(),
@@ -1649,51 +1696,11 @@ export const appRouter = router({
         if (buffer.length > maxSize) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Arquivo muito grande. Máximo 200 MB.' });
         }
-        // Delete previous video file if exists
-        const existing = await db.getXploreTvVideo();
-        if (existing && existing.payload) {
-          try {
-            const oldPayload = JSON.parse(existing.payload);
-            if (oldPayload.url) {
-              const oldKey = oldPayload.url.replace(/^\/uploads\//, '');
-              const { storageDelete } = await import('./storage');
-              await storageDelete(oldKey);
-            }
-          } catch { }
-        }
         const ext = input.fileName.split('.').pop() || 'mp4';
         const randomSuffix = crypto.randomBytes(8).toString('hex');
         const fileKey = `xplore-tv/video/${randomSuffix}.${ext}`;
         const { url } = await storagePut(fileKey, buffer, input.mimeType);
         return { url };
-      }),
-    saveVideo: adminProcedure
-      .input(z.object({
-        titulo: z.string().default('Vídeo'),
-        videoUrl: z.string(),
-        ativo: z.boolean().default(true),
-      }))
-      .mutation(async ({ input }) => {
-        const id = await db.upsertXploreTvVideo(input);
-        return { success: true, id };
-      }),
-    deleteVideo: adminProcedure
-      .mutation(async () => {
-        const existing = await db.getXploreTvVideo();
-        if (existing) {
-          if (existing.payload) {
-            try {
-              const oldPayload = JSON.parse(existing.payload);
-              if (oldPayload.url) {
-                const oldKey = oldPayload.url.replace(/^\/uploads\//, '');
-                const { storageDelete } = await import('./storage');
-                await storageDelete(oldKey);
-              }
-            } catch { }
-          }
-          await db.deleteXploreTvItem(existing.id);
-        }
-        return { success: true };
       }),
   }),
 });

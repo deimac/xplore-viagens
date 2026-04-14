@@ -34,7 +34,7 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
 import { eq, and, desc, inArray, or, isNull, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
-import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes } from "../drizzle/schema";
+import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos } from "../drizzle/schema";
 import { ENV } from './_core/env';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
@@ -3291,43 +3291,74 @@ export async function reorderXploreTvItens(orderedIds: number[]) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// XPLORE TV – Vídeo da Vitrine Digital
+// XPLORE TV – Vídeos da Vitrine Digital (múltiplos)
 // ─────────────────────────────────────────────────────────────
 
-export async function getXploreTvVideo() {
+export async function getAllXploreTvVideos() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(xploreTvVideos).orderBy(xploreTvVideos.ordem);
+}
+
+export async function getActiveXploreTvVideos(orientacao?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const all = await db.select().from(xploreTvVideos)
+    .where(eq(xploreTvVideos.ativo, true))
+    .orderBy(xploreTvVideos.ordem);
+  if (!orientacao || orientacao === 'ambos') return all;
+  return all.filter(v => v.orientacao === orientacao || v.orientacao === 'ambos');
+}
+
+export async function getXploreTvVideoById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(xploreTvItens)
-    .where(eq(xploreTvItens.tipo, 'video'))
-    .orderBy(desc(xploreTvItens.id))
-    .limit(1);
+  const rows = await db.select().from(xploreTvVideos).where(eq(xploreTvVideos.id, id)).limit(1);
   return rows.length > 0 ? rows[0] : null;
 }
 
-export async function upsertXploreTvVideo(data: { titulo: string; videoUrl: string; ativo: boolean }) {
+export async function createXploreTvVideo(data: { nome: string; videoUrl: string; ativo?: boolean; transicao?: string; orientacao?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const existing = await getXploreTvVideo();
-  const payload = JSON.stringify({ url: data.videoUrl });
-  if (existing) {
-    await db.update(xploreTvItens).set({
-      titulo: data.titulo,
-      ativo: data.ativo,
-      payload,
-    }).where(eq(xploreTvItens.id, existing.id));
-    return existing.id;
-  } else {
-    const result = await db.insert(xploreTvItens).values({
-      tipo: 'video',
-      titulo: data.titulo || 'Vídeo',
-      ativo: data.ativo,
-      ordem: 0,
-      duracaoMs: 30000,
-      transicao: 'fade',
-      orientacao: 'ambos',
-      payload,
-    });
-    return Number(result[0].insertId);
+  // Get max ordem
+  const existing = await db.select().from(xploreTvVideos).orderBy(desc(xploreTvVideos.ordem)).limit(1);
+  const maxOrdem = existing.length > 0 ? existing[0].ordem : -1;
+  // Also consider secoes ordem
+  const secoesMax = await db.select().from(xploreTvSecoes).orderBy(desc(xploreTvSecoes.ordem)).limit(1);
+  const secoesMaxOrdem = secoesMax.length > 0 ? secoesMax[0].ordem : -1;
+  const nextOrdem = Math.max(maxOrdem, secoesMaxOrdem) + 1;
+  const result = await db.insert(xploreTvVideos).values({
+    nome: data.nome,
+    videoUrl: data.videoUrl,
+    ativo: data.ativo ?? true,
+    ordem: nextOrdem,
+    transicao: (data.transicao as any) || 'fade',
+    orientacao: (data.orientacao as any) || 'ambos',
+  });
+  return Number(result[0].insertId);
+}
+
+export async function updateXploreTvVideo(id: number, data: Partial<{ nome: string; videoUrl: string; ativo: boolean; ordem: number; transicao: string; orientacao: string }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(xploreTvVideos).set(data as any).where(eq(xploreTvVideos.id, id));
+}
+
+export async function deleteXploreTvVideo(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(xploreTvVideos).where(eq(xploreTvVideos.id, id));
+}
+
+export async function reorderUnifiedTvPlaylist(items: { type: 'secao' | 'video'; id: number }[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type === 'secao') {
+      await db.update(xploreTvSecoes).set({ ordem: i }).where(eq(xploreTvSecoes.id, items[i].id));
+    } else {
+      await db.update(xploreTvVideos).set({ ordem: i }).where(eq(xploreTvVideos.id, items[i].id));
+    }
   }
 }
 
@@ -3467,28 +3498,15 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
         }
         break;
       }
-      case 'video': {
-        const video = await getXploreTvVideo();
-        if (video && video.ativo) {
-          let payload: any = {};
-          try { payload = video.payload ? JSON.parse(video.payload) : {}; } catch { }
-          if (payload.url) {
-            itens = [{
-              id: video.id,
-              titulo: video.titulo,
-              videoUrl: payload.url,
-            }];
-          }
-        }
-        break;
-      }
     }
 
     if (itens.length > 0) {
       result.push({
         id: secao.id,
+        _type: 'secao' as const,
         codigo: secao.codigo,
         nome: secao.nome,
+        ordem: secao.ordem,
         transicao: secao.transicao,
         orientacao: secao.orientacao,
         duracaoSecaoMs: secao.duracaoSecaoMs,
@@ -3498,6 +3516,31 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
       });
     }
   }
+
+  // Merge active video sections
+  const videos = await getActiveXploreTvVideos(orientacao);
+  for (const video of videos) {
+    result.push({
+      id: video.id,
+      _type: 'video' as const,
+      codigo: 'video',
+      nome: video.nome,
+      ordem: video.ordem,
+      transicao: video.transicao,
+      orientacao: video.orientacao,
+      duracaoSecaoMs: 0,
+      duracaoItemMs: 0,
+      fullScreen: true,
+      itens: [{
+        id: video.id,
+        titulo: video.nome,
+        videoUrl: video.videoUrl,
+      }],
+    });
+  }
+
+  // Sort by ordem for unified ordering
+  result.sort((a, b) => a.ordem - b.ordem);
 
   return result;
 }
