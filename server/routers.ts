@@ -1590,7 +1590,17 @@ export const appRouter = router({
     playlist: publicProcedure
       .input(z.object({ orientacao: z.string().optional() }).optional())
       .query(async ({ input }) => {
-        return await db.getHydratedTvPlaylist(input?.orientacao);
+        const start = Date.now();
+        const result = await db.getHydratedTvPlaylist(input?.orientacao);
+        const durationMs = Date.now() - start;
+        const sectionCount = result.length;
+        const itemCount = result.reduce((sum: number, s: any) => sum + (s.itens?.length || 0), 0);
+        if (durationMs > 2000) {
+          console.warn(`[XploreTV] SLOW playlist hydration: ${durationMs}ms (sections=${sectionCount}, items=${itemCount}, orientacao=${input?.orientacao || 'default'})`);
+        } else {
+          console.log(`[XploreTV] Playlist: ${durationMs}ms (sections=${sectionCount}, items=${itemCount})`);
+        }
+        return result;
       }),
     listSecoes: adminProcedure.query(async () => {
       return await db.getAllXploreTvSecoes();

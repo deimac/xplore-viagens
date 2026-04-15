@@ -35,6 +35,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 const SECAO_META: Record<string, { label: string; icon: any; color: string }> = {
     slider: { label: "Slider / Carrossel", icon: ImageIcon, color: "from-blue-500 to-cyan-500" },
@@ -94,6 +102,11 @@ export default function XploreTvPage() {
     const [videoManageId, setVideoManageId] = useState<number | null>(null);
     const [videoUploading, setVideoUploading] = useState(false);
     const [addingVideo, setAddingVideo] = useState(false);
+    const [addVideoTitle, setAddVideoTitle] = useState("");
+    const [addVideoDialogOpen, setAddVideoDialogOpen] = useState(false);
+    const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
+    const [deleteVideoId, setDeleteVideoId] = useState<number | null>(null);
+    const [deleteVideoName, setDeleteVideoName] = useState("");
     const videoInputRef = useRef<HTMLInputElement>(null);
     const addVideoInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,19 +183,29 @@ export default function XploreTvPage() {
         },
     });
 
-    const handleAddVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAddVideoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const maxSize = 200 * 1024 * 1024;
         if (file.size > maxSize) {
             toast.error("Arquivo muito grande. Máximo 200 MB.");
+            if (addVideoInputRef.current) addVideoInputRef.current.value = '';
             return;
         }
         const allowed = ['video/mp4', 'video/webm', 'video/ogg'];
         if (!allowed.includes(file.type)) {
             toast.error("Formato não suportado. Use MP4, WebM ou OGG.");
+            if (addVideoInputRef.current) addVideoInputRef.current.value = '';
             return;
         }
+        setPendingVideoFile(file);
+        setAddVideoTitle("");
+        setAddVideoDialogOpen(true);
+    };
+
+    const handleConfirmAddVideo = async () => {
+        if (!pendingVideoFile || !addVideoTitle.trim()) return;
+        setAddVideoDialogOpen(false);
         setAddingVideo(true);
         try {
             const reader = new FileReader();
@@ -192,15 +215,15 @@ export default function XploreTvPage() {
                     resolve(result.split(',')[1]);
                 };
                 reader.onerror = reject;
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(pendingVideoFile);
             });
             const { url } = await uploadVideoMutation.mutateAsync({
-                fileName: file.name,
+                fileName: pendingVideoFile.name,
                 fileData: base64,
-                mimeType: file.type,
+                mimeType: pendingVideoFile.type,
             });
             await createVideoMutation.mutateAsync({
-                nome: file.name.replace(/\.[^/.]+$/, ''),
+                nome: addVideoTitle.trim(),
                 videoUrl: url,
                 ativo: true,
             });
@@ -208,6 +231,8 @@ export default function XploreTvPage() {
             toast.error(err?.message || "Erro ao fazer upload");
         } finally {
             setAddingVideo(false);
+            setPendingVideoFile(null);
+            setAddVideoTitle("");
             if (addVideoInputRef.current) addVideoInputRef.current.value = '';
         }
     };
@@ -406,7 +431,7 @@ export default function XploreTvPage() {
                         type="file"
                         accept="video/mp4,video/webm,video/ogg"
                         className="hidden"
-                        onChange={handleAddVideoUpload}
+                        onChange={handleAddVideoFileSelect}
                         title="Selecionar vídeo"
                     />
                     <Button
@@ -539,9 +564,8 @@ export default function XploreTvPage() {
                                                 {isVideo && (
                                                     <button
                                                         onClick={() => {
-                                                            if (confirm("Remover esta seção de vídeo?")) {
-                                                                deleteVideoMutation.mutate({ id: item.data.id });
-                                                            }
+                                                            setDeleteVideoId(item.data.id);
+                                                            setDeleteVideoName(video!.nome || 'Vídeo');
                                                         }}
                                                         className="p-2 rounded-lg transition-colors text-gray-400 hover:bg-red-50 hover:text-red-600"
                                                         title="Excluir seção de vídeo"
@@ -693,6 +717,76 @@ export default function XploreTvPage() {
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmDialog
+                open={deleteVideoId !== null}
+                onOpenChange={(open) => { if (!open) setDeleteVideoId(null); }}
+                title="Excluir seção de vídeo"
+                itemName={deleteVideoName}
+                onConfirm={() => {
+                    if (deleteVideoId !== null) {
+                        deleteVideoMutation.mutate({ id: deleteVideoId });
+                        setDeleteVideoId(null);
+                    }
+                }}
+                isLoading={deleteVideoMutation.isPending}
+            />
+
+            {/* Add Video Title Dialog */}
+            <Dialog open={addVideoDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setAddVideoDialogOpen(false);
+                    setPendingVideoFile(null);
+                    setAddVideoTitle("");
+                    if (addVideoInputRef.current) addVideoInputRef.current.value = '';
+                }
+            }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Título do Vídeo</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label className="text-sm text-gray-600 mb-2 block">
+                            Informe um título para identificar este vídeo na playlist
+                        </Label>
+                        <Input
+                            value={addVideoTitle}
+                            onChange={(e) => setAddVideoTitle(e.target.value)}
+                            placeholder="Ex: Vídeo Institucional, Promo Verão..."
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && addVideoTitle.trim()) {
+                                    handleConfirmAddVideo();
+                                }
+                            }}
+                        />
+                        {pendingVideoFile && (
+                            <p className="text-xs text-gray-400 mt-2">
+                                Arquivo: {pendingVideoFile.name}
+                            </p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setAddVideoDialogOpen(false);
+                            setPendingVideoFile(null);
+                            setAddVideoTitle("");
+                            if (addVideoInputRef.current) addVideoInputRef.current.value = '';
+                        }}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={handleConfirmAddVideo}
+                            disabled={!addVideoTitle.trim()}
+                            className="bg-gradient-to-r from-rose-500 to-red-500 text-white"
+                        >
+                            Enviar Vídeo
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

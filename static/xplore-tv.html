@@ -327,30 +327,32 @@
             left: 5vw;
             display: flex;
             flex-wrap: wrap;
-            gap: 0.6vw;
+            gap: 0.8vw;
             z-index: 3;
         }
 
         .slide-viagem .viagem-badge-destaque {
-            background: rgba(245, 158, 11, 0.9);
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
-            padding: 0.5vh 1.2vw;
+            padding: 0.7vh 1.6vw;
             border-radius: 999px;
-            font-size: clamp(0.75rem, 1.2vw, 1.05rem);
-            font-weight: 700;
-            backdrop-filter: blur(4px);
-            letter-spacing: 0.02em;
+            font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.03em;
         }
 
         .slide-viagem .viagem-badge-categoria {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
-            padding: 0.5vh 1.2vw;
+            padding: 0.7vh 1.6vw;
             border-radius: 999px;
-            font-size: clamp(0.75rem, 1.2vw, 1.05rem);
-            font-weight: 500;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.03em;
         }
 
         /* Origin badge (top-right) */
@@ -358,16 +360,16 @@
             position: absolute;
             top: 5vh;
             right: 5vw;
-            background: rgba(14, 116, 144, 0.85);
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
-            padding: 0.8vh 2vw;
-            border-radius: 0.5rem;
-            font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+            padding: 0.7vh 1.6vw;
+            border-radius: 999px;
+            font-size: clamp(0.9rem, 1.4vw, 1.2rem);
             font-weight: 600;
             z-index: 3;
-            backdrop-filter: blur(4px);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.03em;
         }
 
         /* Info panel (left side, vertically centered) */
@@ -375,16 +377,16 @@
             position: absolute;
             bottom: 6vh;
             left: 5vw;
-            width: 42vw;
+            width: 44vw;
             color: #fff;
             z-index: 3;
             display: flex;
             flex-direction: column;
-            gap: 1.8vh;
+            gap: 2vh;
         }
 
         .slide-viagem .viagem-panel h2 {
-            font-size: clamp(2.2rem, 3.8vw, 3.8rem);
+            font-size: clamp(2.4rem, 4vw, 4rem);
             font-weight: 800;
             text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
             line-height: 1.1;
@@ -394,44 +396,50 @@
         .slide-viagem .viagem-hospedagem {
             display: flex;
             align-items: center;
-            gap: 0.6vw;
-            font-size: clamp(1rem, 1.8vw, 1.5rem);
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
+            gap: 0.7vw;
+            font-size: clamp(1.1rem, 2vw, 1.7rem);
+            color: #fbbf24;
+            font-weight: 600;
         }
 
         .slide-viagem .viagem-hospedagem svg {
-            width: clamp(1.1rem, 1.6vw, 1.4rem);
-            height: clamp(1.1rem, 1.6vw, 1.4rem);
+            width: clamp(1.2rem, 1.8vw, 1.6rem);
+            height: clamp(1.2rem, 1.8vw, 1.6rem);
             flex-shrink: 0;
-            opacity: 0.85;
+            opacity: 0.9;
         }
 
         /* Meta row: noites · datas · viajantes */
         .slide-viagem .viagem-meta {
             display: flex;
             flex-wrap: wrap;
-            gap: 1.5vw;
+            align-items: center;
+            gap: 1.2vw;
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 0.8rem;
+            padding: 1.2vh 1.5vw;
         }
 
         .slide-viagem .viagem-meta-item {
             display: flex;
             align-items: center;
-            gap: 0.4vw;
-            font-size: clamp(0.9rem, 1.5vw, 1.25rem);
-            color: rgba(255, 255, 255, 0.8);
+            gap: 0.5vw;
+            font-size: clamp(1rem, 1.7vw, 1.4rem);
+            color: #fbbf24;
+            font-weight: 600;
         }
 
         .slide-viagem .viagem-meta-item svg {
-            width: clamp(1rem, 1.4vw, 1.25rem);
-            height: clamp(1rem, 1.4vw, 1.25rem);
+            width: clamp(1.1rem, 1.6vw, 1.4rem);
+            height: clamp(1.1rem, 1.6vw, 1.4rem);
             flex-shrink: 0;
-            opacity: 0.75;
+            opacity: 0.9;
         }
 
         .slide-viagem .viagem-meta-divider {
-            color: rgba(255, 255, 255, 0.35);
-            font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+            color: rgba(251, 191, 36, 0.45);
+            font-size: clamp(1rem, 1.5vw, 1.3rem);
             align-self: center;
         }
 
@@ -1090,6 +1098,40 @@
             var RETRY_DELAY = 10000;
             var API_URL = '/api/trpc/xploreTv.playlist';
             var FORCE_FULL_SCREEN = ['slider', 'contato_empresa', 'voos_premium', 'video'];
+            var WATCHDOG_THRESHOLD = 120000; // 2 min without slide advance = frozen
+            var HEALTH_LOG_INTERVAL = 300000; // log health every 5 min
+
+            // ── Telemetry ──
+            var metrics = {
+                startedAt: Date.now(),
+                slideAdvances: 0,
+                lastSlideAdvanceAt: 0,
+                pollCount: 0,
+                pollErrors: 0,
+                pollOverlaps: 0,
+                pollLastDurationMs: 0,
+                pollLastStatus: '',
+                pollLastSections: 0,
+                pollLastItems: 0,
+                pollLastPayloadBytes: 0,
+                renderCount: 0,
+                videoEnded: 0,
+                videoErrors: 0,
+                videoStalls: 0,
+                imageErrors: 0,
+                watchdogFires: 0,
+                innerTimerStarts: 0,
+                innerTimerClears: 0,
+                domNodesPeak: 0,
+            };
+            var pollInFlight = false;
+            var renderGeneration = 0; // guards against stale timer callbacks
+
+            function sampleDomNodes() {
+                var count = document.querySelectorAll('*').length;
+                if (count > metrics.domNodesPeak) metrics.domNodesPeak = count;
+                return count;
+            }
 
             // State
             var entries = [];
@@ -1192,17 +1234,42 @@
 
             // Fetch playlist from API
             function fetchPlaylist() {
+                if (pollInFlight) {
+                    metrics.pollOverlaps++;
+                    console.warn('[XploreTV] Poll skipped — previous request still in flight (overlaps: ' + metrics.pollOverlaps + ')');
+                    return;
+                }
+                pollInFlight = true;
+                var pollStart = Date.now();
+                metrics.pollCount++;
+
                 var url = API_URL + '?input=' + encodeURIComponent(JSON.stringify({ json: { orientacao: orientation } }));
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', url, true);
                 xhr.timeout = 10000;
+
+                function finishPoll(status) {
+                    pollInFlight = false;
+                    metrics.pollLastDurationMs = Date.now() - pollStart;
+                    metrics.pollLastStatus = status;
+                }
+
                 xhr.onload = function () {
                     if (xhr.status === 200) {
                         try {
-                            var response = JSON.parse(xhr.responseText);
+                            var responseText = xhr.responseText;
+                            metrics.pollLastPayloadBytes = responseText.length;
+                            var response = JSON.parse(responseText);
                             var raw = response.result && response.result.data;
                             var sections = Array.isArray(raw) ? raw : (raw && raw.json ? raw.json : []);
+                            metrics.pollLastSections = sections.length;
+                            var totalItems = 0;
+                            for (var si = 0; si < sections.length; si++) {
+                                totalItems += (sections[si].itens || []).length;
+                            }
+                            metrics.pollLastItems = totalItems;
                             var processed = processPlaylist(sections);
+                            finishPoll('ok');
                             if (processed.length > 0) {
                                 entries = processed;
                                 hideLoading();
@@ -1216,15 +1283,18 @@
                                 showError();
                             }
                         } catch (e) {
+                            finishPoll('parse_error');
                             console.warn('[XploreTV] Parse error:', e);
                             showError();
                         }
                     } else {
+                        finishPoll('http_' + xhr.status);
+                        metrics.pollErrors++;
                         showError();
                     }
                 };
-                xhr.onerror = function () { showError(); };
-                xhr.ontimeout = function () { showError(); };
+                xhr.onerror = function () { finishPoll('network_error'); metrics.pollErrors++; showError(); };
+                xhr.ontimeout = function () { finishPoll('timeout'); metrics.pollErrors++; showError(); };
                 xhr.send();
             }
 
@@ -1561,7 +1631,7 @@
                         vid.autoplay = true;
                         vid.muted = true;
                         vid.playsInline = true;
-                        vid.preload = 'auto';
+                        vid.preload = 'metadata';
                         vid.controls = false;
                         vid.setAttribute('playsinline', '');
                         vid.setAttribute('muted', '');
@@ -1677,6 +1747,7 @@
                 img.src = d.imagemUrl || '';
                 img.alt = d.titulo || '';
                 img.loading = 'lazy';
+                img.onerror = function () { metrics.imageErrors++; this.style.display = 'none'; };
                 imgSection.appendChild(img);
 
                 var gradient = document.createElement('div');
@@ -1846,6 +1917,7 @@
                 img.src = d.primary_image || '';
                 img.alt = d.name || '';
                 img.loading = 'lazy';
+                img.onerror = function () { metrics.imageErrors++; this.style.display = 'none'; };
                 imgSection.appendChild(img);
 
                 // XP badge (top-right, like site's premium badge position)
@@ -1981,6 +2053,7 @@
                 if (innerTimer) {
                     clearInterval(innerTimer);
                     innerTimer = null;
+                    metrics.innerTimerClears++;
                 }
             }
 
@@ -1992,6 +2065,7 @@
 
                 if (count <= 1) return;
 
+                metrics.innerTimerStarts++;
                 innerTimer = setInterval(function () {
                     activeIdx = (activeIdx + 1) % count;
                     updateCarouselPositions(carousel, dots, activeIdx, count);
@@ -2026,21 +2100,36 @@
 
             // ── Render an entry (full-screen slide or composed section) ──
 
+            var renderInProgress = false;
+
             function renderEntry(index) {
                 if (entries.length === 0) return;
                 var entry = entries[index];
                 if (!entry) return;
+                if (renderInProgress) {
+                    console.warn('[XploreTV] renderEntry skipped — already rendering');
+                    return;
+                }
+                renderInProgress = true;
+                renderGeneration++;
+                metrics.renderCount++;
+                metrics.slideAdvances++;
+                metrics.lastSlideAdvanceAt = Date.now();
 
                 // Stop any inner carousel from previous composed section
                 clearInnerCarousel();
 
-                // Fade out existing elements
+                // Fade out existing elements and clean up video listeners
                 var existing = player.querySelectorAll('.slide, .composed-section');
                 for (var i = 0; i < existing.length; i++) {
                     existing[i].classList.remove('active');
                     var videos = existing[i].querySelectorAll('video');
                     for (var v = 0; v < videos.length; v++) {
-                        try { videos[v].pause(); } catch (e) { }
+                        try {
+                            videos[v].pause();
+                            videos[v].removeAttribute('src');
+                            videos[v].load(); // release media resources
+                        } catch (e) { }
                     }
                 }
 
@@ -2080,6 +2169,8 @@
                     for (var r = 0; r < old.length; r++) {
                         try { player.removeChild(old[r]); } catch (e) { }
                     }
+                    renderInProgress = false;
+                    sampleDomNodes();
                 }, 1200);
             }
 
@@ -2106,20 +2197,29 @@
                     var videoEl = player.querySelector('.slide-video video');
                     if (videoEl) {
                         var advanced = false;
-                        var advanceToNext = function () {
-                            if (advanced) return;
+                        var gen = renderGeneration;
+                        var advanceToNext = function (evt) {
+                            if (advanced || gen !== renderGeneration) return;
                             advanced = true;
+                            if (evt && evt.type === 'ended') metrics.videoEnded++;
+                            if (evt && evt.type === 'error') metrics.videoErrors++;
                             videoEl.removeEventListener('ended', advanceToNext);
                             videoEl.removeEventListener('error', advanceToNext);
+                            videoEl.removeEventListener('stalled', onStall);
                             if (timer) { clearTimeout(timer); timer = null; }
                             currentIndex = (currentIndex + 1) % entries.length;
                             renderEntry(currentIndex);
                             scheduleNext();
                         };
+                        var onStall = function () {
+                            metrics.videoStalls++;
+                            console.warn('[XploreTV] Video stalled (total: ' + metrics.videoStalls + ')');
+                        };
                         videoEl.addEventListener('ended', advanceToNext);
                         videoEl.addEventListener('error', advanceToNext);
+                        videoEl.addEventListener('stalled', onStall);
                         // Fallback: if video doesn't fire ended within 2 minutes, advance anyway
-                        timer = setTimeout(advanceToNext, Math.max(duration * 3, 120000));
+                        timer = setTimeout(function () { advanceToNext({ type: 'timeout' }); }, Math.max(duration * 3, 120000));
                         return;
                     }
                 }
@@ -2142,6 +2242,83 @@
 
             document.addEventListener('click', tryFullscreen, { once: true });
             document.addEventListener('keydown', tryFullscreen, { once: true });
+
+            // ── Watchdog: detect frozen state ──
+            setInterval(function () {
+                if (metrics.lastSlideAdvanceAt === 0) return; // not started yet
+                var elapsed = Date.now() - metrics.lastSlideAdvanceAt;
+                if (elapsed > WATCHDOG_THRESHOLD) {
+                    metrics.watchdogFires++;
+                    var snapshot = getHealthSnapshot();
+                    console.error('[XploreTV] WATCHDOG: No slide advance for ' + Math.round(elapsed / 1000) + 's — possible freeze #' + metrics.watchdogFires);
+                    console.error('[XploreTV] WATCHDOG snapshot:', JSON.stringify(snapshot, null, 2));
+                }
+            }, 30000);
+
+            // ── Health snapshot ──
+            function getHealthSnapshot() {
+                var now = Date.now();
+                return {
+                    uptimeMin: Math.round((now - metrics.startedAt) / 60000),
+                    currentIndex: currentIndex,
+                    totalEntries: entries.length,
+                    currentType: entries[currentIndex] ? (entries[currentIndex].type === 'composed' ? 'composed:' + entries[currentIndex].section.codigo : entries[currentIndex].slide.type) : 'none',
+                    slideAdvances: metrics.slideAdvances,
+                    lastAdvanceAgo: metrics.lastSlideAdvanceAt ? Math.round((now - metrics.lastSlideAdvanceAt) / 1000) + 's' : 'never',
+                    renderInProgress: renderInProgress,
+                    pollInFlight: pollInFlight,
+                    poll: {
+                        count: metrics.pollCount,
+                        errors: metrics.pollErrors,
+                        overlaps: metrics.pollOverlaps,
+                        lastDurationMs: metrics.pollLastDurationMs,
+                        lastStatus: metrics.pollLastStatus,
+                        lastSections: metrics.pollLastSections,
+                        lastItems: metrics.pollLastItems,
+                        lastPayloadBytes: metrics.pollLastPayloadBytes,
+                    },
+                    video: {
+                        ended: metrics.videoEnded,
+                        errors: metrics.videoErrors,
+                        stalls: metrics.videoStalls,
+                    },
+                    imageErrors: metrics.imageErrors,
+                    dom: {
+                        currentNodes: document.querySelectorAll('*').length,
+                        peakNodes: metrics.domNodesPeak,
+                        playerChildren: player.childElementCount,
+                    },
+                    timers: {
+                        innerStarts: metrics.innerTimerStarts,
+                        innerClears: metrics.innerTimerClears,
+                        innerActive: innerTimer !== null,
+                        mainTimerActive: timer !== null,
+                    },
+                    watchdogFires: metrics.watchdogFires,
+                };
+            }
+
+            // ── Expose health globally ──
+            window.xploreTvHealth = function () {
+                var snap = getHealthSnapshot();
+                console.table ? console.table(snap) : console.log(JSON.stringify(snap, null, 2));
+                return snap;
+            };
+            window.xploreTvMetrics = metrics;
+
+            // ── Periodic health log ──
+            setInterval(function () {
+                var snap = getHealthSnapshot();
+                console.log('[XploreTV] Health — uptime: ' + snap.uptimeMin + 'min, slides: ' + snap.slideAdvances + ', polls: ' + snap.poll.count + ', pollErrors: ' + snap.poll.errors + ', videoErrors: ' + snap.video.errors + ', videoStalls: ' + snap.video.stalls + ', imgErrors: ' + snap.imageErrors + ', DOM: ' + snap.dom.currentNodes + '/' + snap.dom.peakNodes + ', watchdog: ' + snap.watchdogFires);
+            }, HEALTH_LOG_INTERVAL);
+
+            // ── Global error handler ──
+            window.addEventListener('error', function (e) {
+                console.error('[XploreTV] Uncaught error:', e.message, e.filename, e.lineno);
+            });
+            window.addEventListener('unhandledrejection', function (e) {
+                console.error('[XploreTV] Unhandled rejection:', e.reason);
+            });
 
             // Periodic playlist refresh
             setInterval(fetchPlaylist, POLL_INTERVAL);

@@ -449,6 +449,7 @@ export async function getAllViagens() {
         AND v.mostrarNoSite = TRUE
         AND v.dataIda IS NOT NULL
         AND DATE(v.dataIda) > CURDATE()
+        AND (v.data_expiracao IS NULL OR DATE(v.data_expiracao) >= CURDATE())
       GROUP BY v.id
       ORDER BY v.criadoEm DESC
     `);
@@ -3400,11 +3401,14 @@ export async function reorderXploreTvSecoes(orderedIds: number[]) {
  * Hidrata a playlist do Xplore TV: retorna seções ativas com os itens reais das fontes.
  */
 export async function getHydratedTvPlaylist(orientacao?: string) {
+  const hydrationStart = Date.now();
+  const timings: Record<string, number> = {};
   const secoes = await getActiveXploreTvSecoes(orientacao);
   const result: any[] = [];
 
   for (const secao of secoes) {
     let itens: any[] = [];
+    const secStart = Date.now();
 
     switch (secao.codigo) {
       case 'slider': {
@@ -3430,6 +3434,7 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
           LEFT JOIN categorias c ON vc.categoriaId = c.id
           WHERE v.ativo = TRUE AND v.mostrarNaTv = TRUE
             AND v.dataIda IS NOT NULL AND DATE(v.dataIda) > CURDATE()
+            AND (v.data_expiracao IS NULL OR DATE(v.data_expiracao) >= CURDATE())
           GROUP BY v.id
           ORDER BY v.criadoEm DESC
         `);
@@ -3500,6 +3505,8 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
       }
     }
 
+    timings[secao.codigo] = Date.now() - secStart;
+
     if (itens.length > 0) {
       result.push({
         id: secao.id,
@@ -3518,6 +3525,7 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
   }
 
   // Merge active video sections
+  const videoStart = Date.now();
   const videos = await getActiveXploreTvVideos(orientacao);
   for (const video of videos) {
     result.push({
@@ -3538,9 +3546,15 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
       }],
     });
   }
+  timings['videos'] = Date.now() - videoStart;
 
   // Sort by ordem for unified ordering
   result.sort((a, b) => a.ordem - b.ordem);
+
+  const totalMs = Date.now() - hydrationStart;
+  if (totalMs > 1000) {
+    console.warn(`[XploreTV:DB] Slow hydration: ${totalMs}ms — timings: ${JSON.stringify(timings)}`);
+  }
 
   return result;
 }
