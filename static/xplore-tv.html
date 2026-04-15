@@ -523,6 +523,27 @@
             backdrop-filter: blur(4px);
         }
 
+        /* Section title badge (top-left) */
+        .slide-hospedagem .hosp-section-title {
+            position: absolute;
+            top: 5vh;
+            left: 5vw;
+            z-index: 3;
+            color: #fff;
+            font-size: clamp(1.1rem, 2vw, 1.6rem);
+            font-weight: 300;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 0.8vh 1.8vw;
+            border-radius: 999px;
+            letter-spacing: 0.02em;
+        }
+
+        .slide-hospedagem .hosp-section-title strong {
+            font-weight: 700;
+        }
+
         /* Info panel (left side) */
         .slide-hospedagem .hosp-panel {
             position: absolute;
@@ -1508,6 +1529,12 @@
                         var ovlH = document.createElement('div');
                         ovlH.className = 'overlay';
                         el.appendChild(ovlH);
+
+                        // Section title badge — top-left
+                        var sectionTitle = document.createElement('div');
+                        sectionTitle.className = 'hosp-section-title';
+                        sectionTitle.innerHTML = 'Lugares Únicos para <strong>Se Hospedar</strong>';
+                        el.appendChild(sectionTitle);
 
                         // XP badge — top-right
                         if (d.xp && d.xp > 0) {
