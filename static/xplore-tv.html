@@ -104,10 +104,20 @@
         }
 
         /* Tipo: Vídeo */
+        .slide-video {
+            background: #000;
+        }
+
         .slide-video video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .slide-video video.video-ready {
+            opacity: 1;
         }
 
         /* Tipo: Marca (brand) */
@@ -1644,10 +1654,9 @@
                         el.classList.add('slide-video');
                         var vid = document.createElement('video');
                         vid.src = d.videoUrl || '';
-                        vid.autoplay = true;
                         vid.muted = true;
                         vid.playsInline = true;
-                        vid.preload = 'metadata';
+                        vid.preload = 'auto';
                         vid.controls = false;
                         vid.setAttribute('playsinline', '');
                         vid.setAttribute('muted', '');
@@ -2155,18 +2164,46 @@
                     topbar.classList.remove('topbar-visible');
                 }
 
-                requestAnimationFrame(function () {
-                    requestAnimationFrame(function () {
+                // Check if this is a video slide that needs to wait for first frame
+                var isVideoEntry = entry.type === 'fullscreen' && entry.slide && entry.slide.type === 'video';
+                var videoEl = isVideoEntry ? el.querySelector('video') : null;
+
+                if (videoEl) {
+                    // Wait for first frame before revealing the slide
+                    var revealed = false;
+                    var revealGen = renderGeneration;
+                    var revealVideo = function () {
+                        if (revealed || revealGen !== renderGeneration) return;
+                        revealed = true;
+                        videoEl.removeEventListener('loadeddata', revealVideo);
+                        videoEl.removeEventListener('canplay', revealVideo);
+                        videoEl.classList.add('video-ready');
                         el.classList.add('active');
-                        if (entry.type === 'composed') {
-                            startInnerCarousel(el, entry.section);
+                        try { videoEl.play(); } catch (e) { }
+                    };
+                    videoEl.addEventListener('loadeddata', revealVideo);
+                    videoEl.addEventListener('canplay', revealVideo);
+                    // If already buffered (cached), reveal immediately
+                    if (videoEl.readyState >= 2) {
+                        revealVideo();
+                    }
+                    // Fallback: if frame isn't ready within 3s, reveal anyway to avoid stuck slide
+                    setTimeout(function () {
+                        if (!revealed && revealGen === renderGeneration) {
+                            console.warn('[XploreTV] Video frame not ready after 3s, revealing anyway');
+                            revealVideo();
                         }
-                        var vids = el.querySelectorAll('video');
-                        for (var vi = 0; vi < vids.length; vi++) {
-                            try { vids[vi].play(); } catch (e) { }
-                        }
+                    }, 3000);
+                } else {
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            el.classList.add('active');
+                            if (entry.type === 'composed') {
+                                startInnerCarousel(el, entry.section);
+                            }
+                        });
                     });
-                });
+                }
 
                 // Remove old elements after transition
                 setTimeout(function () {
