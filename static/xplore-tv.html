@@ -358,15 +358,15 @@
             position: absolute;
             top: 5vh;
             right: 5vw;
-            background: rgba(255, 255, 255, 0.15);
-            color: #fff;
+            background: rgba(251, 191, 36, 0.12);
+            color: #fbbf24;
             padding: 0.7vh 1.6vw;
             border-radius: 999px;
             font-size: clamp(0.9rem, 1.4vw, 1.2rem);
             font-weight: 600;
             z-index: 3;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(251, 191, 36, 0.3);
             letter-spacing: 0.03em;
         }
 
@@ -445,13 +445,6 @@
             align-self: center;
         }
 
-        /* Divider line */
-        .slide-viagem .viagem-divider {
-            width: 100%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.2);
-        }
-
         /* Price block */
         .slide-viagem .viagem-price-block {
             display: flex;
@@ -525,23 +518,26 @@
             backdrop-filter: blur(4px);
         }
 
-        /* Section title (top-left, matches composed-header style) */
+        /* Section title (centered top) */
         .slide-hospedagem .hosp-section-title {
             position: absolute;
             top: 5vh;
-            left: 5vw;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 3;
             color: #fff;
             font-size: clamp(2rem, 4vw, 3.4rem);
             font-weight: 300;
             line-height: 1.2;
-            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+            text-shadow: 0 3px 24px rgba(0, 0, 0, 0.7);
             letter-spacing: 0.01em;
+            text-align: center;
+            white-space: nowrap;
         }
 
         .slide-hospedagem .hosp-section-title strong {
             font-weight: 700;
-            color: #1A2B4C;
+            color: #fbbf24;
         }
 
         /* Info panel (left side) */
@@ -617,13 +613,6 @@
             color: rgba(255, 255, 255, 0.35);
             font-size: clamp(0.9rem, 1.4vw, 1.2rem);
             align-self: center;
-        }
-
-        /* Divider line */
-        .slide-hospedagem .hosp-divider {
-            width: 100%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.2);
         }
 
         /* XP highlight at bottom */
@@ -1480,11 +1469,6 @@
                         }
                         if (metaItems.length > 0) panel.appendChild(metaRow);
 
-                        // Divider
-                        var divLine = document.createElement('div');
-                        divLine.className = 'viagem-divider';
-                        panel.appendChild(divLine);
-
                         // Price block
                         var priceBlock = document.createElement('div');
                         priceBlock.className = 'viagem-price-block';
@@ -1593,11 +1577,6 @@
                             metaRowH.appendChild(metaElH);
                         }
                         if (metaItemsH.length > 0) panelH.appendChild(metaRowH);
-
-                        // Divider
-                        var divLineH = document.createElement('div');
-                        divLineH.className = 'hosp-divider';
-                        panelH.appendChild(divLineH);
 
                         // XP highlight
                         if (d.xp && d.xp > 0) {
