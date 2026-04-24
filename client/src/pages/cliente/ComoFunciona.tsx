@@ -205,6 +205,10 @@ export default function ComoFunciona() {
                         question="Posso usar meus pontos qualificáveis mesmo sem atingir o mínimo?"
                         answer="Sim! Os pontos qualificáveis estão sempre disponíveis para uso. O mínimo só afeta a liberação dos pontos extras de bônus e código."
                     />
+                    <FaqItem
+                        question="Posso aplicar mais de um código promocional ao mesmo tempo?"
+                        answer="Não. Você só pode ter um código promocional ativo por vez. Enquanto ainda houver saldo não resgatado de um código aplicado anteriormente, não será possível adicionar um novo código. Para liberar a aplicação de outro código, resgate os pontos do código ativo ou aguarde sua expiração. Códigos já totalmente resgatados ou expirados não bloqueiam a aplicação de novos códigos."
+                    />
                 </div>
             </section>
 

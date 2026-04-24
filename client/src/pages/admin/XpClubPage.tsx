@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar, CircleHelp, Award, TrendingDown, DollarSign, ClipboardList, ShoppingCart, Ban, Eye, Loader2 } from "lucide-react";
+import { Coins, Clock3, Search, Users, Plus, Pencil, Trash2, Tag, ArrowUpDown, CheckCircle2, XCircle, Calendar, CircleHelp, Award, TrendingDown, DollarSign, ClipboardList, ShoppingCart, Ban, Eye, Loader2, Settings, ArrowRight } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 function formatCurrency(value: number) {
@@ -40,6 +40,58 @@ function formatPhone(value: string) {
     }
     return digits.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
 }
+
+// Catálogo de parâmetros conhecidos do XP Club.
+// Usado para oferecer navegação guiada na aba "Config" sem exigir
+// digitação manual das chaves técnicas.
+type XpConfigCatalogItem = {
+    chave: string;
+    label: string;
+    descricaoPadrao: string;
+    categoria: "Acúmulo" | "Resgate" | "Vencimento";
+    placeholder: string;
+    inputMode: "numeric" | "decimal" | "text";
+    unidade?: string;
+};
+
+const XP_CONFIG_CATALOG: XpConfigCatalogItem[] = [
+    {
+        chave: "xp_por_real_compra",
+        label: "XP por real em compra",
+        descricaoPadrao: "Quantos pontos são creditados por real gasto em compras manuais.",
+        categoria: "Acúmulo",
+        placeholder: "Ex: 1",
+        inputMode: "decimal",
+        unidade: "XP / R$",
+    },
+    {
+        chave: "xp_valor_reais",
+        label: "Valor em reais por XP",
+        descricaoPadrao: "Equivalência monetária de cada XP no momento do resgate.",
+        categoria: "Resgate",
+        placeholder: "Ex: 0.10",
+        inputMode: "decimal",
+        unidade: "R$ / XP",
+    },
+    {
+        chave: "xp_minimo_resgate",
+        label: "XP mínimo para resgate",
+        descricaoPadrao: "Saldo qualificável mínimo para liberar bônus e resgates.",
+        categoria: "Resgate",
+        placeholder: "Ex: 1000",
+        inputMode: "numeric",
+        unidade: "XP",
+    },
+    {
+        chave: "xp_alerta_vencimento_dias",
+        label: "Dias de alerta de vencimento",
+        descricaoPadrao: "Quantos dias antes do vencimento o cliente deve ser alertado.",
+        categoria: "Vencimento",
+        placeholder: "Ex: 15",
+        inputMode: "numeric",
+        unidade: "dias",
+    },
+];
 
 export default function XpClubPage() {
     const [days, setDays] = useState("30");
@@ -78,6 +130,8 @@ export default function XpClubPage() {
         valor: "",
         descricao: "",
     });
+    const [cfgSelectedKey, setCfgSelectedKey] = useState<string | null>(null);
+    const [cfgSearch, setCfgSearch] = useState("");
 
     // ── Pendentes state ──
     const [pendentesStatusFilter, setPendentesStatusFilter] = useState<"all" | "pendente" | "concluida" | "cancelada">("pendente");
@@ -253,7 +307,6 @@ export default function XpClubPage() {
     const cfgUpsertMutation = trpc.xpAdmin.config.upsert.useMutation({
         onSuccess: () => {
             toast.success("Configuração salva");
-            setCfgForm({ chave: "", valor: "", descricao: "" });
             void configQuery.refetch();
             void dashboardResumoQuery.refetch();
         },
@@ -466,7 +519,7 @@ export default function XpClubPage() {
 
     const handleSalvarConfig = () => {
         if (!cfgForm.chave.trim() || !cfgForm.valor.trim()) {
-            toast.error("Chave e valor são obrigatórios");
+            toast.error("Selecione um parâmetro e informe o valor");
             return;
         }
         cfgUpsertMutation.mutate({
@@ -475,6 +528,73 @@ export default function XpClubPage() {
             descricao: cfgForm.descricao.trim() || null,
         });
     };
+
+    // ── Configuração XP: catálogo + estado derivado ──
+    const configsByKey = useMemo(() => {
+        const map = new Map<string, any>();
+        for (const cfg of (configs as any[]) || []) {
+            if (cfg?.chave) map.set(String(cfg.chave), cfg);
+        }
+        return map;
+    }, [configs]);
+
+    const cfgCatalogView = useMemo(() => {
+        return XP_CONFIG_CATALOG.map((item) => {
+            const persisted = configsByKey.get(item.chave);
+            return {
+                ...item,
+                configurado: !!persisted,
+                valorAtual: persisted ? String(persisted.valor ?? "") : null,
+                descricaoAtual: persisted ? (persisted.descricao ?? "") : "",
+            };
+        });
+    }, [configsByKey]);
+
+    const cfgConfiguradosCount = useMemo(
+        () => cfgCatalogView.filter((i) => i.configurado).length,
+        [cfgCatalogView]
+    );
+    const cfgPendentesCount = cfgCatalogView.length - cfgConfiguradosCount;
+
+    const cfgCatalogFiltrado = useMemo(() => {
+        const term = cfgSearch.trim().toLowerCase();
+        if (!term) return cfgCatalogView;
+        return cfgCatalogView.filter((item) =>
+            item.label.toLowerCase().includes(term) ||
+            item.chave.toLowerCase().includes(term) ||
+            item.categoria.toLowerCase().includes(term)
+        );
+    }, [cfgCatalogView, cfgSearch]);
+
+    const cfgSelecionado = useMemo(
+        () => cfgCatalogView.find((i) => i.chave === cfgSelectedKey) || null,
+        [cfgCatalogView, cfgSelectedKey]
+    );
+
+    const selectCfgItem = (chave: string) => {
+        const item = cfgCatalogView.find((i) => i.chave === chave);
+        if (!item) return;
+        setCfgSelectedKey(chave);
+        setCfgForm({
+            chave: item.chave,
+            valor: item.valorAtual ?? "",
+            descricao: item.descricaoAtual || "",
+        });
+    };
+
+    const resetCfgForm = () => {
+        if (!cfgSelecionado) return;
+        setCfgForm({
+            chave: cfgSelecionado.chave,
+            valor: cfgSelecionado.valorAtual ?? "",
+            descricao: cfgSelecionado.descricaoAtual || "",
+        });
+    };
+
+    const isCfgDirty = !!cfgSelecionado && (
+        cfgForm.valor !== (cfgSelecionado.valorAtual ?? "") ||
+        (cfgForm.descricao || "") !== (cfgSelecionado.descricaoAtual || "")
+    );
 
     const resetTipoForm = () => {
         setTipoEditando(null);
@@ -532,7 +652,23 @@ export default function XpClubPage() {
 
     return (
         <AdminLayout>
-            <div className="space-y-4">
+            <div
+                className={[
+                    "space-y-4",
+                    // Padroniza o fundo dos campos editáveis em todas as tabs do XP Club.
+                    // Só atinge componentes do design system marcados com data-slot,
+                    // evitando alterações globais em outras páginas.
+                    "[&_[data-slot=input]]:bg-white",
+                    "[&_[data-slot=textarea]]:bg-white",
+                    "[&_[data-slot=select-trigger]]:bg-white",
+                    // Campos desabilitados ou somente leitura permanecem destacados
+                    // para não parecerem editáveis por engano.
+                    "[&_[data-slot=input]:disabled]:bg-muted/60",
+                    "[&_[data-slot=input][readonly]]:bg-muted/60",
+                    "[&_[data-slot=textarea]:disabled]:bg-muted/60",
+                    "[&_[data-slot=select-trigger][data-disabled]]:bg-muted/60",
+                ].join(" ")}
+            >
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">XP Club</h1>
@@ -1624,59 +1760,190 @@ export default function XpClubPage() {
 
                     <TabsContent value="config" className="space-y-4">
                         <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Salvar configuração XP</CardTitle>
-                                <CardDescription>Ex.: `xp_por_real_compra`, `xp_valor_reais`, `xp_minimo_resgate`, `xp_alerta_vencimento_dias`.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid gap-3 md:grid-cols-3">
-                                <div>
-                                    <Label>Chave</Label>
-                                    <Input value={cfgForm.chave} onChange={(e) => setCfgForm((p) => ({ ...p, chave: e.target.value }))} placeholder="xp_por_real_compra" title="Chave da configuração" />
+                            <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between gap-3 flex-wrap">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-600">
+                                            <Settings className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg">Parâmetros do XP Club</CardTitle>
+                                            <CardDescription>
+                                                Selecione um parâmetro para editar seu valor. Os nomes técnicos são gerenciados automaticamente.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                                            {cfgConfiguradosCount} configurado{cfgConfiguradosCount === 1 ? "" : "s"}
+                                        </Badge>
+                                        {cfgPendentesCount > 0 && (
+                                            <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+                                                {cfgPendentesCount} pendente{cfgPendentesCount === 1 ? "" : "s"}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label>Valor</Label>
-                                    <Input value={cfgForm.valor} onChange={(e) => setCfgForm((p) => ({ ...p, valor: e.target.value }))} placeholder="1" title="Valor da configuração" />
-                                </div>
-                                <div>
-                                    <Label>Descrição</Label>
-                                    <Input value={cfgForm.descricao} onChange={(e) => setCfgForm((p) => ({ ...p, descricao: e.target.value }))} placeholder="XP por real em compra manual" title="Descrição da configuração" />
-                                </div>
-                                <div className="md:col-span-3">
-                                    <Button onClick={handleSalvarConfig} disabled={cfgUpsertMutation.isPending} title="Salvar configuração">
-                                        {cfgUpsertMutation.isPending ? "Salvando..." : "Salvar configuração"}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Configurações atuais</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="border rounded-lg overflow-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-muted/40">
-                                            <tr>
-                                                <th className="text-left px-3 py-2">Chave</th>
-                                                <th className="text-left px-3 py-2">Valor</th>
-                                                <th className="text-left px-3 py-2">Descrição</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {configs.map((cfg: any) => (
-                                                <tr key={cfg.id} className="border-t">
-                                                    <td className="px-3 py-2 font-medium">{cfg.chave}</td>
-                                                    <td className="px-3 py-2">{cfg.valor}</td>
-                                                    <td className="px-3 py-2">{cfg.descricao || "-"}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div className="grid gap-4 lg:grid-cols-[minmax(260px,340px)_1fr]">
+                                    {/* Lista navegável */}
+                                    <div className="space-y-2">
+                                        <div className="relative">
+                                            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                            <Input
+                                                className="pl-9"
+                                                placeholder="Buscar parâmetro"
+                                                value={cfgSearch}
+                                                onChange={(e) => setCfgSearch(e.target.value)}
+                                                title="Buscar parâmetro"
+                                            />
+                                        </div>
+                                        <div className="rounded-lg border divide-y bg-white max-h-[520px] overflow-y-auto">
+                                            {cfgCatalogFiltrado.length === 0 ? (
+                                                <div className="text-center text-sm text-muted-foreground py-8 px-3">
+                                                    Nenhum parâmetro encontrado.
+                                                </div>
+                                            ) : (
+                                                cfgCatalogFiltrado.map((item) => {
+                                                    const isSelected = cfgSelectedKey === item.chave;
+                                                    return (
+                                                        <button
+                                                            key={item.chave}
+                                                            type="button"
+                                                            onClick={() => selectCfgItem(item.chave)}
+                                                            className={`flex w-full items-start justify-between gap-3 px-3 py-2.5 text-left transition-colors ${isSelected ? "bg-blue-50/70" : "hover:bg-muted/40"}`}
+                                                            title={`Editar ${item.label}`}
+                                                        >
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <span className={`text-sm font-medium truncate ${isSelected ? "text-blue-700" : ""}`}>
+                                                                        {item.label}
+                                                                    </span>
+                                                                    {item.configurado ? (
+                                                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-800 border-emerald-200">
+                                                                            Configurado
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-300 text-amber-700 bg-amber-50">
+                                                                            Pendente
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                                                    {item.categoria} · <span className="font-mono">{item.chave}</span>
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <span className="text-sm tabular-nums font-semibold text-foreground/80">
+                                                                    {item.valorAtual ?? "—"}
+                                                                </span>
+                                                                <ArrowRight className={`h-3.5 w-3.5 transition-opacity ${isSelected ? "opacity-100 text-blue-600" : "opacity-30"}`} />
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Painel de edição */}
+                                    <div className="rounded-lg border bg-white p-4 sm:p-5">
+                                        {!cfgSelecionado ? (
+                                            <div className="flex flex-col items-center justify-center text-center py-12 text-sm text-muted-foreground">
+                                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 mb-3">
+                                                    <CircleHelp className="w-6 h-6 text-blue-600" />
+                                                </div>
+                                                <p className="max-w-xs">
+                                                    Selecione um parâmetro na lista ao lado para visualizar e editar seu valor.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-5">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h3 className="text-base font-semibold">{cfgSelecionado.label}</h3>
+                                                        <Badge variant="outline" className="text-[10px]">{cfgSelecionado.categoria}</Badge>
+                                                        {cfgSelecionado.configurado ? (
+                                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-800 border-emerald-200">
+                                                                Configurado
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-300 text-amber-700 bg-amber-50">
+                                                                Pendente
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {cfgSelecionado.descricaoPadrao}
+                                                    </p>
+                                                    <p className="text-[11px] text-muted-foreground/70 font-mono">
+                                                        Chave: {cfgSelecionado.chave}
+                                                    </p>
+                                                </div>
+                                                <div className="grid gap-3 md:grid-cols-2">
+                                                    <div>
+                                                        <Label htmlFor="cfgValor">
+                                                            Valor
+                                                            {cfgSelecionado.unidade && (
+                                                                <span className="text-muted-foreground font-normal ml-1">({cfgSelecionado.unidade})</span>
+                                                            )}
+                                                        </Label>
+                                                        <Input
+                                                            id="cfgValor"
+                                                            value={cfgForm.valor}
+                                                            onChange={(e) => setCfgForm((p) => ({ ...p, valor: e.target.value }))}
+                                                            placeholder={cfgSelecionado.placeholder}
+                                                            inputMode={cfgSelecionado.inputMode}
+                                                            title={`Valor de ${cfgSelecionado.label}`}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="cfgDescricao">
+                                                            Descrição
+                                                            <span className="text-muted-foreground font-normal ml-1">— opcional</span>
+                                                        </Label>
+                                                        <Input
+                                                            id="cfgDescricao"
+                                                            value={cfgForm.descricao}
+                                                            onChange={(e) => setCfgForm((p) => ({ ...p, descricao: e.target.value }))}
+                                                            placeholder={cfgSelecionado.descricaoPadrao}
+                                                            title="Descrição da configuração"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                    <Button
+                                                        onClick={handleSalvarConfig}
+                                                        disabled={cfgUpsertMutation.isPending || !isCfgDirty || !cfgForm.valor.trim()}
+                                                        title="Salvar parâmetro"
+                                                    >
+                                                        {cfgUpsertMutation.isPending ? (
+                                                            <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Salvando...</>
+                                                        ) : (
+                                                            <><CheckCircle2 className="h-4 w-4 mr-1" />Salvar alterações</>
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        onClick={resetCfgForm}
+                                                        disabled={!isCfgDirty || cfgUpsertMutation.isPending}
+                                                        title="Descartar alterações locais"
+                                                    >
+                                                        Cancelar
+                                                    </Button>
+                                                    {cfgSelecionado.configurado && (
+                                                        <span className="ml-auto text-xs text-muted-foreground">
+                                                            Valor salvo: <span className="font-semibold text-foreground tabular-nums">{cfgSelecionado.valorAtual}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
-
                     </TabsContent>
                 </Tabs>
             </div>

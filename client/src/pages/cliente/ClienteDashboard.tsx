@@ -251,7 +251,7 @@ export default function ClienteDashboard() {
                                 maxLength={50}
                             />
                         </div>
-                        <InfoTooltip text="Digite um código promocional válido para receber pontos extras. Os pontos de código entram como bônus (não qualificáveis)." />
+                        <InfoTooltip text="Digite um código promocional válido para receber pontos extras. Os pontos entram como bônus (não qualificáveis). Você só pode ter um código promocional ativo por vez: se ainda houver saldo de um código anterior, é preciso resgatá-lo ou aguardar sua expiração antes de adicionar outro." />
                         <Button type="submit" size="sm" disabled={aplicarCodigo.isPending || !codigo.trim()} className="gap-1.5 h-8">
                             {aplicarCodigo.isPending ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

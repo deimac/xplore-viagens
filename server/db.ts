@@ -2023,6 +2023,12 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
           });
 
         (async () => {
+          // 0. Travar conta XP do cliente para serializar aplicações concorrentes
+          await query(
+            `SELECT id FROM xp_contas WHERE id_cliente = ? FOR UPDATE`,
+            [clienteId]
+          );
+
           // 1. Buscar código
           const codigos: any[] = await query(
             `SELECT * FROM xp_codigos WHERE codigo = ? LIMIT 1`, [codigoStr.trim().toUpperCase()]
@@ -2052,6 +2058,56 @@ export async function aplicarCodigoPromocional(clienteId: number, codigoStr: str
             [codigo.id, clienteId]
           );
           if (usados.length > 0) throw new Error("Você já utilizou este código.");
+
+          // 5.1 Bloquear novo código se ainda existe saldo ativo de outro código promocional.
+          // Replay cronológico do bucket não qualificável: créditos promocionais ainda
+          // não expirados formam uma fila FIFO; débitos consomem essa fila primeiro.
+          // Se sobrar crédito com id_codigo diferente do atual, o cliente já tem um
+          // código promocional ativo e precisa resgatar/esperar vencer antes de aplicar outro.
+          const hojeStr = new Date().toISOString().slice(0, 10);
+          const movs: any[] = await query(
+            `SELECT m.id, m.id_codigo, m.xp, m.data_movimentacao,
+                    t.tipo_operacao, t.qualificavel,
+                    COALESCE(c.dias_expiracao, t.dias_expiracao) AS dias_eff,
+                    c.codigo AS codigo_str
+             FROM xp_movimentacoes m
+             JOIN xp_tipos_movimentacao t ON t.id = m.id_tipo_movimentacao
+             LEFT JOIN xp_codigos c ON c.id = m.id_codigo
+             WHERE m.id_cliente = ?
+               AND (
+                 t.tipo_operacao = 'debito'
+                 OR COALESCE(c.dias_expiracao, t.dias_expiracao) IS NULL
+                 OR DATE_ADD(m.data_movimentacao, INTERVAL COALESCE(c.dias_expiracao, t.dias_expiracao) DAY) >= ?
+               )
+             ORDER BY m.data_movimentacao ASC, m.id ASC`,
+            [clienteId, hojeStr]
+          );
+          const naoQualFifo: { idCodigo: number | null; codigoStr: string | null; remaining: number }[] = [];
+          for (const m of movs) {
+            const xp = Number(m.xp);
+            if (m.tipo_operacao === 'credito') {
+              const qualif = m.qualificavel === 1 || m.qualificavel === true;
+              if (!qualif) {
+                naoQualFifo.push({ idCodigo: m.id_codigo ?? null, codigoStr: m.codigo_str ?? null, remaining: xp });
+              }
+            } else {
+              let debito = Math.abs(xp);
+              while (debito > 0 && naoQualFifo.length > 0) {
+                const head = naoQualFifo[0];
+                const take = Math.min(debito, head.remaining);
+                head.remaining -= take;
+                debito -= take;
+                if (head.remaining <= 0) naoQualFifo.shift();
+              }
+            }
+          }
+          const ativo = naoQualFifo.find(e => e.idCodigo != null && e.remaining > 0);
+          if (ativo) {
+            const ref = ativo.codigoStr ? ` "${ativo.codigoStr}"` : '';
+            throw new Error(
+              `Você ainda possui pontos ativos do código promocional${ref}. Resgate esses pontos ou aguarde sua expiração antes de adicionar um novo código.`
+            );
+          }
 
           // 6. Buscar tipo tecnico 'codigo_promocional' (com fallback por nome para compatibilidade)
           const tipos: any[] = await query(
