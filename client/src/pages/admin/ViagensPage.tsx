@@ -23,8 +23,9 @@ export default function ViagensPage() {
             setTravelModalOpen(false);
             toast.success("Viagem criada com sucesso");
         },
-        onError: () => {
-            toast.error("Erro ao criar viagem");
+        onError: (err: any) => {
+            console.error("[viagens.create] error:", err);
+            toast.error(`Erro ao criar viagem: ${err?.message || "erro desconhecido"}`);
         },
     });
 
@@ -35,8 +36,9 @@ export default function ViagensPage() {
             setTravelModalOpen(false);
             toast.success("Viagem atualizada com sucesso");
         },
-        onError: () => {
-            toast.error("Erro ao atualizar viagem");
+        onError: (err: any) => {
+            console.error("[viagens.update] error:", err);
+            toast.error(`Erro ao atualizar viagem: ${err?.message || "erro desconhecido"}`);
         },
     });
 
@@ -47,8 +49,9 @@ export default function ViagensPage() {
             setDeleteDialogOpen(false);
             toast.success("Viagem deletada com sucesso");
         },
-        onError: () => {
-            toast.error("Erro ao deletar viagem");
+        onError: (err: any) => {
+            console.error("[viagens.delete] error:", err);
+            toast.error(`Erro ao deletar viagem: ${err?.message || "erro desconhecido"}`);
         },
     });
 
@@ -98,6 +101,8 @@ export default function ViagensPage() {
             tipoQuarto: viagem.tipoViagem === "hospedagem" ? (viagem.tipoQuarto || null) : null,
             imagemUrl: viagem.imagemUrl,
             ativo: viagem.ativo !== false,
+            mostrarNoSite: viagem.mostrarNoSite !== false,
+            mostrarNaTv: viagem.mostrarNaTv === true,
             categoriaIds: viagem.categoriaIds || [],
             destaqueIds: viagem.destaqueIds || [],
         };
