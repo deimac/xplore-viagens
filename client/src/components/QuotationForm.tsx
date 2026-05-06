@@ -244,8 +244,13 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
     };
 
     // Validar usando os dados capturados
-    if (!actualFormData.campoNome.trim()) {
-      setMessage({ type: "error", text: "Nome é obrigatório" });
+    const nomeNormalizado = actualFormData.campoNome.trim().replace(/\s+/g, " ");
+    if (!nomeNormalizado) {
+      setMessage({ type: "error", text: "Nome completo é obrigatório" });
+      return;
+    }
+    if (nomeNormalizado.split(" ").length < 2) {
+      setMessage({ type: "error", text: "Informe nome e sobrenome" });
       return;
     }
     if (!actualFormData.campoCelular.trim()) {
