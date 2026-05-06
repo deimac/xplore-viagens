@@ -77,8 +77,13 @@ export default function QuotationForm() {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.campoNome.trim()) {
-      setMessage({ type: "error", text: "Nome é obrigatório" });
+    const nomeNormalizado = formData.campoNome.trim().replace(/\s+/g, " ");
+    if (!nomeNormalizado) {
+      setMessage({ type: "error", text: "Nome completo é obrigatório" });
+      return false;
+    }
+    if (nomeNormalizado.split(" ").length < 2) {
+      setMessage({ type: "error", text: "Informe nome e sobrenome" });
       return false;
     }
     if (!formData.campoCelular.trim()) {
@@ -186,11 +191,10 @@ export default function QuotationForm() {
             {/* Mensagem de Status */}
             {message && (
               <div
-                className={`p-4 rounded-lg text-sm mb-6 ${
-                  message.type === "success"
+                className={`p-4 rounded-lg text-sm mb-6 ${message.type === "success"
                     ? "bg-green-50 border border-green-200 text-green-800"
                     : "bg-red-50 border border-red-200 text-red-800"
-                }`}
+                  }`}
               >
                 {message.text}
               </div>
@@ -202,7 +206,7 @@ export default function QuotationForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-accent mb-1">
-                    Nome <span className="text-red-500">*</span>
+                    Nome completo <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -210,7 +214,7 @@ export default function QuotationForm() {
                     value={formData.campoNome}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 text-sm border border-muted rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Seu nome"
+                    placeholder="Nome e sobrenome"
                   />
                 </div>
                 <div>

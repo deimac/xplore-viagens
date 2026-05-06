@@ -81,8 +81,13 @@ export default function Quotation() {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.campoNome.trim()) {
-      toast.error("Nome é obrigatório");
+    const nomeNormalizado = formData.campoNome.trim().replace(/\s+/g, " ");
+    if (!nomeNormalizado) {
+      toast.error("Nome completo é obrigatório");
+      return false;
+    }
+    if (nomeNormalizado.split(" ").length < 2) {
+      toast.error("Informe nome e sobrenome");
       return false;
     }
     if (!formData.campoCelular.trim()) {
@@ -192,7 +197,7 @@ export default function Quotation() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-accent mb-1">
-                        Nome <span className="text-red-500">*</span>
+                        Nome completo <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -200,7 +205,7 @@ export default function Quotation() {
                         value={formData.campoNome}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 text-sm border border-muted rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                        placeholder="Seu nome"
+                        placeholder="Nome e sobrenome"
                       />
                     </div>
                     <div>

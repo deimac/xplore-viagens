@@ -232,12 +232,15 @@ export default function AdminDashboard() {
   };
 
   const handleSaveTravel = (travel: any) => {
+    const tipoViagem: "pacote" | "hospedagem" =
+      travel.tipoViagem === "hospedagem" ? "hospedagem" : "pacote";
     if (travel.id) {
       const payload = {
         id: travel.id,
         titulo: travel.titulo,
         slug: travel.slug,
         descricao: travel.descricao,
+        tipoViagem,
         origem: travel.origem,
         dataIda: travel.dataIda ?? null,
         dataVolta: travel.dataVolta ?? null,
@@ -249,8 +252,11 @@ export default function AdminDashboard() {
         temJuros: travel.temJuros,
         xp: travel.xp,
         hospedagem: travel.hospedagem ?? null,
+        tipoQuarto: tipoViagem === "hospedagem" ? (travel.tipoQuarto ?? null) : null,
         imagemUrl: travel.imagemUrl,
         ativo: travel.ativo,
+        mostrarNoSite: travel.mostrarNoSite !== false,
+        mostrarNaTv: travel.mostrarNaTv === true,
         categoriaIds: travel.categoriaIds,
         destaqueIds: travel.destaqueIds,
         imagem: travel.imagem ?? undefined,
@@ -261,6 +267,7 @@ export default function AdminDashboard() {
         titulo: travel.titulo,
         slug: travel.slug,
         descricao: travel.descricao,
+        tipoViagem,
         origem: travel.origem,
         dataIda: travel.dataIda ?? null,
         dataVolta: travel.dataVolta ?? null,
@@ -272,8 +279,11 @@ export default function AdminDashboard() {
         temJuros: travel.temJuros,
         xp: travel.xp,
         hospedagem: travel.hospedagem ?? null,
+        tipoQuarto: tipoViagem === "hospedagem" ? (travel.tipoQuarto ?? null) : null,
         imagemUrl: travel.imagemUrl,
         ativo: travel.ativo,
+        mostrarNoSite: travel.mostrarNoSite !== false,
+        mostrarNaTv: travel.mostrarNaTv === true,
         categoriaIds: travel.categoriaIds,
         destaqueIds: travel.destaqueIds,
         imagem: travel.imagem ?? undefined,

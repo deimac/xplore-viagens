@@ -160,8 +160,13 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.campoNome.trim()) {
-      setMessage({ type: "error", text: "Nome é obrigatório" });
+    const nomeNormalizado = formData.campoNome.trim().replace(/\s+/g, " ");
+    if (!nomeNormalizado) {
+      setMessage({ type: "error", text: "Nome completo é obrigatório" });
+      return false;
+    }
+    if (nomeNormalizado.split(" ").length < 2) {
+      setMessage({ type: "error", text: "Informe nome e sobrenome" });
       return false;
     }
     if (!formData.campoCelular.trim()) {
@@ -470,7 +475,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-accent mb-2">Nome <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-medium text-accent mb-2">Nome completo <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     name="campoNome"
@@ -478,7 +483,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
                     onChange={handleInputChange}
                     autoComplete="off"
                     className="w-full px-3 py-2 text-sm border border-muted rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Seu nome"
+                    placeholder="Nome e sobrenome"
                   />
                 </div>
                 <div>

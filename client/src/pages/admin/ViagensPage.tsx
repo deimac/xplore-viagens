@@ -82,11 +82,13 @@ export default function ViagensPage() {
 
     const handleSaveTravel = (viagem: ViagemFormData) => {
         const quantidadePessoas = Number(viagem.quantidadePessoas);
+        const tipoViagem: "pacote" | "hospedagem" =
+            viagem.tipoViagem === "hospedagem" ? "hospedagem" : "pacote";
         const payload: any = {
             titulo: viagem.titulo,
             slug: viagem.slug,
             descricao: viagem.descricao,
-            tipoViagem: viagem.tipoViagem,
+            tipoViagem,
             origem: viagem.origem,
             dataIda: viagem.dataIda || null,
             dataVolta: viagem.dataVolta || null,
@@ -98,7 +100,7 @@ export default function ViagensPage() {
             temJuros: viagem.temJuros || false,
             xp: viagem.xp || 0,
             hospedagem: viagem.hospedagem || null,
-            tipoQuarto: viagem.tipoViagem === "hospedagem" ? (viagem.tipoQuarto || null) : null,
+            tipoQuarto: tipoViagem === "hospedagem" ? (viagem.tipoQuarto || null) : null,
             imagemUrl: viagem.imagemUrl,
             ativo: viagem.ativo !== false,
             mostrarNoSite: viagem.mostrarNoSite !== false,
@@ -111,6 +113,8 @@ export default function ViagensPage() {
         if (viagem.imagem) {
             payload.imagem = viagem.imagem;
         }
+
+        console.log("[viagens.save] payload:", JSON.parse(JSON.stringify(payload)));
 
         if (viagem.id) {
             updateTravelMutation.mutate({ id: viagem.id, ...payload });
