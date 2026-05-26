@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,10 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
     // Estado para o valor formatado visualmente
     const [precoFormatado, setPrecoFormatado] = useState<string>('');
 
+    const updateForm = useCallback((patch: Partial<OfertaVooPremium>) => {
+        setFormData((prev) => ({ ...prev, ...patch }));
+    }, []);
+
     // Função para formatar o valor em reais
     const formatarValorBrasileiro = (valor: number): string => {
         if (valor === 0) return '';
@@ -167,9 +171,8 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
         }
     }, [oferta, isOpen]);
 
-    const handleTipoChange = (tipo: TipoOferta) => {
-        setFormData({
-            ...formData,
+    const handleTipoChange = useCallback((tipo: TipoOferta) => {
+        updateForm({
             tipo_oferta: tipo,
             rotas_fixas: undefined,
             rota_ida: undefined,
@@ -177,49 +180,49 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
             datas_fixas: [],
             datas_flexiveis: [],
         });
-    };
+    }, [updateForm]);
 
-    const handleAddDataFixa = () => {
-        setFormData({
-            ...formData,
-            datas_fixas: [...(formData.datas_fixas || []), { datas_opcao: '' }],
-        });
-    };
+    const handleAddDataFixa = useCallback(() => {
+        setFormData((prev) => ({
+            ...prev,
+            datas_fixas: [...(prev.datas_fixas || []), { datas_opcao: '' }],
+        }));
+    }, []);
 
-    const handleRemoveDataFixa = (index: number) => {
+    const handleRemoveDataFixa = useCallback((index: number) => {
         const novasDatas = [...(formData.datas_fixas || [])];
         novasDatas.splice(index, 1);
-        setFormData({ ...formData, datas_fixas: novasDatas });
-    };
+        updateForm({ datas_fixas: novasDatas });
+    }, [formData.datas_fixas, updateForm]);
 
-    const handleDataFixaChange = (index: number, value: string) => {
+    const handleDataFixaChange = useCallback((index: number, value: string) => {
         const novasDatas = [...(formData.datas_fixas || [])];
         novasDatas[index].datas_opcao = value;
-        setFormData({ ...formData, datas_fixas: novasDatas });
-    };
+        updateForm({ datas_fixas: novasDatas });
+    }, [formData.datas_fixas, updateForm]);
 
-    const handleAddDataFlexivel = (tipo: TipoData) => {
-        setFormData({
-            ...formData,
-            datas_flexiveis: [...(formData.datas_flexiveis || []), {
+    const handleAddDataFlexivel = useCallback((tipo: TipoData) => {
+        setFormData((prev) => ({
+            ...prev,
+            datas_flexiveis: [...(prev.datas_flexiveis || []), {
                 tipo,
                 mes_referencia: '',
                 dias_disponiveis: ''
             }],
-        });
-    };
+        }));
+    }, []);
 
-    const handleRemoveDataFlexivel = (index: number) => {
+    const handleRemoveDataFlexivel = useCallback((index: number) => {
         const novasDatas = [...(formData.datas_flexiveis || [])];
         novasDatas.splice(index, 1);
-        setFormData({ ...formData, datas_flexiveis: novasDatas });
-    };
+        updateForm({ datas_flexiveis: novasDatas });
+    }, [formData.datas_flexiveis, updateForm]);
 
-    const handleDataFlexivelChange = (index: number, field: 'mes_referencia' | 'dias_disponiveis', value: string) => {
+    const handleDataFlexivelChange = useCallback((index: number, field: 'mes_referencia' | 'dias_disponiveis', value: string) => {
         const novasDatas = [...(formData.datas_flexiveis || [])];
         novasDatas[index][field] = value;
-        setFormData({ ...formData, datas_flexiveis: novasDatas });
-    };
+        updateForm({ datas_flexiveis: novasDatas });
+    }, [formData.datas_flexiveis, updateForm]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -285,12 +288,19 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
         onSave({ ...formData, ativo: formData.mostrarNoSite ?? true });
     };
 
-    const datasIda = formData.datas_flexiveis?.filter(d => d.tipo === 'IDA') || [];
-    const datasVolta = formData.datas_flexiveis?.filter(d => d.tipo === 'VOLTA') || [];
+    const datasIda = useMemo(
+        () => (formData.datas_flexiveis || []).map((data, index) => ({ data, index })).filter(({ data }) => data.tipo === 'IDA'),
+        [formData.datas_flexiveis]
+    );
+
+    const datasVolta = useMemo(
+        () => (formData.datas_flexiveis || []).map((data, index) => ({ data, index })).filter(({ data }) => data.tipo === 'VOLTA'),
+        [formData.datas_flexiveis]
+    );
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto data-[state=open]:animate-none data-[state=closed]:animate-none">
                 <DialogHeader>
                     <DialogTitle className="text-2xl">
                         {oferta?.id ? 'Editar Oferta Premium' : 'Nova Oferta Premium'}
@@ -319,7 +329,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Input
                                 id="titulo"
                                 value={formData.titulo}
-                                onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                                onChange={(e) => updateForm({ titulo: e.target.value })}
                                 placeholder="Ex: Londres Premium - Business"
                                 className="h-11"
                             />
@@ -331,7 +341,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Input
                                 id="companhia"
                                 value={formData.companhia_aerea}
-                                onChange={(e) => setFormData({ ...formData, companhia_aerea: e.target.value })}
+                                onChange={(e) => updateForm({ companhia_aerea: e.target.value })}
                                 placeholder="Ex: TAP, British Airways"
                                 className="h-11"
                             />
@@ -344,7 +354,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         <Textarea
                             id="descricao"
                             value={formData.descricao || ''}
-                            onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                            onChange={(e) => updateForm({ descricao: e.target.value })}
                             placeholder="Descrição detalhada da oferta..."
                             rows={3}
                             className="resize-none"
@@ -358,7 +368,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Input
                                 id="origem"
                                 value={formData.origem_principal}
-                                onChange={(e) => setFormData({ ...formData, origem_principal: e.target.value })}
+                                onChange={(e) => updateForm({ origem_principal: e.target.value })}
                                 placeholder="Ex: São Paulo (GRU)"
                                 className="h-11"
                             />
@@ -370,7 +380,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Input
                                 id="destinos"
                                 value={formData.destinos_resumo || ''}
-                                onChange={(e) => setFormData({ ...formData, destinos_resumo: e.target.value })}
+                                onChange={(e) => updateForm({ destinos_resumo: e.target.value })}
                                 placeholder="Ex: Londres, Paris"
                                 className="h-11"
                             />
@@ -381,7 +391,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                         {/* Classe */}
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold">Classe *</Label>
-                            <Select value={formData.classe_voo} onValueChange={(v) => setFormData({ ...formData, classe_voo: v as ClasseVoo })}>
+                            <Select value={formData.classe_voo} onValueChange={(v) => updateForm({ classe_voo: v as ClasseVoo })}>
                                 <SelectTrigger className="h-10 w-full">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -404,7 +414,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                     const valorMascarado = aplicarMascaraValor(e.target.value);
                                     setPrecoFormatado(valorMascarado);
                                     const valorNumerico = parseValorBrasileiro(valorMascarado);
-                                    setFormData({ ...formData, preco: valorNumerico });
+                                    updateForm({ preco: valorNumerico });
                                 }}
                                 placeholder="10.000,00"
                                 className="h-10 w-full"
@@ -417,7 +427,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Input
                                 id="parcelas"
                                 value={formData.parcelas || ''}
-                                onChange={(e) => setFormData({ ...formData, parcelas: e.target.value })}
+                                onChange={(e) => updateForm({ parcelas: e.target.value })}
                                 placeholder="Ex: 10x sem juros"
                                 className="h-10 w-full"
                             />
@@ -434,7 +444,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                 <Input
                                     id="rotas_fixas"
                                     value={formData.rotas_fixas || ''}
-                                    onChange={(e) => setFormData({ ...formData, rotas_fixas: e.target.value })}
+                                    onChange={(e) => updateForm({ rotas_fixas: e.target.value })}
                                     placeholder="Ex: São Paulo,Montreal,Madrid,São Paulo"
                                     className="h-11"
                                 />
@@ -449,7 +459,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                     <Input
                                         id="rota_ida"
                                         value={formData.rota_ida || ''}
-                                        onChange={(e) => setFormData({ ...formData, rota_ida: e.target.value })}
+                                        onChange={(e) => updateForm({ rota_ida: e.target.value })}
                                         placeholder="Ex: GRU-LON"
                                         className="h-11"
                                     />
@@ -459,7 +469,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                                     <Input
                                         id="rota_volta"
                                         value={formData.rota_volta || ''}
-                                        onChange={(e) => setFormData({ ...formData, rota_volta: e.target.value })}
+                                        onChange={(e) => updateForm({ rota_volta: e.target.value })}
                                         placeholder="Ex: LON-GRU"
                                         className="h-11"
                                     />
@@ -527,8 +537,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
 
                                     {datasIda.length > 0 ? (
                                         <div className="space-y-2">
-                                            {datasIda.map((data, idx) => {
-                                                const realIndex = formData.datas_flexiveis?.findIndex(d => d === data) || 0;
+                                            {datasIda.map(({ data, index: realIndex }) => {
                                                 return (
                                                     <div key={realIndex} className="flex gap-2">
                                                         <Select
@@ -583,8 +592,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
 
                                     {datasVolta.length > 0 ? (
                                         <div className="space-y-2">
-                                            {datasVolta.map((data, idx) => {
-                                                const realIndex = formData.datas_flexiveis?.findIndex(d => d === data) || 0;
+                                            {datasVolta.map(({ data, index: realIndex }) => {
                                                 return (
                                                     <div key={realIndex} className="flex gap-2">
                                                         <Select
@@ -643,7 +651,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             id="data_expiracao"
                             type="date"
                             value={formData.data_expiracao || ''}
-                            onChange={(e) => setFormData({ ...formData, data_expiracao: e.target.value || null })}
+                            onChange={(e) => updateForm({ data_expiracao: e.target.value || null })}
                         />
                         <p className="text-xs text-muted-foreground">
                             Após essa data a oferta não será mais exibida. Deixe vazio para não expirar.
@@ -656,7 +664,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Switch
                                 id="mostrarNoSite"
                                 checked={formData.mostrarNoSite ?? true}
-                                onCheckedChange={(checked) => setFormData({ ...formData, mostrarNoSite: checked })}
+                                onCheckedChange={(checked) => updateForm({ mostrarNoSite: checked })}
                             />
                             <Label htmlFor="mostrarNoSite" className="text-sm font-medium cursor-pointer">
                                 Mostrar no Site
@@ -666,7 +674,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
                             <Switch
                                 id="mostrarNaTv"
                                 checked={formData.mostrarNaTv ?? false}
-                                onCheckedChange={(checked) => setFormData({ ...formData, mostrarNaTv: checked })}
+                                onCheckedChange={(checked) => updateForm({ mostrarNaTv: checked })}
                             />
                             <Label htmlFor="mostrarNaTv" className="text-sm font-medium cursor-pointer">
                                 Mostrar na TV

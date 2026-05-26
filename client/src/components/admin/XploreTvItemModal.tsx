@@ -63,6 +63,8 @@ export default function XploreTvItemModal({ open, onClose, onSave, item, nextOrd
     const [transicao, setTransicao] = useState("fade");
     const [orientacao, setOrientacao] = useState("horizontal");
     const [payloadFields, setPayloadFields] = useState<Record<string, string>>({});
+    const [previewImageUrl, setPreviewImageUrl] = useState("");
+    const [previewLogoUrl, setPreviewLogoUrl] = useState("");
 
     useEffect(() => {
         if (item) {
@@ -91,6 +93,15 @@ export default function XploreTvItemModal({ open, onClose, onSave, item, nextOrd
     const updatePayload = (key: string, value: string) => {
         setPayloadFields(prev => ({ ...prev, [key]: value }));
     };
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPreviewImageUrl((payloadFields.url || "").trim());
+            setPreviewLogoUrl((payloadFields.logoUrl || "").trim());
+        }, 350);
+
+        return () => clearTimeout(timer);
+    }, [payloadFields.url, payloadFields.logoUrl]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,10 +156,10 @@ export default function XploreTvItemModal({ open, onClose, onSave, item, nextOrd
                                 placeholder="Texto secundário"
                             />
                         </div>
-                        {payloadFields.url && (
+                        {previewImageUrl && (
                             <div className="rounded-lg overflow-hidden border border-gray-200">
                                 <img
-                                    src={payloadFields.url}
+                                    src={previewImageUrl}
                                     alt="Preview"
                                     className="w-full h-40 object-cover"
                                     onError={e => (e.currentTarget.style.display = "none")}
@@ -204,10 +215,10 @@ export default function XploreTvItemModal({ open, onClose, onSave, item, nextOrd
                                 placeholder="Sua próxima aventura começa aqui"
                             />
                         </div>
-                        {payloadFields.logoUrl && (
+                        {previewLogoUrl && (
                             <div className="rounded-lg p-4 bg-gray-900 flex items-center justify-center">
                                 <img
-                                    src={payloadFields.logoUrl}
+                                    src={previewLogoUrl}
                                     alt="Logo Preview"
                                     className="max-h-20 object-contain"
                                     onError={e => (e.currentTarget.style.display = "none")}

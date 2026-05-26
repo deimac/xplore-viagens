@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,12 +39,14 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
   });
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [imageUrlInput, setImageUrlInput] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImageMutation = trpc.heroSlides.uploadImage.useMutation({
     onSuccess: (data) => {
-      setFormData({ ...formData, imageUrl: data.url });
+      setFormData((prev) => ({ ...prev, imageUrl: data.url }));
       setPreviewUrl(data.url);
+      setImageUrlInput(data.url);
       toast.success("Imagem enviada com sucesso!");
       setUploading(false);
     },
@@ -54,10 +56,17 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
     },
   });
 
+  const applyImageUrl = useCallback(() => {
+    const normalized = imageUrlInput.trim();
+    setFormData((prev) => ({ ...prev, imageUrl: normalized }));
+    setPreviewUrl(normalized);
+  }, [imageUrlInput]);
+
   useEffect(() => {
     if (slide) {
       setFormData(slide);
       setPreviewUrl(slide.imageUrl);
+      setImageUrlInput(slide.imageUrl);
     } else {
       setFormData({
         imageUrl: "",
@@ -69,6 +78,7 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
         mostrarNaTv: 1,
       });
       setPreviewUrl("");
+      setImageUrlInput("");
     }
   }, [slide, open]);
 
@@ -110,8 +120,9 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
   };
 
   const handleRemoveImage = () => {
-    setFormData({ ...formData, imageUrl: "" });
+    setFormData((prev) => ({ ...prev, imageUrl: "" }));
     setPreviewUrl("");
+    setImageUrlInput("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -119,11 +130,12 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.imageUrl) {
+    const normalizedImageUrl = imageUrlInput.trim();
+    if (!normalizedImageUrl) {
       toast.error("Por favor, adicione uma imagem");
       return;
     }
-    onSave(formData);
+    onSave({ ...formData, imageUrl: normalizedImageUrl });
   };
 
   return (
@@ -191,11 +203,9 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
             <Input
               id="imageUrl"
               type="text"
-              value={formData.imageUrl}
-              onChange={(e) => {
-                setFormData({ ...formData, imageUrl: e.target.value });
-                setPreviewUrl(e.target.value);
-              }}
+              value={imageUrlInput}
+              onChange={(e) => setImageUrlInput(e.target.value)}
+              onBlur={applyImageUrl}
               placeholder="https://exemplo.com/imagem.jpg"
               disabled={uploading}
             />

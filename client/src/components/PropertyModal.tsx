@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, MapPin, Users, Home, Bed, Bath, Upload, Plus, DoorOpen } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PropertyFormData, Property } from "@/types/properties";
@@ -65,6 +65,10 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
     const [localSpaces, setLocalSpaces] = useState<LocalSpace[]>([]);
     const [mapAddress, setMapAddress] = useState("");
     const [mapLabel, setMapLabel] = useState("");
+
+    const updateFormData = useCallback((patch: Partial<PropertyFormData>) => {
+        setFormData((prev) => ({ ...prev, ...patch }));
+    }, []);
 
     const utils = trpc.useUtils();
 
@@ -556,13 +560,12 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                 onClick={() => handleStepClick(index)}
                                 disabled={!canNavigate || isLoading}
                                 className={cn(
-                                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 min-w-fit whitespace-nowrap",
-                                    "hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-accent",
+                                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm min-w-fit whitespace-nowrap",
+                                    "hover:bg-accent/20 focus:outline-none",
                                     isActive && "bg-accent text-accent-foreground shadow-sm",
                                     isCompleted && "text-emerald-600 dark:text-emerald-400",
                                     !canNavigate && "opacity-40 cursor-not-allowed",
-                                    canNavigate && !isActive && "text-muted-foreground hover:text-foreground",
-                                    isActive && isValid && "ring-2 ring-emerald-500/20"
+                                    canNavigate && !isActive && "text-muted-foreground hover:text-foreground"
                                 )}
                                 title={!canNavigate ? "Complete as seções anteriores primeiro" : `Ir para ${step.title}`}
                             >
@@ -593,7 +596,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     <Input
                                         id="name"
                                         value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        onChange={(e) => updateFormData({ name: e.target.value })}
                                         placeholder="Ex: Apartamento Aconchegante em Copacabana"
                                     />
                                 </div>
@@ -603,7 +606,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                     <Input
                                         id="description_short"
                                         value={formData.description_short}
-                                        onChange={(e) => setFormData({ ...formData, description_short: e.target.value })}
+                                        onChange={(e) => updateFormData({ description_short: e.target.value })}
                                         placeholder="Breve descrição para a listagem"
                                     />
                                 </div>
@@ -614,7 +617,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         id="description_full"
                                         rows={6}
                                         value={formData.description_full}
-                                        onChange={(e) => setFormData({ ...formData, description_full: e.target.value })}
+                                        onChange={(e) => updateFormData({ description_full: e.target.value })}
                                         placeholder="Descrição detalhada da hospedagem, comodidades, localização..."
                                     />
                                 </div>
@@ -625,8 +628,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         id="property_type"
                                         title="Tipo de Propriedade"
                                         value={formData.property_type_id || ""}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
+                                        onChange={(e) => updateFormData({
                                             property_type_id: e.target.value ? Number(e.target.value) : undefined
                                         })}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -645,7 +647,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         id="is_featured"
                                         checked={formData.is_featured || false}
                                         onCheckedChange={(checked) =>
-                                            setFormData({ ...formData, is_featured: checked as boolean })
+                                            updateFormData({ is_featured: checked as boolean })
                                         }
                                     />
                                     <Label htmlFor="is_featured" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -658,7 +660,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         id="mostrarNoSite"
                                         checked={formData.mostrarNoSite ?? true}
                                         onCheckedChange={(checked) =>
-                                            setFormData({ ...formData, mostrarNoSite: checked as boolean })
+                                            updateFormData({ mostrarNoSite: checked as boolean })
                                         }
                                     />
                                     <Label htmlFor="mostrarNoSite" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -671,7 +673,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         id="mostrarNaTv"
                                         checked={formData.mostrarNaTv ?? false}
                                         onCheckedChange={(checked) =>
-                                            setFormData({ ...formData, mostrarNaTv: checked as boolean })
+                                            updateFormData({ mostrarNaTv: checked as boolean })
                                         }
                                     />
                                     <Label htmlFor="mostrarNaTv" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -692,7 +694,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                             type="number"
                                             min="1"
                                             value={formData.max_guests}
-                                            onChange={(e) => setFormData({ ...formData, max_guests: parseInt(e.target.value) || 1 })}
+                                            onChange={(e) => updateFormData({ max_guests: parseInt(e.target.value) || 1 })}
                                         />
                                     </div>
 
@@ -715,19 +717,19 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 if (value === "") {
-                                                    setFormData({ ...formData, area_m2: undefined });
+                                                    updateFormData({ area_m2: undefined });
                                                     return;
                                                 }
                                                 const parsed = parseFloat(value);
                                                 if (!isNaN(parsed) && parsed >= 0 && parsed <= 9999.99) {
-                                                    setFormData({ ...formData, area_m2: parsed });
+                                                    updateFormData({ area_m2: parsed });
                                                 }
                                             }}
                                             onBlur={(e) => {
                                                 const value = e.target.value;
                                                 if (value && !isNaN(parseFloat(value))) {
                                                     const rounded = Math.round(parseFloat(value) * 100) / 100;
-                                                    setFormData({ ...formData, area_m2: rounded });
+                                                    updateFormData({ area_m2: rounded });
                                                 }
                                             }}
                                         />
@@ -748,8 +750,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                             value={formData.xp}
                                             onChange={(e) => {
                                                 const parsed = Number(e.target.value);
-                                                setFormData({
-                                                    ...formData,
+                                                updateFormData({
                                                     xp: Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0,
                                                 });
                                             }}
@@ -767,7 +768,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="address_street"
                                             value={formData.address_street || ""}
-                                            onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
+                                            onChange={(e) => updateFormData({ address_street: e.target.value })}
                                             placeholder="Ex: Avenida Atlântica"
                                         />
                                     </div>
@@ -777,7 +778,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="address_number"
                                             value={formData.address_number || ""}
-                                            onChange={(e) => setFormData({ ...formData, address_number: e.target.value })}
+                                            onChange={(e) => updateFormData({ address_number: e.target.value })}
                                             placeholder="Ex: 1234"
                                         />
                                     </div>
@@ -789,7 +790,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="address_complement"
                                             value={formData.address_complement || ""}
-                                            onChange={(e) => setFormData({ ...formData, address_complement: e.target.value })}
+                                            onChange={(e) => updateFormData({ address_complement: e.target.value })}
                                             placeholder="Ex: Apto 501, Bloco B"
                                         />
                                     </div>
@@ -799,7 +800,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="neighborhood"
                                             value={formData.neighborhood || ""}
-                                            onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                                            onChange={(e) => updateFormData({ neighborhood: e.target.value })}
                                             placeholder="Ex: Copacabana"
                                         />
                                     </div>
@@ -811,7 +812,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="city"
                                             value={formData.city}
-                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                            onChange={(e) => updateFormData({ city: e.target.value })}
                                             placeholder="Ex: Rio de Janeiro"
                                         />
                                     </div>
@@ -821,7 +822,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="state_region"
                                             value={formData.state_region || ""}
-                                            onChange={(e) => setFormData({ ...formData, state_region: e.target.value })}
+                                            onChange={(e) => updateFormData({ state_region: e.target.value })}
                                             placeholder="Ex: RJ"
                                         />
                                     </div>
@@ -833,7 +834,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="country"
                                             value={formData.country}
-                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                            onChange={(e) => updateFormData({ country: e.target.value })}
                                             placeholder="Ex: Brasil"
                                         />
                                     </div>
@@ -843,7 +844,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
                                         <Input
                                             id="postal_code"
                                             value={formData.postal_code || ""}
-                                            onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                                            onChange={(e) => updateFormData({ postal_code: e.target.value })}
                                             placeholder="Ex: 22021-001"
                                         />
                                     </div>

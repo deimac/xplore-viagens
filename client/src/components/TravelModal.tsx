@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { memo, useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,40 @@ interface TravelModalProps {
   initialData?: any;
   isLoading?: boolean;
 }
+
+interface TravelTagSelectorsProps {
+  categoriaIds: number[];
+  destaqueIds: number[];
+  onCategoriaChange: (ids: number[]) => void;
+  onDestaqueChange: (ids: number[]) => void;
+}
+
+const TravelTagSelectors = memo(function TravelTagSelectors({
+  categoriaIds,
+  destaqueIds,
+  onCategoriaChange,
+  onDestaqueChange,
+}: TravelTagSelectorsProps) {
+  return (
+    <>
+      <div>
+        <Label className="text-accent mb-2 block">Categorias</Label>
+        <CategoriaSelector
+          selectedIds={categoriaIds}
+          onSelectionChange={onCategoriaChange}
+        />
+      </div>
+
+      <div>
+        <Label className="text-accent mb-2 block">Destaques (tags do card)</Label>
+        <DestaqueSelector
+          selectedIds={destaqueIds}
+          onSelectionChange={onDestaqueChange}
+        />
+      </div>
+    </>
+  );
+});
 
 function slugify(text: string): string {
   return text
@@ -154,6 +188,7 @@ export default function TravelModal({
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [valorTotalInput, setValorTotalInput] = useState("");
   const [valorParcelaInput, setValorParcelaInput] = useState("");
+  const [showTagSelectors, setShowTagSelectors] = useState(false);
 
   // Date range for BookingDatePicker
   const dateRange: DateRange | undefined =
@@ -162,6 +197,7 @@ export default function TravelModal({
       : undefined;
 
   useEffect(() => {
+    setShowTagSelectors(false);
     if (initialData) {
       setFormData({
         id: initialData.id,
@@ -244,6 +280,14 @@ export default function TravelModal({
     set("valorParcela", parsed);
   };
 
+  const handleCategoriaChange = useCallback((ids: number[]) => {
+    setFormData((prev) => ({ ...prev, categoriaIds: ids }));
+  }, []);
+
+  const handleDestaqueChange = useCallback((ids: number[]) => {
+    setFormData((prev) => ({ ...prev, destaqueIds: ids }));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -299,8 +343,8 @@ export default function TravelModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-2xl w-full my-8">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-muted">
           <h2 className="text-xl font-medium text-accent">
@@ -312,7 +356,7 @@ export default function TravelModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
 
           {/* === Tipo da viagem === */}
           <div>
@@ -530,22 +574,25 @@ export default function TravelModal({
             />
           </div>
 
-          {/* === Categorias === */}
-          <div>
-            <Label className="text-accent mb-2 block">Categorias</Label>
-            <CategoriaSelector
-              selectedIds={formData.categoriaIds}
-              onSelectionChange={(ids) => set("categoriaIds", ids)}
-            />
-          </div>
+          {/* === Categorias / Destaques === */}
+          <div className="space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowTagSelectors((prev) => !prev)}
+              className="w-full"
+            >
+              {showTagSelectors ? "Ocultar categorias e destaques" : "Editar categorias e destaques"}
+            </Button>
 
-          {/* === Destaques === */}
-          <div>
-            <Label className="text-accent mb-2 block">Destaques (tags do card)</Label>
-            <DestaqueSelector
-              selectedIds={formData.destaqueIds}
-              onSelectionChange={(ids) => set("destaqueIds", ids)}
-            />
+            {showTagSelectors && (
+              <TravelTagSelectors
+                categoriaIds={formData.categoriaIds}
+                destaqueIds={formData.destaqueIds}
+                onCategoriaChange={handleCategoriaChange}
+                onDestaqueChange={handleDestaqueChange}
+              />
+            )}
           </div>
 
           {/* Actions */}
