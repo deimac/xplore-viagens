@@ -522,7 +522,7 @@ export function PropertyModal({ isOpen, onClose, property, onSave }: Props) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black">
             <div className="bg-background rounded-lg shadow-lg w-full max-w-4xl h-[85vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b">

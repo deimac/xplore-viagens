@@ -140,7 +140,7 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent disableAnimations className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{slide?.id ? "Editar Slide" : "Adicionar Slide"}</DialogTitle>
         </DialogHeader>

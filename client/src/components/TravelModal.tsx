@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback } from "react";
+import { memo, useState, useEffect, useCallback, useMemo } from "react";
 import { X } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,34 @@ const TravelTagSelectors = memo(function TravelTagSelectors({
         />
       </div>
     </>
+  );
+});
+
+const TravelDatePicker = memo(function TravelDatePicker({
+  value,
+  onChange,
+}: {
+  value: DateRange | undefined;
+  onChange: (range: DateRange | undefined) => void;
+}) {
+  return <BookingDatePicker value={value} onChange={onChange} mode="flight" />;
+});
+
+const TravelImageField = memo(function TravelImageField({
+  currentImageUrl,
+  previewUrl,
+  onImageSelect,
+}: {
+  currentImageUrl?: string;
+  previewUrl?: string;
+  onImageSelect: (file: File | null) => void;
+}) {
+  return (
+    <ViagemImageUpload
+      currentImageUrl={currentImageUrl}
+      previewUrl={previewUrl}
+      onImageSelect={onImageSelect}
+    />
   );
 });
 
@@ -191,10 +219,12 @@ export default function TravelModal({
   const [showTagSelectors, setShowTagSelectors] = useState(false);
 
   // Date range for BookingDatePicker
-  const dateRange: DateRange | undefined =
-    formData.dataIda || formData.dataVolta
+  const dateRange: DateRange | undefined = useMemo(
+    () => (formData.dataIda || formData.dataVolta
       ? { from: parseDateStr(formData.dataIda), to: parseDateStr(formData.dataVolta) }
-      : undefined;
+      : undefined),
+    [formData.dataIda, formData.dataVolta]
+  );
 
   useEffect(() => {
     setShowTagSelectors(false);
@@ -343,7 +373,7 @@ export default function TravelModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black flex items-center justify-center z-50 p-4">
       <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-muted">
@@ -375,7 +405,7 @@ export default function TravelModal({
           {/* === Imagem === */}
           <div>
             <Label className="text-accent mb-2 block">Imagem *</Label>
-            <ViagemImageUpload
+            <TravelImageField
               currentImageUrl={formData.imagemUrl || undefined}
               previewUrl={imagePreview}
               onImageSelect={handleImageSelect}
@@ -426,10 +456,9 @@ export default function TravelModal({
             </div>
             <div>
               <Label className="text-accent mb-1 block">Período da Viagem</Label>
-              <BookingDatePicker
+              <TravelDatePicker
                 value={dateRange}
                 onChange={handleDateChange}
-                mode="flight"
               />
             </div>
           </div>

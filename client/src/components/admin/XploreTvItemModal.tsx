@@ -294,7 +294,7 @@ export default function XploreTvItemModal({ open, onClose, onSave, item, nextOrd
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent disableAnimations className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-semibold">
                         {item?.id ? "Editar Bloco TV" : "Novo Bloco TV"}

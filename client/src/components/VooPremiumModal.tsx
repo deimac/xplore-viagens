@@ -300,7 +300,7 @@ export default function VooPremiumModal({ isOpen, onClose, onSave, oferta }: Voo
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto data-[state=open]:animate-none data-[state=closed]:animate-none">
+            <DialogContent disableAnimations className="max-w-4xl max-h-[95vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-2xl">
                         {oferta?.id ? 'Editar Oferta Premium' : 'Nova Oferta Premium'}
