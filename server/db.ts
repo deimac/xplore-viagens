@@ -34,7 +34,7 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
 import { eq, and, desc, inArray, or, isNull, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
-import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos } from "../drizzle/schema";
+import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos, adminLembretes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
@@ -651,6 +651,111 @@ export async function deleteQuotation(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(quotations).where(eq(quotations.id, id));
+}
+
+type AdminLembreteStatus = "pendente" | "concluida";
+
+type AdminLembreteCreateInput = {
+  titulo: string;
+  origem?: string | null;
+  prazo?: string | null;
+  userId: number;
+};
+
+type AdminLembreteListOptions = {
+  status?: AdminLembreteStatus;
+  limit?: number;
+};
+
+async function getAdminLembreteById(id: number) {
+  const results = await executeQuery<any[]>(
+    `SELECT
+        l.*,
+        criador.name AS criador_nome,
+        conclusao.name AS conclusao_nome
+     FROM admin_lembretes l
+     INNER JOIN users criador ON criador.id = l.id_users_criador
+     LEFT JOIN users conclusao ON conclusao.id = l.id_users_conclusao
+     WHERE l.id = ?
+     LIMIT 1`,
+    [id],
+  );
+
+  return results[0] ?? null;
+}
+
+export async function listAdminLembretes(options: AdminLembreteListOptions = {}) {
+  const params: any[] = [];
+  const whereClauses: string[] = [];
+
+  if (options.status) {
+    whereClauses.push(`l.status = ?`);
+    params.push(options.status);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+  const limitSql = options.limit ? `LIMIT ${Math.max(1, Math.min(options.limit, 100))}` : "";
+
+  return await executeQuery<any[]>(
+    `SELECT
+        l.*,
+        criador.name AS criador_nome,
+        conclusao.name AS conclusao_nome
+     FROM admin_lembretes l
+     INNER JOIN users criador ON criador.id = l.id_users_criador
+     LEFT JOIN users conclusao ON conclusao.id = l.id_users_conclusao
+     ${whereSql}
+     ORDER BY
+        CASE WHEN l.status = 'pendente' THEN 0 ELSE 1 END,
+        l.prazo IS NULL,
+        l.prazo ASC,
+        l.created_at DESC
+     ${limitSql}`,
+    params,
+  );
+}
+
+export async function createAdminLembrete(input: AdminLembreteCreateInput) {
+  const result: any = await executeQuery(
+    `INSERT INTO admin_lembretes (titulo, origem, prazo, status, id_users_criador)
+     VALUES (?, ?, ?, 'pendente', ?)`,
+    [input.titulo, input.origem ?? null, input.prazo ?? null, input.userId],
+  );
+
+  return await getAdminLembreteById(result.insertId);
+}
+
+export async function concluirAdminLembrete(id: number, userId: number) {
+  await executeQuery(
+    `UPDATE admin_lembretes
+     SET status = 'concluida',
+         id_users_conclusao = ?,
+         concluida_em = NOW()
+     WHERE id = ?`,
+    [userId, id],
+  );
+
+  return await getAdminLembreteById(id);
+}
+
+export async function reabrirAdminLembrete(id: number) {
+  await executeQuery(
+    `UPDATE admin_lembretes
+     SET status = 'pendente',
+         id_users_conclusao = NULL,
+         concluida_em = NULL
+     WHERE id = ?`,
+    [id],
+  );
+
+  return await getAdminLembreteById(id);
+}
+
+export async function deleteAdminLembrete(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(adminLembretes).where(eq(adminLembretes.id, id));
+  return { success: true } as const;
 }
 
 // Company Settings queries

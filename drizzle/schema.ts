@@ -193,6 +193,25 @@ export type Quotation = typeof quotations.$inferSelect;
 export type InsertQuotation = typeof quotations.$inferInsert;
 
 /**
+ * Admin reminders/tasks for dashboard quick capture.
+ */
+export const adminLembretes = mysqlTable("admin_lembretes", {
+  id: int("id").autoincrement().primaryKey(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  origem: varchar("origem", { length: 50 }),
+  prazo: date("prazo"),
+  status: mysqlEnum("status", ["pendente", "concluida"]).notNull().default("pendente"),
+  idUsersCriador: int("id_users_criador").notNull().references(() => users.id),
+  idUsersConclusao: int("id_users_conclusao").references(() => users.id),
+  concluidaEm: timestamp("concluida_em"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+export type AdminLembrete = typeof adminLembretes.$inferSelect;
+export type InsertAdminLembrete = typeof adminLembretes.$inferInsert;
+
+/**
  * Company Settings table - stores company information
  */
 export const companySettings = mysqlTable("companySettings", {

@@ -489,6 +489,53 @@ export const appRouter = router({
       }),
   }),
 
+  adminLembretes: router({
+    list: adminProcedure
+      .input(
+        z.object({
+          status: z.enum(["pendente", "concluida"]).optional(),
+          limit: z.number().int().min(1).max(100).optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        return await db.listAdminLembretes({
+          status: input?.status,
+          limit: input?.limit,
+        });
+      }),
+    create: adminProcedure
+      .input(
+        z.object({
+          titulo: z.string().trim().min(3).max(255),
+          origem: z.string().trim().max(50).optional().nullable(),
+          prazo: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        return await db.createAdminLembrete({
+          titulo: input.titulo,
+          origem: input.origem,
+          prazo: input.prazo,
+          userId: ctx.user.id,
+        });
+      }),
+    concluir: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.concluirAdminLembrete(input.id, ctx.user.id);
+      }),
+    reabrir: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ input }) => {
+        return await db.reabrirAdminLembrete(input.id);
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteAdminLembrete(input.id);
+      }),
+  }),
+
   reviews: router({
     // Verify Google token and return user info
     verifyGoogle: publicProcedure
