@@ -507,16 +507,41 @@ export const appRouter = router({
       .input(
         z.object({
           titulo: z.string().trim().min(3).max(255),
+          observacoes: z.string().trim().max(5000).optional().nullable(),
           origem: z.string().trim().max(50).optional().nullable(),
+          prioridade: z.enum(["normal", "media", "alta"]).optional(),
           prazo: z.string().optional().nullable(),
         })
       )
       .mutation(async ({ input, ctx }) => {
         return await db.createAdminLembrete({
           titulo: input.titulo,
+          observacoes: input.observacoes,
           origem: input.origem,
+          prioridade: input.prioridade,
           prazo: input.prazo,
           userId: ctx.user.id,
+        });
+      }),
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          titulo: z.string().trim().min(3).max(255),
+          observacoes: z.string().trim().max(5000).optional().nullable(),
+          origem: z.string().trim().max(50).optional().nullable(),
+          prioridade: z.enum(["normal", "media", "alta"]).optional(),
+          prazo: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.updateAdminLembrete({
+          id: input.id,
+          titulo: input.titulo,
+          observacoes: input.observacoes,
+          origem: input.origem,
+          prioridade: input.prioridade,
+          prazo: input.prazo,
         });
       }),
     concluir: adminProcedure

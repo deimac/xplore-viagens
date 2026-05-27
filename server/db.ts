@@ -654,18 +654,53 @@ export async function deleteQuotation(id: number) {
 }
 
 type AdminLembreteStatus = "pendente" | "concluida";
+type AdminLembretePrioridade = "normal" | "media" | "alta";
 
 type AdminLembreteCreateInput = {
   titulo: string;
+  observacoes?: string | null;
   origem?: string | null;
+  prioridade?: AdminLembretePrioridade;
   prazo?: string | null;
   userId: number;
+};
+
+type AdminLembreteUpdateInput = {
+  id: number;
+  titulo: string;
+  observacoes?: string | null;
+  origem?: string | null;
+  prioridade?: AdminLembretePrioridade;
+  prazo?: string | null;
 };
 
 type AdminLembreteListOptions = {
   status?: AdminLembreteStatus;
   limit?: number;
 };
+
+function normalizeSqlDate(dateValue: unknown): string | null {
+  if (!dateValue) return null;
+
+  if (dateValue instanceof Date) {
+    const iso = dateValue.toISOString();
+    return iso.slice(0, 10);
+  }
+
+  if (typeof dateValue === "string") {
+    const dateOnlyMatch = dateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateOnlyMatch) return dateOnlyMatch[1];
+  }
+
+  return null;
+}
+
+function mapAdminLembreteRow(row: any) {
+  return {
+    ...row,
+    prazo: normalizeSqlDate(row.prazo),
+  };
+}
 
 async function getAdminLembreteById(id: number) {
   const results = await executeQuery<any[]>(
@@ -681,7 +716,8 @@ async function getAdminLembreteById(id: number) {
     [id],
   );
 
-  return results[0] ?? null;
+  if (!results[0]) return null;
+  return mapAdminLembreteRow(results[0]);
 }
 
 export async function listAdminLembretes(options: AdminLembreteListOptions = {}) {
@@ -696,7 +732,7 @@ export async function listAdminLembretes(options: AdminLembreteListOptions = {})
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
   const limitSql = options.limit ? `LIMIT ${Math.max(1, Math.min(options.limit, 100))}` : "";
 
-  return await executeQuery<any[]>(
+  const rows = await executeQuery<any[]>(
     `SELECT
         l.*,
         criador.name AS criador_nome,
@@ -707,22 +743,58 @@ export async function listAdminLembretes(options: AdminLembreteListOptions = {})
      ${whereSql}
      ORDER BY
         CASE WHEN l.status = 'pendente' THEN 0 ELSE 1 END,
+        CASE l.prioridade
+          WHEN 'alta' THEN 0
+          WHEN 'media' THEN 1
+          ELSE 2
+        END,
         l.prazo IS NULL,
         l.prazo ASC,
         l.created_at DESC
      ${limitSql}`,
     params,
   );
+
+  return rows.map(mapAdminLembreteRow);
 }
 
 export async function createAdminLembrete(input: AdminLembreteCreateInput) {
   const result: any = await executeQuery(
-    `INSERT INTO admin_lembretes (titulo, origem, prazo, status, id_users_criador)
-     VALUES (?, ?, ?, 'pendente', ?)`,
-    [input.titulo, input.origem ?? null, input.prazo ?? null, input.userId],
+    `INSERT INTO admin_lembretes (titulo, observacoes, origem, prioridade, prazo, status, id_users_criador)
+     VALUES (?, ?, ?, ?, ?, 'pendente', ?)`,
+    [
+      input.titulo,
+      input.observacoes ?? null,
+      input.origem ?? null,
+      input.prioridade ?? "normal",
+      input.prazo ?? null,
+      input.userId,
+    ],
   );
 
   return await getAdminLembreteById(result.insertId);
+}
+
+export async function updateAdminLembrete(input: AdminLembreteUpdateInput) {
+  await executeQuery(
+    `UPDATE admin_lembretes
+     SET titulo = ?,
+         observacoes = ?,
+         origem = ?,
+         prioridade = ?,
+         prazo = ?
+     WHERE id = ?`,
+    [
+      input.titulo,
+      input.observacoes ?? null,
+      input.origem ?? null,
+      input.prioridade ?? "normal",
+      input.prazo ?? null,
+      input.id,
+    ],
+  );
+
+  return await getAdminLembreteById(input.id);
 }
 
 export async function concluirAdminLembrete(id: number, userId: number) {

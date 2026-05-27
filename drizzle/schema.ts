@@ -198,7 +198,9 @@ export type InsertQuotation = typeof quotations.$inferInsert;
 export const adminLembretes = mysqlTable("admin_lembretes", {
   id: int("id").autoincrement().primaryKey(),
   titulo: varchar("titulo", { length: 255 }).notNull(),
+  observacoes: text("observacoes"),
   origem: varchar("origem", { length: 50 }),
+  prioridade: mysqlEnum("prioridade", ["normal", "media", "alta"]).notNull().default("normal"),
   prazo: date("prazo"),
   status: mysqlEnum("status", ["pendente", "concluida"]).notNull().default("pendente"),
   idUsersCriador: int("id_users_criador").notNull().references(() => users.id),
