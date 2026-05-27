@@ -201,6 +201,7 @@ export const adminLembretes = mysqlTable("admin_lembretes", {
   observacoes: text("observacoes"),
   origem: varchar("origem", { length: 50 }),
   prioridade: mysqlEnum("prioridade", ["normal", "media", "alta"]).notNull().default("normal"),
+  sortOrder: int("sort_order").notNull().default(0),
   prazo: date("prazo"),
   status: mysqlEnum("status", ["pendente", "concluida"]).notNull().default("pendente"),
   idUsersCriador: int("id_users_criador").notNull().references(() => users.id),

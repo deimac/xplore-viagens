@@ -559,6 +559,11 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await db.deleteAdminLembrete(input.id);
       }),
+    reorder: adminProcedure
+      .input(z.object({ ids: z.array(z.number().int()) }))
+      .mutation(async ({ input }) => {
+        return await db.reorderAdminLembretes(input.ids);
+      }),
   }),
 
   reviews: router({

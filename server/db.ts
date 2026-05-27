@@ -763,14 +763,8 @@ export async function listAdminLembretes(options: AdminLembreteListOptions = {})
      ${whereSql}
      ORDER BY
         CASE WHEN l.status = 'pendente' THEN 0 ELSE 1 END,
-        CASE l.prioridade
-          WHEN 'alta' THEN 0
-          WHEN 'media' THEN 1
-          ELSE 2
-        END,
-        l.prazo IS NULL,
-        l.prazo ASC,
-        l.created_at DESC
+        l.sort_order ASC,
+        l.created_at ASC
      ${limitSql}`,
     params,
   );
@@ -779,20 +773,35 @@ export async function listAdminLembretes(options: AdminLembreteListOptions = {})
 }
 
 export async function createAdminLembrete(input: AdminLembreteCreateInput) {
+  const maxRows = await executeQuery<any[]>(
+    `SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM admin_lembretes`
+  );
+  const nextOrder = (maxRows[0]?.next_order as number) ?? 0;
+
   const result: any = await executeQuery(
-    `INSERT INTO admin_lembretes (titulo, observacoes, origem, prioridade, prazo, status, id_users_criador)
-     VALUES (?, ?, ?, ?, ?, 'pendente', ?)`,
+    `INSERT INTO admin_lembretes (titulo, observacoes, origem, prioridade, sort_order, prazo, status, id_users_criador)
+     VALUES (?, ?, ?, ?, ?, ?, 'pendente', ?)`,
     [
       input.titulo,
       input.observacoes ?? null,
       input.origem ?? null,
       input.prioridade ?? "normal",
+      nextOrder,
       input.prazo ?? null,
       input.userId,
     ],
   );
 
   return await getAdminLembreteById(result.insertId);
+}
+
+export async function reorderAdminLembretes(ids: number[]) {
+  await Promise.all(
+    ids.map((id, index) =>
+      executeQuery(`UPDATE admin_lembretes SET sort_order = ? WHERE id = ?`, [index, id])
+    )
+  );
+  return { success: true } as const;
 }
 
 export async function updateAdminLembrete(input: AdminLembreteUpdateInput) {

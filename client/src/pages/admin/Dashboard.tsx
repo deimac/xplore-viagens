@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,13 +12,15 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
     AlertTriangle,
+    ArrowDown,
+    ArrowUp,
     Building2,
     CalendarClock,
     Check,
     ChevronDown,
-    ChevronUp,
     Clock3,
     Edit3,
+    GripVertical,
     Image,
     MessageSquarePlus,
     Plane,
@@ -27,6 +29,27 @@ import {
     Trash2,
     X,
 } from "lucide-react";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type ReminderPriority = "normal" | "media" | "alta";
 
@@ -44,7 +67,7 @@ type AdminReminder = {
     conclusao_nome?: string | null;
 };
 
-type ReminderSortMode = "prioridade_data" | "criacao_recente" | "criacao_antiga";
+type ReminderSortMode = "manual" | "criacao_recente" | "criacao_antiga";
 
 type ReminderFormState = {
     titulo: string;
@@ -53,6 +76,10 @@ type ReminderFormState = {
     prioridade: ReminderPriority;
     prazo: string;
 };
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const reminderOriginOptions = [
     { value: "whatsapp", label: "WhatsApp" },
@@ -72,6 +99,10 @@ const priorityClasses: Record<ReminderPriority, string> = {
     media: "bg-amber-100 text-amber-800",
     alta: "bg-rose-100 text-rose-800",
 };
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function normalizeDateOnly(dateValue?: string | null) {
     if (!dateValue) return null;
@@ -99,7 +130,7 @@ function parseDateOnly(dateValue?: string | null) {
 
 function formatTargetDate(dateValue?: string | null) {
     const parsed = parseDateOnly(dateValue);
-    if (!parsed) return "Sem data-alvo";
+    if (!parsed) return null;
 
     return new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
@@ -108,15 +139,15 @@ function formatTargetDate(dateValue?: string | null) {
 }
 
 function formatDateTime(dateValue?: string | null) {
-    if (!dateValue) return "Data/hora de criação indisponível";
+    if (!dateValue) return "—";
 
     const parsed = new Date(dateValue);
-    if (Number.isNaN(parsed.getTime())) return "Data/hora de criação indisponível";
+    if (Number.isNaN(parsed.getTime())) return "—";
 
     return new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
+        year: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
     }).format(parsed);
@@ -136,16 +167,211 @@ function createInitialFormState(): ReminderFormState {
     };
 }
 
+// ---------------------------------------------------------------------------
+// SortableReminderCard
+// ---------------------------------------------------------------------------
+
+type SortableReminderCardProps = {
+    reminder: AdminReminder;
+    isExpanded: boolean;
+    isFirst: boolean;
+    isLast: boolean;
+    isConcluding: boolean;
+    isDeleting: boolean;
+    onToggleExpand: () => void;
+    onEdit: (reminder: AdminReminder) => void;
+    onConclude: (id: number) => void;
+    onDelete: (id: number) => void;
+    onMoveUp: (id: number) => void;
+    onMoveDown: (id: number) => void;
+};
+
+function SortableReminderCard({
+    reminder,
+    isExpanded,
+    isFirst,
+    isLast,
+    isConcluding,
+    isDeleting,
+    onToggleExpand,
+    onEdit,
+    onConclude,
+    onDelete,
+    onMoveUp,
+    onMoveDown,
+}: SortableReminderCardProps) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: reminder.id,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    const dueDate = parseDateOnly(reminder.prazo);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isOverdue = dueDate ? dueDate < today : false;
+    const formattedDue = formatTargetDate(reminder.prazo);
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`rounded-xl border bg-white shadow-sm transition-colors ${isDragging ? "z-50 border-orange-400 shadow-lg opacity-90" : "border-slate-200 hover:border-orange-200"}`}
+        >
+            {/* Compact row (always visible) */}
+            <div
+                className="flex cursor-pointer items-center gap-2 px-3 py-2.5"
+                onClick={onToggleExpand}
+            >
+                {/* Drag handle */}
+                <button
+                    type="button"
+                    className="cursor-grab touch-none shrink-0 rounded p-0.5 text-slate-300 hover:text-slate-500"
+                    onClick={(e) => e.stopPropagation()}
+                    {...attributes}
+                    {...listeners}
+                    title="Arrastar para reordenar"
+                >
+                    <GripVertical className="h-4 w-4" />
+                </button>
+
+                {/* Title + badges */}
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="text-sm font-semibold text-slate-900 truncate max-w-[180px] sm:max-w-none">
+                        {reminder.titulo}
+                    </p>
+                    {reminder.origem && (
+                        <Badge variant="outline" className="shrink-0 border-slate-200 text-slate-500 text-[11px] px-1.5 py-0">
+                            {getReminderOriginLabel(reminder.origem)}
+                        </Badge>
+                    )}
+                    <Badge
+                        variant="secondary"
+                        className={`${priorityClasses[reminder.prioridade ?? "normal"]} shrink-0 text-[11px] px-1.5 py-0`}
+                    >
+                        {priorityLabels[reminder.prioridade ?? "normal"]}
+                    </Badge>
+                    {formattedDue && (
+                        <Badge
+                            variant="secondary"
+                            className={`shrink-0 text-[11px] px-1.5 py-0 ${isOverdue ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600"}`}
+                        >
+                            {formattedDue}
+                        </Badge>
+                    )}
+                </div>
+
+                {/* Right: datetime + direction arrows + chevron */}
+                <div className="flex shrink-0 items-center gap-0.5">
+                    <span className="hidden sm:block mr-2 text-[11px] text-slate-400">
+                        {formatDateTime(reminder.created_at)}
+                    </span>
+                    <button
+                        type="button"
+                        className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-25"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onMoveUp(reminder.id);
+                        }}
+                        disabled={isFirst}
+                        title="Mover para cima"
+                    >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                        type="button"
+                        className="rounded p-1 text-slate-300 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-25"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onMoveDown(reminder.id);
+                        }}
+                        disabled={isLast}
+                        title="Mover para baixo"
+                    >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
+                    <ChevronDown
+                        className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    />
+                </div>
+            </div>
+
+            {/* Expanded section */}
+            {isExpanded && (
+                <div className="border-t border-slate-100 px-3 pb-3 pt-2 space-y-2">
+                    <p className="block text-[11px] text-slate-400 sm:hidden">
+                        {formatDateTime(reminder.created_at)}
+                    </p>
+
+                    {isOverdue && (
+                        <p className="text-xs font-medium text-rose-600">⚠ Data-alvo vencida</p>
+                    )}
+
+                    {!!reminder.observacoes && (
+                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                            <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Detalhes
+                            </p>
+                            <p className="whitespace-pre-wrap text-sm text-slate-700">{reminder.observacoes}</p>
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onEdit(reminder)}
+                        >
+                            <Edit3 className="mr-1 h-3.5 w-3.5" />
+                            Editar
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                            onClick={() => onConclude(reminder.id)}
+                            disabled={isConcluding}
+                        >
+                            <Check className="mr-1 h-3.5 w-3.5" />
+                            Concluir
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="text-rose-600 hover:border-rose-200 hover:text-rose-700"
+                            onClick={() => onDelete(reminder.id)}
+                            disabled={isDeleting}
+                        >
+                            <Trash2 className="mr-1 h-3.5 w-3.5" />
+                            Excluir
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
+
 export default function Dashboard() {
     const [, navigate] = useLocation();
     const utils = trpc.useUtils();
 
     const [formState, setFormState] = useState<ReminderFormState>(createInitialFormState());
     const [editingReminderId, setEditingReminderId] = useState<number | null>(null);
-    const [showAdvancedFields, setShowAdvancedFields] = useState(false);
-    const [sortMode, setSortMode] = useState<ReminderSortMode>("prioridade_data");
+    const [sortMode, setSortMode] = useState<ReminderSortMode>("manual");
     const [expandedReminderIds, setExpandedReminderIds] = useState<number[]>([]);
+    const [localPendingReminders, setLocalPendingReminders] = useState<AdminReminder[] | null>(null);
 
+    // Queries
     // @ts-expect-error - tRPC types are generated when server is running
     const propertiesQuery = trpc.properties.listAll.useQuery();
     // @ts-expect-error - tRPC types are generated when server is running
@@ -157,16 +383,21 @@ export default function Dashboard() {
     // @ts-expect-error - tRPC types are generated when server is running
     const remindersQuery = trpc.adminLembretes.list.useQuery({ limit: 40 });
 
-    const invalidateReminders = async () => {
-        await utils.adminLembretes.list.invalidate();
-    };
+    // Clear optimistic state whenever server data updates
+    useEffect(() => {
+        setLocalPendingReminders(null);
+    }, [remindersQuery.data]);
 
-    const resetForm = () => {
+    const invalidateReminders = useCallback(async () => {
+        await utils.adminLembretes.list.invalidate();
+    }, [utils]);
+
+    const resetForm = useCallback(() => {
         setFormState(createInitialFormState());
         setEditingReminderId(null);
-        setShowAdvancedFields(false);
-    };
+    }, []);
 
+    // Mutations
     // @ts-expect-error - tRPC types are generated when server is running
     const createReminderMutation = trpc.adminLembretes.create.useMutation({
         onSuccess: async () => {
@@ -224,6 +455,19 @@ export default function Dashboard() {
         },
     });
 
+    // @ts-expect-error - tRPC types are generated when server is running
+    const reorderMutation = trpc.adminLembretes.reorder.useMutation({
+        onSuccess: async () => {
+            setLocalPendingReminders(null);
+            await invalidateReminders();
+        },
+        onError: () => {
+            setLocalPendingReminders(null);
+            toast.error("Não foi possível salvar a nova ordem");
+        },
+    });
+
+    // Derived data
     const reviews: any[] = (reviewsQuery.data as any)?.json || reviewsQuery.data || [];
     const pendingReviewsCount = reviews.filter((r: any) => r.status === "pending").length;
     const reminders = (remindersQuery.data as AdminReminder[] | undefined) ?? [];
@@ -232,85 +476,135 @@ export default function Dashboard() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const pending = reminders.filter((reminder) => reminder.status === "pendente");
-
-        if (sortMode === "criacao_recente") {
-            pending.sort((a, b) => {
-                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-                return timeB - timeA;
-            });
-        }
-
-        if (sortMode === "criacao_antiga") {
-            pending.sort((a, b) => {
-                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-                return timeA - timeB;
-            });
-        }
-
-        const completed = reminders.filter((reminder) => reminder.status === "concluida").slice(0, 6);
-        const overdue = pending.filter((reminder) => {
-            const dueDate = parseDateOnly(reminder.prazo);
-            return dueDate ? dueDate < today : false;
+        const pending = reminders.filter((r) => r.status === "pendente");
+        const completed = reminders.filter((r) => r.status === "concluida").slice(0, 6);
+        const overdue = pending.filter((r) => {
+            const d = parseDateOnly(r.prazo);
+            return d ? d < today : false;
         }).length;
 
-        return {
-            pendingReminders: pending,
-            completedReminders: completed,
-            overdueRemindersCount: overdue,
-        };
-    }, [reminders, sortMode]);
+        return { pendingReminders: pending, completedReminders: completed, overdueRemindersCount: overdue };
+    }, [reminders]);
+
+    // Apply sort on top of server order; local optimistic state takes precedence
+    const displayedPendingReminders = useMemo((): AdminReminder[] => {
+        if (localPendingReminders !== null) return localPendingReminders;
+
+        if (sortMode === "criacao_recente") {
+            return [...pendingReminders].sort((a, b) => {
+                const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return tB - tA;
+            });
+        }
+        if (sortMode === "criacao_antiga") {
+            return [...pendingReminders].sort((a, b) => {
+                const tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return tA - tB;
+            });
+        }
+        return pendingReminders; // manual: server sort_order
+    }, [pendingReminders, sortMode, localPendingReminders]);
 
     const isSaving = createReminderMutation.isPending || updateReminderMutation.isPending;
     const isEditing = editingReminderId !== null;
 
-    const handleSelectReminderForEdit = (reminder: AdminReminder) => {
+    // dnd-kit sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+
+    const handleDragEnd = useCallback(
+        (event: DragEndEvent) => {
+            const { active, over } = event;
+            if (!over || active.id === over.id) return;
+
+            const list = localPendingReminders ?? pendingReminders;
+            const oldIndex = list.findIndex((r) => r.id === active.id);
+            const newIndex = list.findIndex((r) => r.id === over.id);
+            if (oldIndex === -1 || newIndex === -1) return;
+
+            const newList = arrayMove(list, oldIndex, newIndex);
+            setLocalPendingReminders(newList);
+            reorderMutation.mutate({ ids: newList.map((r) => r.id) });
+        },
+        [localPendingReminders, pendingReminders, reorderMutation],
+    );
+
+    const handleMoveUp = useCallback(
+        (id: number) => {
+            const list = localPendingReminders ?? pendingReminders;
+            const index = list.findIndex((r) => r.id === id);
+            if (index <= 0) return;
+            const newList = arrayMove(list, index, index - 1);
+            setLocalPendingReminders(newList);
+            reorderMutation.mutate({ ids: newList.map((r) => r.id) });
+        },
+        [localPendingReminders, pendingReminders, reorderMutation],
+    );
+
+    const handleMoveDown = useCallback(
+        (id: number) => {
+            const list = localPendingReminders ?? pendingReminders;
+            const index = list.findIndex((r) => r.id === id);
+            if (index === -1 || index >= list.length - 1) return;
+            const newList = arrayMove(list, index, index + 1);
+            setLocalPendingReminders(newList);
+            reorderMutation.mutate({ ids: newList.map((r) => r.id) });
+        },
+        [localPendingReminders, pendingReminders, reorderMutation],
+    );
+
+    const handleSelectReminderForEdit = useCallback((reminder: AdminReminder) => {
         setFormState({
             titulo: reminder.titulo,
             observacoes: reminder.observacoes || "",
             origem: reminder.origem || "whatsapp",
-            prioridade: reminder.prioridade || "normal",
+            prioridade: reminder.prioridade ?? "normal",
             prazo: normalizeDateOnly(reminder.prazo) || "",
         });
         setEditingReminderId(reminder.id);
-        setShowAdvancedFields(true);
-    };
+        setTimeout(() => {
+            const el = document.getElementById("lembreteTitulo");
+            el?.scrollIntoView({ behavior: "smooth", block: "center" });
+            el?.focus();
+        }, 50);
+    }, []);
 
-    const handleCreateOrUpdateReminder = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
+    const handleCreateOrUpdateReminder = useCallback(
+        async (event: React.FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
 
-        const titulo = formState.titulo.trim();
-        if (titulo.length < 3) {
-            toast.error("Descreva a demanda com pelo menos 3 caracteres");
-            return;
-        }
+            const titulo = formState.titulo.trim();
+            if (titulo.length < 3) {
+                toast.error("Descreva o lembrete com pelo menos 3 caracteres");
+                return;
+            }
 
-        const payload = {
-            titulo,
-            observacoes: formState.observacoes.trim() || null,
-            origem: formState.origem || null,
-            prioridade: formState.prioridade,
-            prazo: formState.prazo || null,
-        } as const;
+            const payload = {
+                titulo,
+                observacoes: formState.observacoes.trim() || null,
+                origem: formState.origem || null,
+                prioridade: formState.prioridade,
+                prazo: formState.prazo || null,
+            } as const;
 
-        if (editingReminderId) {
-            await updateReminderMutation.mutateAsync({
-                id: editingReminderId,
-                ...payload,
-            });
-            return;
-        }
+            if (editingReminderId) {
+                await updateReminderMutation.mutateAsync({ id: editingReminderId, ...payload });
+            } else {
+                await createReminderMutation.mutateAsync(payload);
+            }
+        },
+        [formState, editingReminderId, updateReminderMutation, createReminderMutation],
+    );
 
-        await createReminderMutation.mutateAsync(payload);
-    };
-
-    const toggleReminderDetails = (id: number) => {
+    const toggleReminderExpand = useCallback((id: number) => {
         setExpandedReminderIds((prev) =>
-            prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
-    };
+    }, []);
 
     const stats = [
         {
@@ -358,6 +652,7 @@ export default function Dashboard() {
                     <p className="text-gray-600 mt-1">Visão geral do sistema</p>
                 </div>
 
+                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
                     {stats.map((stat) => {
                         const Icon = stat.icon;
@@ -378,8 +673,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.95fr] gap-6 items-start">
+                    {/* Reminders card */}
                     <Card className="border-orange-100 shadow-sm">
-                        <CardHeader className="space-y-3">
+                        <CardHeader className="space-y-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2 text-xl">
@@ -387,7 +683,7 @@ export default function Dashboard() {
                                         {isEditing ? "Editar lembrete" : "Lembretes rápidos do admin"}
                                     </CardTitle>
                                     <CardDescription>
-                                        Cole uma cotação completa ou registre uma tarefa. Selecione um item da lista para atualizar quando quiser.
+                                        Registre demandas e priorize a fila. Selecione um item para editar.
                                     </CardDescription>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
@@ -402,235 +698,182 @@ export default function Dashboard() {
                                 </div>
                             </div>
 
+                            {/* Form — always visible, all fields */}
                             <form onSubmit={handleCreateOrUpdateReminder} className="space-y-3">
-                                <div className="space-y-2">
-                                    <Label htmlFor="lembreteTitulo">Resumo da demanda</Label>
-                                    <Input
-                                        id="lembreteTitulo"
-                                        value={formState.titulo}
-                                        onChange={(event) => setFormState((prev) => ({ ...prev, titulo: event.target.value }))}
-                                        placeholder="Ex.: Ligar para fulano"
-                                        disabled={isSaving}
-                                    />
+                                {/* Row 1: Lembrete + Origem + Prioridade + Data-alvo */}
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_160px_140px_148px]">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="lembreteTitulo">Lembrete</Label>
+                                        <Input
+                                            id="lembreteTitulo"
+                                            value={formState.titulo}
+                                            onChange={(e) =>
+                                                setFormState((prev) => ({ ...prev, titulo: e.target.value }))
+                                            }
+                                            placeholder="Ex.: Ligar para fulano às 14h"
+                                            disabled={isSaving}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="lembreteOrigem">Origem</Label>
+                                        <Select
+                                            value={formState.origem}
+                                            onValueChange={(value) =>
+                                                setFormState((prev) => ({ ...prev, origem: value }))
+                                            }
+                                        >
+                                            <SelectTrigger id="lembreteOrigem">
+                                                <SelectValue placeholder="Origem" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {reminderOriginOptions.map((opt) => (
+                                                    <SelectItem key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="lembretePrioridade">Prioridade</Label>
+                                        <Select
+                                            value={formState.prioridade}
+                                            onValueChange={(value: ReminderPriority) =>
+                                                setFormState((prev) => ({ ...prev, prioridade: value }))
+                                            }
+                                        >
+                                            <SelectTrigger id="lembretePrioridade">
+                                                <SelectValue placeholder="Prioridade" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="normal">Normal</SelectItem>
+                                                <SelectItem value="media">Média</SelectItem>
+                                                <SelectItem value="alta">Alta</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="lembreteDataAlvo">Data-alvo</Label>
+                                        <Input
+                                            id="lembreteDataAlvo"
+                                            type="date"
+                                            value={formState.prazo}
+                                            onChange={(e) =>
+                                                setFormState((prev) => ({ ...prev, prazo: e.target.value }))
+                                            }
+                                            disabled={isSaving}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="lembreteObservacoesResumo">Detalhes (opcional)</Label>
+                                {/* Row 2: Detalhes */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="lembreteDetalhes">Detalhes (opcional)</Label>
                                     <Textarea
-                                        id="lembreteObservacoesResumo"
+                                        id="lembreteDetalhes"
                                         value={formState.observacoes}
-                                        onChange={(event) => setFormState((prev) => ({ ...prev, observacoes: event.target.value }))}
-                                        placeholder="Ex.: Cotação para Miami para fulano, saindo em julho, hotel 4 estrelas, 2 adultos e 1 criança"
-                                        className="min-h-[96px]"
+                                        onChange={(e) =>
+                                            setFormState((prev) => ({ ...prev, observacoes: e.target.value }))
+                                        }
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                                e.preventDefault();
+                                                e.currentTarget.form?.requestSubmit();
+                                            }
+                                        }}
+                                        placeholder="Cole uma cotação, contexto ou qualquer detalhe relevante…"
+                                        className="min-h-[80px]"
                                         disabled={isSaving}
                                     />
                                 </div>
 
+                                {/* Row 3: Buttons + sort select */}
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Button type="submit" disabled={isSaving}>
-                                        {isSaving ? "Salvando..." : isEditing ? "Salvar alterações" : "Adicionar lembrete"}
+                                        {isSaving
+                                            ? "Salvando…"
+                                            : isEditing
+                                              ? "Salvar alterações"
+                                              : "Adicionar lembrete"}
                                     </Button>
                                     {isEditing && (
-                                        <Button type="button" variant="outline" onClick={resetForm} disabled={isSaving}>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={resetForm}
+                                            disabled={isSaving}
+                                        >
                                             <X className="mr-1 h-4 w-4" />
                                             Cancelar edição
                                         </Button>
                                     )}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="text-slate-700"
-                                        onClick={() => setShowAdvancedFields((prev) => !prev)}
-                                    >
-                                        {showAdvancedFields ? (
-                                            <>
-                                                <ChevronUp className="mr-1 h-4 w-4" />
-                                                Ocultar detalhes
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ChevronDown className="mr-1 h-4 w-4" />
-                                                Mostrar detalhes
-                                            </>
-                                        )}
-                                    </Button>
-                                    <div className="min-w-[220px]">
-                                        <Select value={sortMode} onValueChange={(value: ReminderSortMode) => setSortMode(value)}>
+                                    <div className="ml-auto min-w-[200px]">
+                                        <Select
+                                            value={sortMode}
+                                            onValueChange={(value: ReminderSortMode) => setSortMode(value)}
+                                        >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Classificação" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="prioridade_data">Classificação operacional</SelectItem>
+                                                <SelectItem value="manual">Ordem manual</SelectItem>
                                                 <SelectItem value="criacao_recente">Criação: mais recentes</SelectItem>
                                                 <SelectItem value="criacao_antiga">Criação: mais antigas</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
-
-                                {showAdvancedFields && (
-                                    <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-3">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="lembreteOrigem">Origem</Label>
-                                            <Select
-                                                value={formState.origem}
-                                                onValueChange={(value) => setFormState((prev) => ({ ...prev, origem: value }))}
-                                            >
-                                                <SelectTrigger id="lembreteOrigem">
-                                                    <SelectValue placeholder="Origem" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {reminderOriginOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="lembretePrioridade">Prioridade</Label>
-                                            <Select
-                                                value={formState.prioridade}
-                                                onValueChange={(value: ReminderPriority) => setFormState((prev) => ({ ...prev, prioridade: value }))}
-                                            >
-                                                <SelectTrigger id="lembretePrioridade">
-                                                    <SelectValue placeholder="Prioridade" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="normal">Normal</SelectItem>
-                                                    <SelectItem value="media">Média</SelectItem>
-                                                    <SelectItem value="alta">Alta</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="lembreteDataAlvo">Data-alvo</Label>
-                                            <Input
-                                                id="lembreteDataAlvo"
-                                                type="date"
-                                                value={formState.prazo}
-                                                onChange={(event) => setFormState((prev) => ({ ...prev, prazo: event.target.value }))}
-                                                disabled={isSaving}
-                                            />
-                                            <p className="text-xs text-slate-500">Quando agir, responder ou executar.</p>
-                                        </div>
-
-                                        <div className="space-y-2 lg:col-span-3">
-                                            <p className="text-xs text-slate-500">
-                                                Origem, prioridade e data-alvo ajudam na organização. O texto detalhado fica no campo "Detalhes" acima.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
                             </form>
                         </CardHeader>
 
                         <CardContent className="space-y-5">
-                            <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-                                {pendingReminders.length === 0 ? (
+                            {/* Pending reminders list */}
+                            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                                {displayedPendingReminders.length === 0 ? (
                                     <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/60 px-4 py-8 text-center text-sm text-orange-900">
-                                        Nenhuma pendência registrada. Cole uma demanda acima para iniciar seu fluxo.
+                                        Nenhuma pendência registrada. Use o formulário acima para iniciar seu fluxo.
                                     </div>
                                 ) : (
-                                    pendingReminders.map((reminder) => {
-                                        const dueDate = parseDateOnly(reminder.prazo);
-                                        const today = new Date();
-                                        today.setHours(0, 0, 0, 0);
-                                        const isOverdue = dueDate ? dueDate < today : false;
-                                        const isExpanded = expandedReminderIds.includes(reminder.id);
-
-                                        return (
-                                            <div
-                                                key={reminder.id}
-                                                className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition-colors hover:border-orange-200"
-                                            >
-                                                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                                    <div className="space-y-2">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <p className="text-sm font-semibold text-slate-900">{reminder.titulo}</p>
-                                                            <Badge variant="outline" className="border-slate-200 text-slate-600">
-                                                                {getReminderOriginLabel(reminder.origem)}
-                                                            </Badge>
-                                                            <Badge variant="secondary" className={priorityClasses[reminder.prioridade || "normal"]}>
-                                                                {priorityLabels[reminder.prioridade || "normal"]}
-                                                            </Badge>
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className={isOverdue ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-700"}
-                                                            >
-                                                                {formatTargetDate(reminder.prazo)}
-                                                            </Badge>
-                                                        </div>
-                                                        {!!reminder.observacoes && isExpanded && (
-                                                            <div className="rounded-lg bg-slate-50 px-3 py-2">
-                                                                <p className="text-xs font-medium text-slate-700">Detalhes</p>
-                                                                <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600">{reminder.observacoes}</p>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                                                            <span>Criado por {reminder.criador_nome || "admin"}</span>
-                                                            <span>Criado em {formatDateTime(reminder.created_at)}</span>
-                                                            {isOverdue && <span className="font-medium text-rose-600">Data-alvo vencida</span>}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {!!reminder.observacoes && (
-                                                            <Button
-                                                                type="button"
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() => toggleReminderDetails(reminder.id)}
-                                                            >
-                                                                {isExpanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
-                                                                {isExpanded ? "Ocultar detalhes" : "Ver detalhes"}
-                                                            </Button>
-                                                        )}
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => handleSelectReminderForEdit(reminder)}
-                                                        >
-                                                            <Edit3 className="mr-1 h-4 w-4" />
-                                                            Editar
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                                            onClick={() => concludeReminderMutation.mutate({ id: reminder.id })}
-                                                            disabled={concludeReminderMutation.isPending}
-                                                        >
-                                                            <Check className="mr-1 h-4 w-4" />
-                                                            Concluir
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => deleteReminderMutation.mutate({ id: reminder.id })}
-                                                            disabled={deleteReminderMutation.isPending}
-                                                        >
-                                                            <Trash2 className="mr-1 h-4 w-4" />
-                                                            Excluir
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={displayedPendingReminders.map((r) => r.id)}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            {displayedPendingReminders.map((reminder, index) => (
+                                                <SortableReminderCard
+                                                    key={reminder.id}
+                                                    reminder={reminder}
+                                                    isExpanded={expandedReminderIds.includes(reminder.id)}
+                                                    isFirst={index === 0}
+                                                    isLast={index === displayedPendingReminders.length - 1}
+                                                    isConcluding={concludeReminderMutation.isPending}
+                                                    isDeleting={deleteReminderMutation.isPending}
+                                                    onToggleExpand={() => toggleReminderExpand(reminder.id)}
+                                                    onEdit={handleSelectReminderForEdit}
+                                                    onConclude={(id) => concludeReminderMutation.mutate({ id })}
+                                                    onDelete={(id) => deleteReminderMutation.mutate({ id })}
+                                                    onMoveUp={handleMoveUp}
+                                                    onMoveDown={handleMoveDown}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
                                 )}
                             </div>
 
+                            {/* Completed reminders */}
                             {completedReminders.length > 0 && (
                                 <div className="space-y-3 rounded-2xl bg-slate-50 p-4">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <h3 className="text-sm font-semibold text-slate-900">Últimas concluídas</h3>
-                                            <p className="text-xs text-slate-500">Reabra rapidamente se algo voltou para a fila.</p>
+                                            <p className="text-xs text-slate-500">
+                                                Reabra rapidamente se algo voltou para a fila.
+                                            </p>
                                         </div>
                                         <Clock3 className="h-4 w-4 text-slate-400" />
                                     </div>
@@ -641,16 +884,18 @@ export default function Dashboard() {
                                                 className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 md:flex-row md:items-center md:justify-between"
                                             >
                                                 <div>
-                                                    <p className="text-sm font-medium text-slate-800">{reminder.titulo}</p>
+                                                    <p className="text-sm font-medium text-slate-800">
+                                                        {reminder.titulo}
+                                                    </p>
                                                     <p className="text-xs text-slate-500">
-                                                        Concluída por {reminder.conclusao_nome || "admin"}{" "}
+                                                        Concluída por {reminder.conclusao_nome || "admin"}
                                                         {reminder.concluida_em
-                                                            ? `• ${new Intl.DateTimeFormat("pt-BR", {
-                                                                day: "2-digit",
-                                                                month: "2-digit",
-                                                                hour: "2-digit",
-                                                                minute: "2-digit",
-                                                            }).format(new Date(reminder.concluida_em))}`
+                                                            ? ` • ${new Intl.DateTimeFormat("pt-BR", {
+                                                                  day: "2-digit",
+                                                                  month: "2-digit",
+                                                                  hour: "2-digit",
+                                                                  minute: "2-digit",
+                                                              }).format(new Date(reminder.concluida_em))}`
                                                             : ""}
                                                     </p>
                                                 </div>
@@ -659,7 +904,9 @@ export default function Dashboard() {
                                                     size="sm"
                                                     variant="ghost"
                                                     className="justify-start md:justify-center"
-                                                    onClick={() => reopenReminderMutation.mutate({ id: reminder.id })}
+                                                    onClick={() =>
+                                                        reopenReminderMutation.mutate({ id: reminder.id })
+                                                    }
                                                     disabled={reopenReminderMutation.isPending}
                                                 >
                                                     <RotateCcw className="mr-1 h-4 w-4" />
@@ -673,6 +920,7 @@ export default function Dashboard() {
                         </CardContent>
                     </Card>
 
+                    {/* Right column */}
                     <div className="space-y-6">
                         {pendingReviewsCount > 0 && (
                             <Card className="border-amber-200 bg-amber-50">
@@ -684,7 +932,10 @@ export default function Dashboard() {
                                         <div>
                                             <p className="font-semibold text-amber-900">
                                                 Atenção: você tem {pendingReviewsCount}{" "}
-                                                {pendingReviewsCount === 1 ? "avaliação pendente" : "avaliações pendentes"} para aprovar.
+                                                {pendingReviewsCount === 1
+                                                    ? "avaliação pendente"
+                                                    : "avaliações pendentes"}{" "}
+                                                para aprovar.
                                             </p>
                                             <p className="text-sm text-amber-800 mt-1">
                                                 Revise as avaliações para manter os depoimentos da home atualizados.
@@ -705,30 +956,33 @@ export default function Dashboard() {
                             <CardHeader>
                                 <CardTitle>Ritmo do dia</CardTitle>
                                 <CardDescription>
-                                    Use os lembretes para registrar demandas, priorizar a fila e manter o acompanhamento operacional sem perder contexto.
+                                    Use os lembretes para registrar demandas, priorizar a fila e manter o
+                                    acompanhamento operacional sem perder contexto.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm text-slate-600">
                                 <div className="rounded-2xl bg-slate-50 p-4">
                                     <p className="font-medium text-slate-900">Fluxo sugerido</p>
-                                    <p className="mt-1">1. Recebeu demanda. 2. Registra com prioridade. 3. Atualiza sempre que avançar. 4. Conclui quando executar.</p>
+                                    <p className="mt-1">
+                                        1. Recebeu demanda. 2. Registra com prioridade. 3. Atualiza sempre que
+                                        avançar. 4. Conclui quando executar.
+                                    </p>
                                 </div>
                                 <div className="rounded-2xl bg-orange-50 p-4 text-orange-900">
                                     <p className="font-medium">Prioridade imediata</p>
                                     <p className="mt-1">
                                         {overdueRemindersCount > 0
                                             ? `${overdueRemindersCount} lembrete(s) com data-alvo vencida pedem ação agora.`
-                                            : "Sem alertas de data vencida no momento."}
+                                            : "Tudo em dia. Continue assim!"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl bg-slate-50 p-4">
+                                    <p className="font-medium text-slate-900">Reordenar</p>
+                                    <p className="mt-1">
+                                        Arraste pelo ícone <GripVertical className="inline h-3.5 w-3.5" /> ou use as setas ↑↓ para ajustar a ordem conforme sua prioridade do momento.
                                     </p>
                                 </div>
                             </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Bem-vindo ao Painel Administrativo</CardTitle>
-                                <CardDescription>Use o menu lateral para navegar pelas diferentes seções do sistema.</CardDescription>
-                            </CardHeader>
                         </Card>
                     </div>
                 </div>
