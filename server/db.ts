@@ -695,10 +695,30 @@ function normalizeSqlDate(dateValue: unknown): string | null {
   return null;
 }
 
+function normalizeSqlDateTime(dateValue: unknown): string | null {
+  if (!dateValue) return null;
+
+  if (dateValue instanceof Date) {
+    return dateValue.toISOString();
+  }
+
+  if (typeof dateValue === "string") {
+    const parsed = new Date(dateValue);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+
+  return null;
+}
+
 function mapAdminLembreteRow(row: any) {
   return {
     ...row,
     prazo: normalizeSqlDate(row.prazo),
+    created_at: normalizeSqlDateTime(row.created_at),
+    updated_at: normalizeSqlDateTime(row.updated_at),
+    concluida_em: normalizeSqlDateTime(row.concluida_em),
   };
 }
 
