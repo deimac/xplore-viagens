@@ -144,6 +144,7 @@ export default function Dashboard() {
     const [editingReminderId, setEditingReminderId] = useState<number | null>(null);
     const [showAdvancedFields, setShowAdvancedFields] = useState(false);
     const [sortMode, setSortMode] = useState<ReminderSortMode>("prioridade_data");
+    const [expandedReminderIds, setExpandedReminderIds] = useState<number[]>([]);
 
     // @ts-expect-error - tRPC types are generated when server is running
     const propertiesQuery = trpc.properties.listAll.useQuery();
@@ -305,6 +306,12 @@ export default function Dashboard() {
         await createReminderMutation.mutateAsync(payload);
     };
 
+    const toggleReminderDetails = (id: number) => {
+        setExpandedReminderIds((prev) =>
+            prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+        );
+    };
+
     const stats = [
         {
             title: "Total Hospedagens",
@@ -398,15 +405,25 @@ export default function Dashboard() {
                             <form onSubmit={handleCreateOrUpdateReminder} className="space-y-3">
                                 <div className="space-y-2">
                                     <Label htmlFor="lembreteTitulo">Resumo da demanda</Label>
-                                    <Textarea
+                                    <Input
                                         id="lembreteTitulo"
                                         value={formState.titulo}
                                         onChange={(event) => setFormState((prev) => ({ ...prev, titulo: event.target.value }))}
-                                        placeholder="Ex.: Cliente João pediu cotação para Cancún com saída em agosto..."
-                                        className="min-h-[120px]"
+                                        placeholder="Ex.: Ligar para fulano"
                                         disabled={isSaving}
                                     />
-                                    <p className="text-xs text-slate-500">Dica: use Ctrl+Enter (ou Cmd+Enter no Mac) para salvar rapidamente.</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="lembreteObservacoesResumo">Detalhes (opcional)</Label>
+                                    <Textarea
+                                        id="lembreteObservacoesResumo"
+                                        value={formState.observacoes}
+                                        onChange={(event) => setFormState((prev) => ({ ...prev, observacoes: event.target.value }))}
+                                        placeholder="Ex.: Cotação para Miami para fulano, saindo em julho, hotel 4 estrelas, 2 adultos e 1 criança"
+                                        className="min-h-[96px]"
+                                        disabled={isSaving}
+                                    />
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
@@ -502,15 +519,9 @@ export default function Dashboard() {
                                         </div>
 
                                         <div className="space-y-2 lg:col-span-3">
-                                            <Label htmlFor="lembreteObservacoes">Observações</Label>
-                                            <Textarea
-                                                id="lembreteObservacoes"
-                                                value={formState.observacoes}
-                                                onChange={(event) => setFormState((prev) => ({ ...prev, observacoes: event.target.value }))}
-                                                placeholder="Complementos da negociação, histórico de retorno ou detalhes do pedido"
-                                                className="min-h-[96px]"
-                                                disabled={isSaving}
-                                            />
+                                            <p className="text-xs text-slate-500">
+                                                Origem, prioridade e data-alvo ajudam na organização. O texto detalhado fica no campo "Detalhes" acima.
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -529,6 +540,7 @@ export default function Dashboard() {
                                         const today = new Date();
                                         today.setHours(0, 0, 0, 0);
                                         const isOverdue = dueDate ? dueDate < today : false;
+                                        const isExpanded = expandedReminderIds.includes(reminder.id);
 
                                         return (
                                             <div
@@ -552,8 +564,11 @@ export default function Dashboard() {
                                                                 {formatTargetDate(reminder.prazo)}
                                                             </Badge>
                                                         </div>
-                                                        {!!reminder.observacoes && (
-                                                            <p className="whitespace-pre-wrap text-xs text-slate-600">{reminder.observacoes}</p>
+                                                        {!!reminder.observacoes && isExpanded && (
+                                                            <div className="rounded-lg bg-slate-50 px-3 py-2">
+                                                                <p className="text-xs font-medium text-slate-700">Detalhes</p>
+                                                                <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600">{reminder.observacoes}</p>
+                                                            </div>
                                                         )}
                                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                                                             <span>Criado por {reminder.criador_nome || "admin"}</span>
@@ -562,6 +577,17 @@ export default function Dashboard() {
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-wrap gap-2">
+                                                        {!!reminder.observacoes && (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => toggleReminderDetails(reminder.id)}
+                                                            >
+                                                                {isExpanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
+                                                                {isExpanded ? "Ocultar detalhes" : "Ver detalhes"}
+                                                            </Button>
+                                                        )}
                                                         <Button
                                                             type="button"
                                                             size="sm"
