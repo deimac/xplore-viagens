@@ -40,6 +40,7 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [imageUrlInput, setImageUrlInput] = useState<string>("");
+  const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImageMutation = trpc.heroSlides.uploadImage.useMutation({
@@ -82,8 +83,7 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
     }
   }, [slide, open]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleSelectedFile = useCallback((file?: File) => {
     if (!file) return;
 
     // Validar tipo de arquivo
@@ -117,6 +117,32 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
       setUploading(false);
     };
     reader.readAsDataURL(file);
+  }, [uploadImageMutation]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    handleSelectedFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading) setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (uploading) return;
+    const file = e.dataTransfer.files?.[0];
+    handleSelectedFile(file);
   };
 
   const handleRemoveImage = () => {
@@ -170,11 +196,14 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-muted rounded-lg p-8 text-center cursor-pointer hover:border-accent transition-colors"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive ? "border-accent bg-accent/5" : "border-muted hover:border-accent"}`}
               >
                 <Upload className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-1">
-                  {uploading ? "Enviando..." : "Clique para fazer upload"}
+                  {uploading ? "Enviando..." : isDragActive ? "Solte a imagem aqui" : "Arraste e solte ou clique para fazer upload"}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   PNG, JPG ou WEBP (máx. 5MB)
@@ -212,14 +241,13 @@ export default function HeroSlideModal({ open, onClose, onSave, slide }: HeroSli
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Título *</Label>
+            <Label htmlFor="title">Título (opcional)</Label>
             <Input
               id="title"
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Ex: Descubra Santorini"
-              required
             />
           </div>
 

@@ -14,6 +14,10 @@ interface Slide {
   subtitle: string;
 }
 
+function hasText(value?: string | null) {
+  return !!value && value.trim().length > 0;
+}
+
 // Slides hardcoded como fallback caso banco esteja vazio
 const fallbackSlides: Slide[] = [
   {
@@ -118,12 +122,16 @@ export default function HeroSlider({ isMobileMenuOpen, setIsMobileMenuOpen, menu
             {/* Conteúdo do Slide */}
             <div className="relative h-full flex flex-col items-center justify-center text-center px-6 md:px-16">
               <div className="flex flex-col items-center gap-6">
-                <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-2xl text-balance max-w-3xl md:max-w-4xl leading-tight">
-                  {slide.title}
-                </h1>
-                <p className="text-lg md:text-2xl text-white/95 max-w-2xl md:max-w-3xl drop-shadow-lg min-h-[72px] text-balance leading-tight">
-                  {slide.subtitle}
-                </p>
+                {hasText(slide.title) && (
+                  <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-2xl text-balance max-w-3xl md:max-w-4xl leading-tight">
+                    {slide.title}
+                  </h1>
+                )}
+                {hasText(slide.subtitle) && (
+                  <p className="text-lg md:text-2xl text-white/95 max-w-2xl md:max-w-3xl drop-shadow-lg text-balance leading-tight">
+                    {slide.subtitle}
+                  </p>
+                )}
 
                 {/* Botões CTA */}
                 <div className="flex flex-col sm:flex-row gap-4 pt-2">

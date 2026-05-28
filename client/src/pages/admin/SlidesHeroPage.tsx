@@ -88,11 +88,12 @@ export default function SlidesHeroPage() {
     };
 
     const handleSaveSlide = (slide: HeroSlide) => {
+        const normalizedTitle = (slide.title || "").trim();
         if (slide.id) {
             updateSlideMutation.mutate({
                 id: slide.id,
                 imageUrl: slide.imageUrl,
-                title: slide.title,
+                title: normalizedTitle,
                 subtitle: slide.subtitle || undefined,
                 order: slide.order,
                 isActive: slide.isActive,
@@ -102,7 +103,7 @@ export default function SlidesHeroPage() {
         } else {
             createSlideMutation.mutate({
                 imageUrl: slide.imageUrl,
-                title: slide.title,
+                title: normalizedTitle,
                 subtitle: slide.subtitle || undefined,
                 order: slide.order,
                 isActive: slide.isActive,
@@ -181,12 +182,12 @@ export default function SlidesHeroPage() {
                                         <td className="px-6 py-4">
                                             <img
                                                 src={slide.imageUrl}
-                                                alt={slide.title}
+                                                alt={slide.title || "Slide hero"}
                                                 className="w-24 h-16 object-cover rounded"
                                             />
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                                            {slide.title}
+                                            {slide.title || "(Sem título)"}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {slide.subtitle || "-"}
@@ -215,7 +216,7 @@ export default function SlidesHeroPage() {
                                                     <SquarePen className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteSlide(slide.id, slide.title)}
+                                                    onClick={() => handleDeleteSlide(slide.id, slide.title || "Slide sem título")}
                                                     disabled={deleteSlideMutation.isPending}
                                                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                                     aria-label="Excluir slide"
