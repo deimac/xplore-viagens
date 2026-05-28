@@ -26,6 +26,7 @@ type HeaderReminder = {
     titulo: string;
     prioridade: ReminderPriority;
     prazo: string | null;
+    prazo_horario: string | null;
     status: "pendente" | "concluida";
 };
 
@@ -41,18 +42,20 @@ const priorityClasses: Record<ReminderPriority, string> = {
     alta: "bg-rose-100 text-rose-800",
 };
 
-function parsePrazo(prazo?: string | null): Date | null {
-    if (!prazo) return null;
-    const match = String(prazo).match(/^(\d{4}-\d{2}-\d{2})/);
+function parsePrazo(dateValue?: string | null, timeValue?: string | null): Date | null {
+    if (!dateValue) return null;
+    const match = String(dateValue).match(/^(\d{4}-\d{2}-\d{2})/);
     if (!match) return null;
-    const d = new Date(`${match[1]}T00:00:00`);
+    const normalizedTime = /^([01]\d|2[0-3]):([0-5]\d)$/.test(timeValue || "") ? timeValue : null;
+    const d = new Date(`${match[1]}T${normalizedTime || "23:59"}:00`);
     return isNaN(d.getTime()) ? null : d;
 }
 
-function formatPrazo(prazo?: string | null): string {
-    const d = parsePrazo(prazo);
+function formatPrazo(prazo?: string | null, prazoHorario?: string | null): string {
+    const d = parsePrazo(prazo, prazoHorario);
     if (!d) return "";
-    return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(d);
+    const dateText = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(d);
+    return prazoHorario ? `${dateText} ${prazoHorario}` : dateText;
 }
 
 interface AdminHeaderProps {
@@ -68,16 +71,20 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const remindersQuery = trpc.adminLembretes.list.useQuery({ limit: 40 });
 
     const { dateReminders, overdueCount } = useMemo(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
         const all = ((remindersQuery.data as HeaderReminder[] | undefined) ?? [])
-            .filter((r) => r.status === "pendente" && r.prazo);
+            .filter((r) => r.status === "pendente" && r.prazo)
+            .filter((r) => {
+                const due = parsePrazo(r.prazo, r.prazo_horario);
+                if (!due) return false;
+                return due.getTime() <= oneHourFromNow.getTime();
+            });
 
-        // Sort: overdue first, then by date ascending
         all.sort((a, b) => {
-            const dA = parsePrazo(a.prazo);
-            const dB = parsePrazo(b.prazo);
+            const dA = parsePrazo(a.prazo, a.prazo_horario);
+            const dB = parsePrazo(b.prazo, b.prazo_horario);
             if (!dA && !dB) return 0;
             if (!dA) return 1;
             if (!dB) return -1;
@@ -85,8 +92,8 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         });
 
         const overdue = all.filter((r) => {
-            const d = parsePrazo(r.prazo);
-            return d ? d < today : false;
+            const d = parsePrazo(r.prazo, r.prazo_horario);
+            return d ? d.getTime() < now.getTime() : false;
         }).length;
 
         return { dateReminders: all, overdueCount: overdue };
@@ -169,25 +176,24 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                             <p className="text-sm font-semibold text-slate-900">Lembretes com data-alvo</p>
                             <p className="text-xs text-slate-500">
                                 {dateReminders.length === 0
-                                    ? "Nenhum lembrete com prazo definido"
+                                    ? "Nenhum lembrete em alerta no momento"
                                     : overdueCount > 0
-                                        ? `${overdueCount} atrasado${overdueCount > 1 ? "s" : ""} · ${dateReminders.length - overdueCount} a vencer`
-                                        : `${dateReminders.length} dentro do prazo`}
+                                        ? `${overdueCount} atrasado${overdueCount > 1 ? "s" : ""} · ${dateReminders.length - overdueCount} próximo${dateReminders.length - overdueCount === 1 ? "" : "s"}`
+                                        : `${dateReminders.length} para os próximos 60 min`}
                             </p>
                         </div>
 
                         {/* List */}
                         {dateReminders.length === 0 ? (
                             <div className="px-4 py-6 text-center text-sm text-slate-400">
-                                Nenhum lembrete com data-alvo pendente.
+                                Nenhum lembrete atrasado ou previsto para os próximos 60 minutos.
                             </div>
                         ) : (
                             <div className="max-h-72 divide-y divide-slate-100 overflow-y-auto">
                                 {dateReminders.map((r) => {
-                                    const d = parsePrazo(r.prazo);
-                                    const today = new Date();
-                                    today.setHours(0, 0, 0, 0);
-                                    const isOverdue = d ? d < today : false;
+                                    const d = parsePrazo(r.prazo, r.prazo_horario);
+                                    const now = new Date();
+                                    const isOverdue = d ? d.getTime() < now.getTime() : false;
 
                                     return (
                                         <div key={r.id} className="px-4 py-3">
@@ -206,7 +212,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                                                 className={`mt-0.5 text-xs font-medium ${isOverdue ? "text-rose-600" : "text-slate-500"}`}
                                             >
                                                 {isOverdue ? "⚠ Atrasado — " : ""}
-                                                {formatPrazo(r.prazo)}
+                                                {formatPrazo(r.prazo, r.prazo_horario)}
                                             </p>
                                         </div>
                                     );

@@ -60,6 +60,7 @@ type AdminReminder = {
     origem: string | null;
     prioridade: ReminderPriority;
     prazo: string | null;
+    prazo_horario: string | null;
     created_at: string | null;
     status: "pendente" | "concluida";
     concluida_em: string | null;
@@ -75,6 +76,7 @@ type ReminderFormState = {
     origem: string;
     prioridade: ReminderPriority;
     prazo: string;
+    prazoHorario: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -128,14 +130,34 @@ function parseDateOnly(dateValue?: string | null) {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function formatTargetDate(dateValue?: string | null) {
+function isValidTimeString(value?: string | null) {
+    return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value || "");
+}
+
+function normalizeTimeInput(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+function buildReminderDueDate(dateValue?: string | null, timeValue?: string | null) {
+    const normalized = normalizeDateOnly(dateValue);
+    if (!normalized) return null;
+    const fullTime = isValidTimeString(timeValue) ? timeValue : "23:59";
+    const parsed = new Date(`${normalized}T${fullTime}:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatTargetDate(dateValue?: string | null, timeValue?: string | null) {
     const parsed = parseDateOnly(dateValue);
     if (!parsed) return null;
 
-    return new Intl.DateTimeFormat("pt-BR", {
+    const dateText = new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
         month: "short",
     }).format(parsed);
+
+    return isValidTimeString(timeValue) ? `${dateText} ${timeValue}` : dateText;
 }
 
 function formatDateTime(dateValue?: string | null) {
@@ -164,6 +186,7 @@ function createInitialFormState(): ReminderFormState {
         origem: "whatsapp",
         prioridade: "normal",
         prazo: "",
+        prazoHorario: "",
     };
 }
 
@@ -209,11 +232,10 @@ function SortableReminderCard({
         transition,
     };
 
-    const dueDate = parseDateOnly(reminder.prazo);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isOverdue = dueDate ? dueDate < today : false;
-    const formattedDue = formatTargetDate(reminder.prazo);
+    const dueDate = buildReminderDueDate(reminder.prazo, reminder.prazo_horario);
+    const now = new Date();
+    const isOverdue = dueDate ? dueDate.getTime() < now.getTime() : false;
+    const formattedDue = formatTargetDate(reminder.prazo, reminder.prazo_horario);
 
     return (
         <div
@@ -307,7 +329,11 @@ function SortableReminderCard({
                     </p>
 
                     {isOverdue && (
-                        <p className="text-xs font-medium text-rose-600">⚠ Data-alvo vencida</p>
+                        <p className="text-xs font-medium text-rose-600">⚠ Prazo vencido</p>
+                    )}
+
+                    {formattedDue && (
+                        <p className="text-xs text-slate-500">Prazo: {formattedDue}</p>
                     )}
 
                     {!!reminder.observacoes && (
@@ -473,14 +499,13 @@ export default function Dashboard() {
     const reminders = (remindersQuery.data as AdminReminder[] | undefined) ?? [];
 
     const { pendingReminders, completedReminders, overdueRemindersCount } = useMemo(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
 
         const pending = reminders.filter((r) => r.status === "pendente");
         const completed = reminders.filter((r) => r.status === "concluida").slice(0, 6);
         const overdue = pending.filter((r) => {
-            const d = parseDateOnly(r.prazo);
-            return d ? d < today : false;
+            const d = buildReminderDueDate(r.prazo, r.prazo_horario);
+            return d ? d.getTime() < now.getTime() : false;
         }).length;
 
         return { pendingReminders: pending, completedReminders: completed, overdueRemindersCount: overdue };
@@ -564,6 +589,7 @@ export default function Dashboard() {
             origem: reminder.origem || "whatsapp",
             prioridade: reminder.prioridade ?? "normal",
             prazo: normalizeDateOnly(reminder.prazo) || "",
+            prazoHorario: reminder.prazo_horario || "",
         });
         setEditingReminderId(reminder.id);
         setTimeout(() => {
@@ -583,12 +609,24 @@ export default function Dashboard() {
                 return;
             }
 
+            const prazoHorario = formState.prazoHorario.trim();
+            if (prazoHorario && !formState.prazo) {
+                toast.error("Preencha a data-alvo antes de informar o horário");
+                return;
+            }
+
+            if (prazoHorario && !isValidTimeString(prazoHorario)) {
+                toast.error("Informe um horário válido no formato 00:00");
+                return;
+            }
+
             const payload = {
                 titulo,
                 observacoes: formState.observacoes.trim() || null,
                 origem: formState.origem || null,
                 prioridade: formState.prioridade,
                 prazo: formState.prazo || null,
+                prazoHorario: prazoHorario || null,
             } as const;
 
             if (editingReminderId) {
@@ -700,8 +738,8 @@ export default function Dashboard() {
 
                             {/* Form — always visible, all fields */}
                             <form onSubmit={handleCreateOrUpdateReminder} className="space-y-3">
-                                {/* Row 1: Lembrete + Origem + Prioridade + Data-alvo */}
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_160px_140px_148px]">
+                                {/* Row 1: Lembrete + Origem + Prioridade + Data-alvo + Horário */}
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_160px_140px_148px_110px]">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="lembreteTitulo">Lembrete</Label>
                                         <Input
@@ -764,6 +802,24 @@ export default function Dashboard() {
                                             disabled={isSaving}
                                         />
                                     </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="lembreteHorarioAlvo">Horário</Label>
+                                        <Input
+                                            id="lembreteHorarioAlvo"
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={5}
+                                            value={formState.prazoHorario}
+                                            onChange={(e) =>
+                                                setFormState((prev) => ({
+                                                    ...prev,
+                                                    prazoHorario: normalizeTimeInput(e.target.value),
+                                                }))
+                                            }
+                                            placeholder="09:30"
+                                            disabled={isSaving}
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Row 2: Detalhes */}
@@ -793,8 +849,8 @@ export default function Dashboard() {
                                         {isSaving
                                             ? "Salvando…"
                                             : isEditing
-                                              ? "Salvar alterações"
-                                              : "Adicionar lembrete"}
+                                                ? "Salvar alterações"
+                                                : "Adicionar lembrete"}
                                     </Button>
                                     {isEditing && (
                                         <Button
@@ -891,11 +947,11 @@ export default function Dashboard() {
                                                         Concluída por {reminder.conclusao_nome || "admin"}
                                                         {reminder.concluida_em
                                                             ? ` • ${new Intl.DateTimeFormat("pt-BR", {
-                                                                  day: "2-digit",
-                                                                  month: "2-digit",
-                                                                  hour: "2-digit",
-                                                                  minute: "2-digit",
-                                                              }).format(new Date(reminder.concluida_em))}`
+                                                                day: "2-digit",
+                                                                month: "2-digit",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                            }).format(new Date(reminder.concluida_em))}`
                                                             : ""}
                                                     </p>
                                                 </div>

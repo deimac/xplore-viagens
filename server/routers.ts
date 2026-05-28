@@ -511,6 +511,7 @@ export const appRouter = router({
           origem: z.string().trim().max(50).optional().nullable(),
           prioridade: z.enum(["normal", "media", "alta"]).optional(),
           prazo: z.string().optional().nullable(),
+          prazoHorario: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional().nullable(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -520,6 +521,7 @@ export const appRouter = router({
           origem: input.origem,
           prioridade: input.prioridade,
           prazo: input.prazo,
+          prazoHorario: input.prazoHorario,
           userId: ctx.user.id,
         });
       }),
@@ -532,6 +534,7 @@ export const appRouter = router({
           origem: z.string().trim().max(50).optional().nullable(),
           prioridade: z.enum(["normal", "media", "alta"]).optional(),
           prazo: z.string().optional().nullable(),
+          prazoHorario: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional().nullable(),
         })
       )
       .mutation(async ({ input }) => {
@@ -542,6 +545,7 @@ export const appRouter = router({
           origem: input.origem,
           prioridade: input.prioridade,
           prazo: input.prazo,
+          prazoHorario: input.prazoHorario,
         });
       }),
     concluir: adminProcedure

@@ -662,6 +662,7 @@ type AdminLembreteCreateInput = {
   origem?: string | null;
   prioridade?: AdminLembretePrioridade;
   prazo?: string | null;
+  prazoHorario?: string | null;
   userId: number;
 };
 
@@ -672,6 +673,7 @@ type AdminLembreteUpdateInput = {
   origem?: string | null;
   prioridade?: AdminLembretePrioridade;
   prazo?: string | null;
+  prazoHorario?: string | null;
 };
 
 type AdminLembreteListOptions = {
@@ -716,6 +718,7 @@ function mapAdminLembreteRow(row: any) {
   return {
     ...row,
     prazo: normalizeSqlDate(row.prazo),
+    prazo_horario: typeof row.prazo_horario === "string" ? row.prazo_horario.slice(0, 5) : null,
     created_at: normalizeSqlDateTime(row.created_at),
     updated_at: normalizeSqlDateTime(row.updated_at),
     concluida_em: normalizeSqlDateTime(row.concluida_em),
@@ -779,8 +782,8 @@ export async function createAdminLembrete(input: AdminLembreteCreateInput) {
   const nextOrder = (maxRows[0]?.next_order as number) ?? 0;
 
   const result: any = await executeQuery(
-    `INSERT INTO admin_lembretes (titulo, observacoes, origem, prioridade, sort_order, prazo, status, id_users_criador)
-     VALUES (?, ?, ?, ?, ?, ?, 'pendente', ?)`,
+    `INSERT INTO admin_lembretes (titulo, observacoes, origem, prioridade, sort_order, prazo, prazo_horario, status, id_users_criador)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?)`,
     [
       input.titulo,
       input.observacoes ?? null,
@@ -788,6 +791,7 @@ export async function createAdminLembrete(input: AdminLembreteCreateInput) {
       input.prioridade ?? "normal",
       nextOrder,
       input.prazo ?? null,
+      input.prazoHorario ?? null,
       input.userId,
     ],
   );
@@ -811,7 +815,8 @@ export async function updateAdminLembrete(input: AdminLembreteUpdateInput) {
          observacoes = ?,
          origem = ?,
          prioridade = ?,
-         prazo = ?
+         prazo = ?,
+         prazo_horario = ?
      WHERE id = ?`,
     [
       input.titulo,
@@ -819,6 +824,7 @@ export async function updateAdminLembrete(input: AdminLembreteUpdateInput) {
       input.origem ?? null,
       input.prioridade ?? "normal",
       input.prazo ?? null,
+      input.prazoHorario ?? null,
       input.id,
     ],
   );
