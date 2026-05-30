@@ -402,6 +402,8 @@ export function PropertyView({ slug, onClose }: Props) {
                                         city: property.city || undefined,
                                         state_region: property.state_region || undefined,
                                         country: property.country || undefined,
+                                        latitude: property.latitude ?? undefined,
+                                        longitude: property.longitude ?? undefined,
                                     }}
                                     height="400px"
                                 />

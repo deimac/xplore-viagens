@@ -12,6 +12,8 @@ interface PropertyMapProps {
         city?: string;
         state_region?: string;
         country?: string;
+        latitude?: number;
+        longitude?: number;
     };
     height?: string;
 }
@@ -25,33 +27,12 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
         setIsLoading(true);
         setError(null);
 
-        // Montar endereço completo ou usar apenas cidade
-        let addressToGeocode = '';
+        const hasCoordinates =
+            typeof property.latitude === 'number' &&
+            typeof property.longitude === 'number';
 
-        // Tentar endereço completo primeiro
-        const addressParts = [
-            property.address_street,
-            property.address_number,
-            property.city,
-            property.state_region,
-            property.country
-        ].filter(Boolean);
-
-        if (addressParts.length >= 3) {
-            // Endereço completo: tem pelo menos rua/número, cidade e país
-            addressToGeocode = addressParts.join(', ');
-        } else if (property.city) {
-            // Apenas cidade + estado/país se disponível
-            const cityParts = [
-                property.city,
-                property.state_region,
-                property.country
-            ].filter(Boolean);
-            addressToGeocode = cityParts.join(', ');
-        }
-
-        // Se não tiver endereço nenhum, não renderizar
-        if (!addressToGeocode) {
+        if (!hasCoordinates) {
+            setError('Localização indisponível para este imóvel');
             setIsLoading(false);
             return;
         }
@@ -67,43 +48,34 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
                 }
 
 
-                // Carregar as bibliotecas necessárias
+                // Carregar bibliotecas necessárias para renderizar mapa por coordenada
                 const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
-                const { Geocoder } = await google.maps.importLibrary("geocoding") as google.maps.GeocodingLibrary;
                 const { Marker } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
 
+                const location = {
+                    lat: property.latitude!,
+                    lng: property.longitude!,
+                };
 
-                const geocoder = new Geocoder();
-
-                geocoder.geocode({ address: addressToGeocode }, (results, status) => {
-
-                    if (status === 'OK' && results && results[0]) {
-                        const location = results[0].geometry.location;
-
-                        // Criar mapa
-                        const map = new Map(mapRef.current!, {
-                            center: location,
-                            zoom: 12,
-                            mapId: 'DEMO_MAP_ID',
-                            mapTypeControl: false,
-                            streetViewControl: false,
-                            fullscreenControl: true,
-                            zoomControl: true
-                        });
-
-                        // Criar marker
-                        new Marker({
-                            position: location,
-                            map: map,
-                            title: property.city || 'Localização'
-                        });
-
-                        setIsLoading(false);
-                    } else {
-                        setError(`Erro ao geocodificar: ${status}`);
-                        setIsLoading(false);
-                    }
+                // Criar mapa
+                const map = new Map(mapRef.current!, {
+                    center: location,
+                    zoom: 12,
+                    mapId: 'DEMO_MAP_ID',
+                    mapTypeControl: false,
+                    streetViewControl: false,
+                    fullscreenControl: true,
+                    zoomControl: true
                 });
+
+                // Criar marker
+                new Marker({
+                    position: location,
+                    map: map,
+                    title: property.city || 'Localização'
+                });
+
+                setIsLoading(false);
 
             } catch (error) {
                 setError('Erro ao carregar o mapa');
@@ -124,10 +96,10 @@ export function PropertyMap({ property, height = '400px' }: PropertyMapProps) {
         return () => {
             clearTimeout(timer);
         };
-    }, [property.address_street, property.address_number, property.city, property.state_region, property.country]);
+    }, [property.city, property.latitude, property.longitude]);
 
-    // Se não tiver cidade, não renderizar nada
-    if (!property.city) {
+    // Se não tiver cidade e coordenadas, não renderizar nada
+    if (!property.city && (typeof property.latitude !== 'number' || typeof property.longitude !== 'number')) {
         return null;
     }
 
