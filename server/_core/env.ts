@@ -67,6 +67,9 @@ export const ENV = {
   // FACEBOOK OAUTH
   facebookAppId: process.env.FACEBOOK_APP_ID || '2368392583585442',
   facebookAppSecret: process.env.FACEBOOK_APP_SECRET || '',
+
+  // GEMINI AI (Google AI Studio)
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
 };
 
 export function validateEnv(): void {
