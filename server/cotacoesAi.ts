@@ -7,9 +7,10 @@
  * O resultado nunca deve ser tratado como verdade incontestável: a UI
  * sempre apresenta os dados para edição/confirmação.
  *
- * Arquitetura: adapter único hoje (forge/gemini via `invokeLLM`), mas com
- * uma interface `Extractor` pronta para receber outros provedores e cair
- * em fallback automático no futuro.
+ * Arquitetura: adapter único hoje (Google Gemini via `invokeLLM`, chamada
+ * direta à API do Google AI Studio), mas com uma interface `Extractor`
+ * pronta para receber outros provedores e cair em fallback automático no
+ * futuro.
  */
 
 import { invokeLLM, type Message } from "./_core/llm";
@@ -129,8 +130,8 @@ function parseStructuredOutput(content: unknown): ExtractedPeca {
     }
 }
 
-const forgeExtractor: Extractor = {
-    name: "forge-gemini-2.5-flash",
+const geminiExtractor: Extractor = {
+    name: "google-gemini-2.5-flash",
     async fromText(text: string) {
         const messages: Message[] = [
             { role: "system", content: SYSTEM_PROMPT },
@@ -170,8 +171,8 @@ const forgeExtractor: Extractor = {
     },
 };
 
-// Cadeia de fallback: hoje apenas o forge; ordem importa.
-const extractors: Extractor[] = [forgeExtractor];
+// Cadeia de fallback: hoje apenas Google Gemini direto; ordem importa.
+const extractors: Extractor[] = [geminiExtractor];
 
 export interface ExtractionResult {
     peca: ExtractedPeca;
