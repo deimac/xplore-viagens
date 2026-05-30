@@ -337,6 +337,171 @@ export const reviews = mysqlTable("reviews", {
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
 
+/**
+ * Cotacoes Workspace (admin) — operational tool for organizing flight research.
+ * Independent from the public `quotations` lead form.
+ */
+export const cwCotacoes = mysqlTable("cw_cotacoes", {
+  id: int("id").autoincrement().primaryKey(),
+  codigo: varchar("codigo", { length: 20 }),
+  clienteNome: varchar("cliente_nome", { length: 255 }).notNull(),
+  clienteEmail: varchar("cliente_email", { length: 320 }),
+  clienteTelefone: varchar("cliente_telefone", { length: 50 }),
+  origem: varchar("origem", { length: 120 }),
+  destino: varchar("destino", { length: 120 }),
+  dataIda: date("data_ida"),
+  dataVolta: date("data_volta"),
+  paxAdultos: int("pax_adultos").default(1).notNull(),
+  paxCriancas: int("pax_criancas").default(0).notNull(),
+  paxBebes: int("pax_bebes").default(0).notNull(),
+  observacoes: text("observacoes"),
+  status: mysqlEnum("status", [
+    "rascunho",
+    "em_pesquisa",
+    "em_montagem",
+    "proposta_enviada",
+    "fechada",
+    "cancelada",
+  ])
+    .default("rascunho")
+    .notNull(),
+  idUsersCriador: int("id_users_criador")
+    .notNull()
+    .references(() => users.id),
+  criadoEm: timestamp("criado_em").defaultNow(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
+});
+
+export type CwCotacao = typeof cwCotacoes.$inferSelect;
+export type InsertCwCotacao = typeof cwCotacoes.$inferInsert;
+
+export const cwPecas = mysqlTable("cw_pecas", {
+  id: int("id").autoincrement().primaryKey(),
+  cotacaoId: int("cotacao_id")
+    .notNull()
+    .references(() => cwCotacoes.id, { onDelete: "cascade" }),
+  titulo: varchar("titulo", { length: 255 }),
+  origem: varchar("origem", { length: 120 }),
+  destino: varchar("destino", { length: 120 }),
+  dataSaida: timestamp("data_saida"),
+  dataChegada: timestamp("data_chegada"),
+  duracaoMinutos: int("duracao_minutos"),
+  qtdConexoes: int("qtd_conexoes").default(0).notNull(),
+  companhias: varchar("companhias", { length: 255 }),
+  bagagem: varchar("bagagem", { length: 255 }),
+  classe: varchar("classe", { length: 40 }),
+  tipoFinanceiro: mysqlEnum("tipo_financeiro", ["milhas", "pagante", "misto"])
+    .default("pagante")
+    .notNull(),
+  custo: decimal("custo", { precision: 10, scale: 2 }),
+  venda: decimal("venda", { precision: 10, scale: 2 }),
+  fonte: varchar("fonte", { length: 80 }),
+  estrategia: text("estrategia"),
+  status: mysqlEnum("status", ["pesquisa", "favorita"]).default("pesquisa").notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+  origemDados: mysqlEnum("origem_dados", ["manual", "texto", "print"])
+    .default("manual")
+    .notNull(),
+  observacoes: text("observacoes"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
+});
+
+export type CwPeca = typeof cwPecas.$inferSelect;
+export type InsertCwPeca = typeof cwPecas.$inferInsert;
+
+export const cwSegmentos = mysqlTable("cw_segmentos", {
+  id: int("id").autoincrement().primaryKey(),
+  pecaId: int("peca_id")
+    .notNull()
+    .references(() => cwPecas.id, { onDelete: "cascade" }),
+  ordem: int("ordem").default(0).notNull(),
+  aeroportoOrigem: varchar("aeroporto_origem", { length: 10 }),
+  aeroportoDestino: varchar("aeroporto_destino", { length: 10 }),
+  cidadeOrigem: varchar("cidade_origem", { length: 120 }),
+  cidadeDestino: varchar("cidade_destino", { length: 120 }),
+  saida: timestamp("saida"),
+  chegada: timestamp("chegada"),
+  companhia: varchar("companhia", { length: 120 }),
+  numeroVoo: varchar("numero_voo", { length: 20 }),
+  classe: varchar("classe", { length: 40 }),
+  bagagem: varchar("bagagem", { length: 120 }),
+  duracaoConexaoMinutos: int("duracao_conexao_minutos"),
+});
+
+export type CwSegmento = typeof cwSegmentos.$inferSelect;
+export type InsertCwSegmento = typeof cwSegmentos.$inferInsert;
+
+export const cwCenarios = mysqlTable("cw_cenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  cotacaoId: int("cotacao_id")
+    .notNull()
+    .references(() => cwCotacoes.id, { onDelete: "cascade" }),
+  nome: varchar("nome", { length: 120 }).notNull(),
+  descricao: text("descricao"),
+  status: mysqlEnum("status", ["rascunho", "selecionado_proposta"])
+    .default("rascunho")
+    .notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+  criadoEm: timestamp("criado_em").defaultNow(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow(),
+});
+
+export type CwCenario = typeof cwCenarios.$inferSelect;
+export type InsertCwCenario = typeof cwCenarios.$inferInsert;
+
+export const cwCenarioPecas = mysqlTable("cw_cenario_pecas", {
+  id: int("id").autoincrement().primaryKey(),
+  cenarioId: int("cenario_id")
+    .notNull()
+    .references(() => cwCenarios.id, { onDelete: "cascade" }),
+  pecaId: int("peca_id")
+    .notNull()
+    .references(() => cwPecas.id, { onDelete: "cascade" }),
+  grupo: mysqlEnum("grupo", ["ida", "volta", "outro"]).default("outro").notNull(),
+  ordem: int("ordem").default(0).notNull(),
+});
+
+export type CwCenarioPeca = typeof cwCenarioPecas.$inferSelect;
+export type InsertCwCenarioPeca = typeof cwCenarioPecas.$inferInsert;
+
+export const cwPropostas = mysqlTable("cw_propostas", {
+  id: int("id").autoincrement().primaryKey(),
+  cotacaoId: int("cotacao_id")
+    .notNull()
+    .references(() => cwCotacoes.id, { onDelete: "cascade" }),
+  titulo: varchar("titulo", { length: 255 }),
+  validadeData: date("validade_data"),
+  snapshotJson: text("snapshot_json").notNull(),
+  geradaEm: timestamp("gerada_em").defaultNow(),
+  idUsersGerador: int("id_users_gerador")
+    .notNull()
+    .references(() => users.id),
+});
+
+export type CwProposta = typeof cwPropostas.$inferSelect;
+export type InsertCwProposta = typeof cwPropostas.$inferInsert;
+
+export const cwArquivosOrigem = mysqlTable("cw_arquivos_origem", {
+  id: int("id").autoincrement().primaryKey(),
+  cotacaoId: int("cotacao_id")
+    .notNull()
+    .references(() => cwCotacoes.id, { onDelete: "cascade" }),
+  pecaId: int("peca_id").references(() => cwPecas.id, { onDelete: "set null" }),
+  tipo: mysqlEnum("tipo", ["print", "texto"]).notNull(),
+  url: text("url"),
+  conteudoTexto: text("conteudo_texto"),
+  provedorIa: varchar("provedor_ia", { length: 80 }),
+  status: mysqlEnum("status", ["pendente", "processado", "erro"])
+    .default("pendente")
+    .notNull(),
+  erroMsg: text("erro_msg"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export type CwArquivoOrigem = typeof cwArquivosOrigem.$inferSelect;
+export type InsertCwArquivoOrigem = typeof cwArquivosOrigem.$inferInsert;
+
 // Relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   travelCategories: many(travelCategories),

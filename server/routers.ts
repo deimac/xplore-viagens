@@ -17,6 +17,7 @@ import { parsearOfertaVoo } from "./ofertasVoo";
 import * as properties from "./properties";
 import * as ofertasVooPremium from "./ofertasVooPremium";
 import { clienteAuthRouter, clienteRouter, xpRouter } from "./clienteRouters";
+import { extractPecaFromText, extractPecaFromImage } from "./cotacoesAi";
 
 
 export const appRouter = router({
@@ -1792,6 +1793,332 @@ export const appRouter = router({
         const fileKey = `xplore-tv/video/${randomSuffix}.${ext}`;
         const { url } = await storagePut(fileKey, buffer, input.mimeType);
         return { url };
+      }),
+  }),
+
+  cotacoesWorkspace: router({
+    list: adminProcedure.query(async () => {
+      return await db.listCwCotacoes();
+    }),
+    getById: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getCwCotacaoById(input.id);
+      }),
+    create: adminProcedure
+      .input(
+        z.object({
+          clienteNome: z.string().min(1),
+          clienteEmail: z.string().email().optional().nullable(),
+          clienteTelefone: z.string().optional().nullable(),
+          origem: z.string().optional().nullable(),
+          destino: z.string().optional().nullable(),
+          dataIda: z.string().optional().nullable(),
+          dataVolta: z.string().optional().nullable(),
+          paxAdultos: z.number().int().min(1).default(1),
+          paxCriancas: z.number().int().min(0).default(0),
+          paxBebes: z.number().int().min(0).default(0),
+          observacoes: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+        return await db.createCwCotacao({
+          ...input,
+          dataIda: input.dataIda || null,
+          dataVolta: input.dataVolta || null,
+          idUsersCriador: ctx.user.id,
+        } as any);
+      }),
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          patch: z.object({
+            clienteNome: z.string().min(1).optional(),
+            clienteEmail: z.string().email().optional().nullable(),
+            clienteTelefone: z.string().optional().nullable(),
+            origem: z.string().optional().nullable(),
+            destino: z.string().optional().nullable(),
+            dataIda: z.string().optional().nullable(),
+            dataVolta: z.string().optional().nullable(),
+            paxAdultos: z.number().int().min(1).optional(),
+            paxCriancas: z.number().int().min(0).optional(),
+            paxBebes: z.number().int().min(0).optional(),
+            observacoes: z.string().optional().nullable(),
+            status: z
+              .enum([
+                "rascunho",
+                "em_pesquisa",
+                "em_montagem",
+                "proposta_enviada",
+                "fechada",
+                "cancelada",
+              ])
+              .optional(),
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.updateCwCotacao(input.id, input.patch as any);
+        return { success: true };
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCwCotacao(input.id);
+        return { success: true };
+      }),
+    getFull: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getCwCotacaoFull(input.id);
+      }),
+
+    // Pecas
+    createPeca: adminProcedure
+      .input(
+        z.object({
+          cotacaoId: z.number(),
+          titulo: z.string().optional().nullable(),
+          origem: z.string().optional().nullable(),
+          destino: z.string().optional().nullable(),
+          dataSaida: z.string().optional().nullable(),
+          dataChegada: z.string().optional().nullable(),
+          duracaoMinutos: z.number().int().optional().nullable(),
+          qtdConexoes: z.number().int().min(0).default(0),
+          companhias: z.string().optional().nullable(),
+          bagagem: z.string().optional().nullable(),
+          classe: z.string().optional().nullable(),
+          tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).default("pagante"),
+          custo: z.number().optional().nullable(),
+          venda: z.number().optional().nullable(),
+          fonte: z.string().optional().nullable(),
+          estrategia: z.string().optional().nullable(),
+          status: z.enum(["pesquisa", "favorita"]).default("pesquisa"),
+          observacoes: z.string().optional().nullable(),
+          segmentos: z
+            .array(
+              z.object({
+                ordem: z.number().int().default(0),
+                aeroportoOrigem: z.string().optional().nullable(),
+                aeroportoDestino: z.string().optional().nullable(),
+                cidadeOrigem: z.string().optional().nullable(),
+                cidadeDestino: z.string().optional().nullable(),
+                saida: z.string().optional().nullable(),
+                chegada: z.string().optional().nullable(),
+                companhia: z.string().optional().nullable(),
+                numeroVoo: z.string().optional().nullable(),
+                classe: z.string().optional().nullable(),
+                bagagem: z.string().optional().nullable(),
+                duracaoConexaoMinutos: z.number().int().optional().nullable(),
+              })
+            )
+            .default([]),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { segmentos, ...pecaData } = input;
+        return await db.createCwPeca(
+          {
+            ...pecaData,
+            dataSaida: pecaData.dataSaida ? new Date(pecaData.dataSaida) : null,
+            dataChegada: pecaData.dataChegada ? new Date(pecaData.dataChegada) : null,
+            custo: pecaData.custo != null ? String(pecaData.custo) : null,
+            venda: pecaData.venda != null ? String(pecaData.venda) : null,
+          } as any,
+          segmentos.map((s) => ({
+            ...s,
+            saida: s.saida ? new Date(s.saida) : null,
+            chegada: s.chegada ? new Date(s.chegada) : null,
+          })) as any
+        );
+      }),
+    updatePeca: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          patch: z.object({
+            titulo: z.string().optional().nullable(),
+            origem: z.string().optional().nullable(),
+            destino: z.string().optional().nullable(),
+            dataSaida: z.string().optional().nullable(),
+            dataChegada: z.string().optional().nullable(),
+            duracaoMinutos: z.number().int().optional().nullable(),
+            qtdConexoes: z.number().int().min(0).optional(),
+            companhias: z.string().optional().nullable(),
+            bagagem: z.string().optional().nullable(),
+            classe: z.string().optional().nullable(),
+            tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).optional(),
+            custo: z.number().optional().nullable(),
+            venda: z.number().optional().nullable(),
+            fonte: z.string().optional().nullable(),
+            estrategia: z.string().optional().nullable(),
+            status: z.enum(["pesquisa", "favorita"]).optional(),
+            observacoes: z.string().optional().nullable(),
+          }),
+          segmentos: z
+            .array(
+              z.object({
+                ordem: z.number().int().default(0),
+                aeroportoOrigem: z.string().optional().nullable(),
+                aeroportoDestino: z.string().optional().nullable(),
+                cidadeOrigem: z.string().optional().nullable(),
+                cidadeDestino: z.string().optional().nullable(),
+                saida: z.string().optional().nullable(),
+                chegada: z.string().optional().nullable(),
+                companhia: z.string().optional().nullable(),
+                numeroVoo: z.string().optional().nullable(),
+                classe: z.string().optional().nullable(),
+                bagagem: z.string().optional().nullable(),
+                duracaoConexaoMinutos: z.number().int().optional().nullable(),
+              })
+            )
+            .optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const patch: any = { ...input.patch };
+        if ("dataSaida" in patch) patch.dataSaida = patch.dataSaida ? new Date(patch.dataSaida) : null;
+        if ("dataChegada" in patch) patch.dataChegada = patch.dataChegada ? new Date(patch.dataChegada) : null;
+        if ("custo" in patch) patch.custo = patch.custo != null ? String(patch.custo) : null;
+        if ("venda" in patch) patch.venda = patch.venda != null ? String(patch.venda) : null;
+        const segs = input.segmentos?.map((s) => ({
+          ...s,
+          saida: s.saida ? new Date(s.saida) : null,
+          chegada: s.chegada ? new Date(s.chegada) : null,
+        })) as any;
+        await db.updateCwPeca(input.id, patch, segs);
+        return { success: true };
+      }),
+    deletePeca: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCwPeca(input.id);
+        return { success: true };
+      }),
+    reorderPecas: adminProcedure
+      .input(z.object({ orderedIds: z.array(z.number()) }))
+      .mutation(async ({ input }) => {
+        await db.reorderCwPecas(input.orderedIds);
+        return { success: true };
+      }),
+
+    // Cenarios
+    createCenario: adminProcedure
+      .input(
+        z.object({
+          cotacaoId: z.number(),
+          nome: z.string().min(1),
+          descricao: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.createCwCenario(input as any);
+      }),
+    updateCenario: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          patch: z.object({
+            nome: z.string().min(1).optional(),
+            descricao: z.string().optional().nullable(),
+            status: z.enum(["rascunho", "selecionado_proposta"]).optional(),
+            sortOrder: z.number().int().optional(),
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.updateCwCenario(input.id, input.patch as any);
+        return { success: true };
+      }),
+    deleteCenario: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCwCenario(input.id);
+        return { success: true };
+      }),
+    addPecaToCenario: adminProcedure
+      .input(
+        z.object({
+          cenarioId: z.number(),
+          pecaId: z.number(),
+          grupo: z.enum(["ida", "volta", "outro"]).default("outro"),
+          ordem: z.number().int().default(0),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await db.addPecaToCenario(input as any);
+      }),
+    removePecaFromCenario: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.removePecaFromCenario(input.id);
+        return { success: true };
+      }),
+    reorderCenarioPecas: adminProcedure
+      .input(z.object({ orderedIds: z.array(z.number()) }))
+      .mutation(async ({ input }) => {
+        await db.reorderCenarioPecas(input.orderedIds);
+        return { success: true };
+
+        // IA — extração de peça a partir de texto/imagem (não persiste; só devolve)
+        extractFromText: adminProcedure
+          .input(z.object({ texto: z.string().min(5) }))
+          .mutation(async ({ input }) => {
+            return await extractPecaFromText(input.texto);
+          }),
+          extractFromImage: adminProcedure
+            .input(
+              z.object({
+                fileData: z.string().min(10),
+                mimeType: z.string().min(3),
+              })
+            )
+            .mutation(async ({ input }) => {
+              const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+              if (!allowed.includes(input.mimeType)) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Formato de imagem não suportado. Use PNG, JPG, WEBP ou GIF." });
+              }
+              return await extractPecaFromImage(input.fileData, input.mimeType);
+            }),
+
+            // Propostas (snapshots cliente-safe)
+            listPropostas: adminProcedure
+              .input(z.object({ cotacaoId: z.number() }))
+              .query(async ({ input }) => {
+                return await db.listCwPropostas(input.cotacaoId);
+              }),
+              getProposta: adminProcedure
+                .input(z.object({ id: z.number() }))
+                .query(async ({ input }) => {
+                  const p = await db.getCwPropostaById(input.id);
+                  if (!p) return null;
+                  return { ...p, snapshot: JSON.parse(p.snapshotJson) as db.PropostaSnapshot };
+                }),
+                generateProposta: adminProcedure
+                  .input(
+                    z.object({
+                      cotacaoId: z.number(),
+                      titulo: z.string().optional().nullable(),
+                      validadeData: z.string().optional().nullable(),
+                    })
+                  )
+                  .mutation(async ({ input, ctx }) => {
+                    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+                    return await db.generateCwProposta(
+                      input.cotacaoId,
+                      ctx.user.id,
+                      input.titulo ?? null,
+                      input.validadeData ?? null
+                    );
+                  }),
+                  deleteProposta: adminProcedure
+                    .input(z.object({ id: z.number() }))
+                    .mutation(async ({ input }) => {
+                      await db.deleteCwProposta(input.id);
+                      return { success: true };
+                    }),
       }),
   }),
 });

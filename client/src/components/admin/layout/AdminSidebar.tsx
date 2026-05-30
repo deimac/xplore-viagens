@@ -17,6 +17,7 @@ import {
     List,
     Coins,
     Monitor,
+    FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,11 @@ const menuItems: MenuItem[] = [
         icon: Coins,
         label: "XP Club",
         href: "/admin/xp-club",
+    },
+    {
+        icon: FileText,
+        label: "Cotações",
+        href: "/admin/cotacoes",
     },
     {
         icon: Monitor,

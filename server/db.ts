@@ -3827,3 +3827,395 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
   return result;
 }
 
+
+// =====================================================================
+// Cotacoes Workspace (admin)
+// =====================================================================
+import { cwCotacoes, type CwCotacao, type InsertCwCotacao } from "../drizzle/schema";
+
+export async function createCwCotacao(input: InsertCwCotacao): Promise<CwCotacao> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const [result]: any = await database.insert(cwCotacoes).values(input);
+  const id = result.insertId as number;
+  const rows = await database.select().from(cwCotacoes).where(eq(cwCotacoes.id, id)).limit(1);
+  return rows[0] as CwCotacao;
+}
+
+export async function listCwCotacoes(): Promise<CwCotacao[]> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  return await database.select().from(cwCotacoes).orderBy(desc(cwCotacoes.criadoEm));
+}
+
+export async function getCwCotacaoById(id: number): Promise<CwCotacao | null> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const rows = await database.select().from(cwCotacoes).where(eq(cwCotacoes.id, id)).limit(1);
+  return (rows[0] as CwCotacao) ?? null;
+}
+
+export async function updateCwCotacao(id: number, patch: Partial<InsertCwCotacao>): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.update(cwCotacoes).set(patch).where(eq(cwCotacoes.id, id));
+}
+
+export async function deleteCwCotacao(id: number): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.delete(cwCotacoes).where(eq(cwCotacoes.id, id));
+}
+
+import {
+  cwPecas,
+  type CwPeca,
+  type InsertCwPeca,
+  cwSegmentos,
+  type CwSegmento,
+  type InsertCwSegmento,
+  cwCenarios,
+  type CwCenario,
+  type InsertCwCenario,
+  cwCenarioPecas,
+  type CwCenarioPeca,
+  type InsertCwCenarioPeca,
+} from "../drizzle/schema";
+
+export interface CwPecaComSegmentos extends CwPeca {
+  segmentos: CwSegmento[];
+}
+
+export interface CwCenarioComPecas extends CwCenario {
+  pecas: { id: number; pecaId: number; grupo: string; ordem: number }[];
+}
+
+export interface CwCotacaoFull {
+  cotacao: CwCotacao;
+  pecas: CwPecaComSegmentos[];
+  cenarios: CwCenarioComPecas[];
+}
+
+export async function getCwCotacaoFull(id: number): Promise<CwCotacaoFull | null> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const cotRows = await database.select().from(cwCotacoes).where(eq(cwCotacoes.id, id)).limit(1);
+  const cotacao = cotRows[0] as CwCotacao | undefined;
+  if (!cotacao) return null;
+
+  const pecas = (await database
+    .select()
+    .from(cwPecas)
+    .where(eq(cwPecas.cotacaoId, id))
+    .orderBy(cwPecas.sortOrder, cwPecas.id)) as CwPeca[];
+
+  const pecaIds = pecas.map((p) => p.id);
+  const segmentos = pecaIds.length
+    ? ((await database
+        .select()
+        .from(cwSegmentos)
+        .where(inArray(cwSegmentos.pecaId, pecaIds))
+        .orderBy(cwSegmentos.pecaId, cwSegmentos.ordem)) as CwSegmento[])
+    : [];
+
+  const pecasComSegmentos: CwPecaComSegmentos[] = pecas.map((p) => ({
+    ...p,
+    segmentos: segmentos.filter((s) => s.pecaId === p.id),
+  }));
+
+  const cenarios = (await database
+    .select()
+    .from(cwCenarios)
+    .where(eq(cwCenarios.cotacaoId, id))
+    .orderBy(cwCenarios.sortOrder, cwCenarios.id)) as CwCenario[];
+
+  const cenarioIds = cenarios.map((c) => c.id);
+  const cenarioPecasRows = cenarioIds.length
+    ? ((await database
+        .select()
+        .from(cwCenarioPecas)
+        .where(inArray(cwCenarioPecas.cenarioId, cenarioIds))
+        .orderBy(cwCenarioPecas.cenarioId, cwCenarioPecas.ordem)) as CwCenarioPeca[])
+    : [];
+
+  const cenariosComPecas: CwCenarioComPecas[] = cenarios.map((c) => ({
+    ...c,
+    pecas: cenarioPecasRows
+      .filter((cp) => cp.cenarioId === c.id)
+      .map((cp) => ({ id: cp.id, pecaId: cp.pecaId, grupo: cp.grupo, ordem: cp.ordem })),
+  }));
+
+  return { cotacao, pecas: pecasComSegmentos, cenarios: cenariosComPecas };
+}
+
+export async function createCwPeca(
+  input: InsertCwPeca,
+  segmentos: Omit<InsertCwSegmento, "pecaId">[] = []
+): Promise<CwPeca> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const [result]: any = await database.insert(cwPecas).values(input);
+  const id = result.insertId as number;
+  if (segmentos.length) {
+    await database
+      .insert(cwSegmentos)
+      .values(segmentos.map((s, idx) => ({ ...s, pecaId: id, ordem: s.ordem ?? idx })));
+  }
+  const rows = await database.select().from(cwPecas).where(eq(cwPecas.id, id)).limit(1);
+  return rows[0] as CwPeca;
+}
+
+export async function updateCwPeca(
+  id: number,
+  patch: Partial<InsertCwPeca>,
+  segmentos?: Omit<InsertCwSegmento, "pecaId">[]
+): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  if (Object.keys(patch).length) {
+    await database.update(cwPecas).set(patch).where(eq(cwPecas.id, id));
+  }
+  if (segmentos) {
+    await database.delete(cwSegmentos).where(eq(cwSegmentos.pecaId, id));
+    if (segmentos.length) {
+      await database
+        .insert(cwSegmentos)
+        .values(segmentos.map((s, idx) => ({ ...s, pecaId: id, ordem: s.ordem ?? idx })));
+    }
+  }
+}
+
+export async function deleteCwPeca(id: number): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.delete(cwPecas).where(eq(cwPecas.id, id));
+}
+
+export async function reorderCwPecas(orderedIds: number[]): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  for (let i = 0; i < orderedIds.length; i++) {
+    await database.update(cwPecas).set({ sortOrder: i }).where(eq(cwPecas.id, orderedIds[i]));
+  }
+}
+
+export async function createCwCenario(input: InsertCwCenario): Promise<CwCenario> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const [result]: any = await database.insert(cwCenarios).values(input);
+  const id = result.insertId as number;
+  const rows = await database.select().from(cwCenarios).where(eq(cwCenarios.id, id)).limit(1);
+  return rows[0] as CwCenario;
+}
+
+export async function updateCwCenario(id: number, patch: Partial<InsertCwCenario>): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.update(cwCenarios).set(patch).where(eq(cwCenarios.id, id));
+}
+
+export async function deleteCwCenario(id: number): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.delete(cwCenarios).where(eq(cwCenarios.id, id));
+}
+
+export async function addPecaToCenario(input: InsertCwCenarioPeca): Promise<CwCenarioPeca> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const [result]: any = await database.insert(cwCenarioPecas).values(input);
+  const id = result.insertId as number;
+  const rows = await database.select().from(cwCenarioPecas).where(eq(cwCenarioPecas.id, id)).limit(1);
+  return rows[0] as CwCenarioPeca;
+}
+
+export async function removePecaFromCenario(id: number): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.delete(cwCenarioPecas).where(eq(cwCenarioPecas.id, id));
+}
+
+export async function reorderCenarioPecas(orderedIds: number[]): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  for (let i = 0; i < orderedIds.length; i++) {
+    await database.update(cwCenarioPecas).set({ ordem: i }).where(eq(cwCenarioPecas.id, orderedIds[i]));
+  }
+}
+
+import { cwPropostas, type CwProposta, type InsertCwProposta } from "../drizzle/schema";
+
+/**
+ * Snapshot serializado de uma proposta. Tudo aqui é cliente-safe:
+ * NUNCA inclui custo, tipoFinanceiro, fonte, estrategia ou observacoes internas.
+ */
+export interface PropostaSnapshot {
+  titulo: string | null;
+  validadeData: string | null;
+  geradoEm: string;
+  cotacao: {
+    clienteNome: string;
+    origem: string | null;
+    destino: string | null;
+    dataIda: string | null;
+    dataVolta: string | null;
+    paxAdultos: number;
+    paxCriancas: number;
+    paxBebes: number;
+  };
+  cenarios: Array<{
+    nome: string;
+    descricao: string | null;
+    totalVenda: number;
+    pecas: Array<{
+      grupo: string;
+      titulo: string | null;
+      origem: string | null;
+      destino: string | null;
+      dataSaida: string | null;
+      dataChegada: string | null;
+      duracaoMinutos: number | null;
+      qtdConexoes: number;
+      companhias: string | null;
+      bagagem: string | null;
+      classe: string | null;
+      venda: number | null;
+      segmentos: Array<{
+        ordem: number;
+        aeroportoOrigem: string | null;
+        aeroportoDestino: string | null;
+        cidadeOrigem: string | null;
+        cidadeDestino: string | null;
+        saida: string | null;
+        chegada: string | null;
+        companhia: string | null;
+        numeroVoo: string | null;
+        classe: string | null;
+        bagagem: string | null;
+        duracaoConexaoMinutos: number | null;
+      }>;
+    }>;
+  }>;
+}
+
+function toIsoOrNull(v: Date | string | null | undefined): string | null {
+  if (!v) return null;
+  const d = typeof v === "string" ? new Date(v) : v;
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+export async function generateCwProposta(
+  cotacaoId: number,
+  userId: number,
+  titulo: string | null,
+  validadeData: string | null
+): Promise<CwProposta> {
+  const full = await getCwCotacaoFull(cotacaoId);
+  if (!full) throw new Error("Cotação não encontrada");
+
+  const selecionados = full.cenarios.filter((c) => c.status === "selecionado_proposta");
+  if (selecionados.length === 0) {
+    throw new Error("Nenhum cenário marcado para proposta. Selecione ao menos um cenário primeiro.");
+  }
+
+  const snapshot: PropostaSnapshot = {
+    titulo,
+    validadeData,
+    geradoEm: new Date().toISOString(),
+    cotacao: {
+      clienteNome: full.cotacao.clienteNome,
+      origem: full.cotacao.origem ?? null,
+      destino: full.cotacao.destino ?? null,
+      dataIda: toIsoOrNull(full.cotacao.dataIda as any),
+      dataVolta: toIsoOrNull(full.cotacao.dataVolta as any),
+      paxAdultos: full.cotacao.paxAdultos,
+      paxCriancas: full.cotacao.paxCriancas,
+      paxBebes: full.cotacao.paxBebes,
+    },
+    cenarios: selecionados.map((c) => {
+      const pecasOrdenadas = [...c.pecas].sort((a, b) => a.ordem - b.ordem);
+      const pecasSerial = pecasOrdenadas
+        .map((cp) => {
+          const peca = full.pecas.find((p) => p.id === cp.pecaId);
+          if (!peca) return null;
+          return {
+            grupo: cp.grupo,
+            titulo: peca.titulo ?? null,
+            origem: peca.origem ?? null,
+            destino: peca.destino ?? null,
+            dataSaida: toIsoOrNull(peca.dataSaida as any),
+            dataChegada: toIsoOrNull(peca.dataChegada as any),
+            duracaoMinutos: peca.duracaoMinutos ?? null,
+            qtdConexoes: peca.qtdConexoes ?? 0,
+            companhias: peca.companhias ?? null,
+            bagagem: peca.bagagem ?? null,
+            classe: peca.classe ?? null,
+            venda: peca.venda != null ? Number(peca.venda) : null,
+            segmentos: peca.segmentos
+              .slice()
+              .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+              .map((s) => ({
+                ordem: s.ordem ?? 0,
+                aeroportoOrigem: s.aeroportoOrigem ?? null,
+                aeroportoDestino: s.aeroportoDestino ?? null,
+                cidadeOrigem: s.cidadeOrigem ?? null,
+                cidadeDestino: s.cidadeDestino ?? null,
+                saida: toIsoOrNull(s.saida as any),
+                chegada: toIsoOrNull(s.chegada as any),
+                companhia: s.companhia ?? null,
+                numeroVoo: s.numeroVoo ?? null,
+                classe: s.classe ?? null,
+                bagagem: s.bagagem ?? null,
+                duracaoConexaoMinutos: s.duracaoConexaoMinutos ?? null,
+              })),
+          };
+        })
+        .filter(Boolean) as PropostaSnapshot["cenarios"][number]["pecas"];
+
+      const totalVenda = pecasSerial.reduce((acc, p) => acc + (p.venda || 0), 0);
+      return {
+        nome: c.nome,
+        descricao: c.descricao ?? null,
+        totalVenda,
+        pecas: pecasSerial,
+      };
+    }),
+  };
+
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const insertData: InsertCwProposta = {
+    cotacaoId,
+    titulo: titulo,
+    validadeData: validadeData as any,
+    snapshotJson: JSON.stringify(snapshot),
+    idUsersGerador: userId,
+  };
+  const [result]: any = await database.insert(cwPropostas).values(insertData);
+  const id = result.insertId as number;
+  const rows = await database.select().from(cwPropostas).where(eq(cwPropostas.id, id)).limit(1);
+  return rows[0] as CwProposta;
+}
+
+export async function listCwPropostas(cotacaoId: number): Promise<CwProposta[]> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  return await database
+    .select()
+    .from(cwPropostas)
+    .where(eq(cwPropostas.cotacaoId, cotacaoId))
+    .orderBy(desc(cwPropostas.geradaEm));
+}
+
+export async function getCwPropostaById(id: number): Promise<CwProposta | null> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const rows = await database.select().from(cwPropostas).where(eq(cwPropostas.id, id)).limit(1);
+  return (rows[0] as CwProposta) ?? null;
+}
+
+export async function deleteCwProposta(id: number): Promise<void> {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  await database.delete(cwPropostas).where(eq(cwPropostas.id, id));
+}

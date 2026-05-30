@@ -29,6 +29,9 @@ import SlidesHeroPage from "./pages/admin/SlidesHeroPage";
 import AvaliacoesPage from "./pages/admin/AvaliacoesPage";
 import XpClubPage from "./pages/admin/XpClubPage";
 import XploreTvPage from "./pages/admin/XploreTvPage";
+import CotacoesPage from "./pages/admin/CotacoesPage";
+import CotacaoDetailPage from "./pages/admin/CotacaoDetailPage";
+import PropostaViewPage from "./pages/admin/PropostaViewPage";
 import { Redirect } from "wouter";
 
 // Área do Cliente
@@ -64,6 +67,9 @@ function Router() {
       <Route path={"/admin/configuracoes"} component={() => <AdminRoute component={CompanySettings} />} />
       <Route path={"/admin/xp-club"} component={() => <AdminRoute component={XpClubPage} />} />
       <Route path={"/admin/xplore-tv"} component={() => <AdminRoute component={XploreTvPage} />} />
+      <Route path={"/admin/cotacoes"} component={() => <AdminRoute component={CotacoesPage} />} />
+      <Route path={"/admin/cotacoes/:id"} component={() => <AdminRoute component={CotacaoDetailPage} />} />
+      <Route path={"/admin/cotacoes/:id/proposta/:propostaId"} component={() => <AdminRoute component={PropostaViewPage} />} />
 
       <Route path={"/avaliar"} component={ReviewPage} />
       <Route path={"/politica-de-privacidade"} component={PrivacidadePage} />
