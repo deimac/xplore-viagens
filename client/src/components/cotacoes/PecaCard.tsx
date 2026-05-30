@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -13,9 +14,13 @@ import {
     Coins,
     Shuffle,
     CheckCircle2,
+    Layers,
+    Plus,
+    Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PecaCompleta } from "./types";
 import { TIPO_FINANCEIRO_LABEL } from "./types";
 import {
@@ -26,12 +31,21 @@ import {
     pecaDurationMinutes,
 } from "@/lib/cotacoes/calc";
 
+export interface CenarioOption {
+    id: number;
+    nome: string;
+    jaTem: boolean;
+}
+
 interface Props {
     peca: PecaCompleta;
     usadaEmCenarios: number;
+    cenariosOptions?: CenarioOption[];
     onToggleFavorita: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onAddToCenario?: (cenarioId: number) => void;
+    onCreateCenarioAndAdd?: () => void;
 }
 
 const TIPO_ICON = {
@@ -40,7 +54,17 @@ const TIPO_ICON = {
     misto: Shuffle,
 } as const;
 
-export function PecaCard({ peca, usadaEmCenarios, onToggleFavorita, onEdit, onDelete }: Props) {
+export function PecaCard({
+    peca,
+    usadaEmCenarios,
+    cenariosOptions,
+    onToggleFavorita,
+    onEdit,
+    onDelete,
+    onAddToCenario,
+    onCreateCenarioAndAdd,
+}: Props) {
+    const [popoverOpen, setPopoverOpen] = useState(false);
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: `peca-${peca.id}`,
         data: { kind: "peca-library", pecaId: peca.id },
@@ -138,14 +162,81 @@ export function PecaCard({ peca, usadaEmCenarios, onToggleFavorita, onEdit, onDe
 
                     {/* Linha 3: financeiro interno */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-dashed">
-                        <Badge
-                            variant="outline"
-                            className="gap-1 font-normal text-[10px] py-0 h-5"
-                            title={TIPO_FINANCEIRO_LABEL[peca.tipoFinanceiro]}
-                        >
-                            <TipoIcon className="h-3 w-3" />
-                            {TIPO_FINANCEIRO_LABEL[peca.tipoFinanceiro]}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                            <Badge
+                                variant="outline"
+                                className="gap-1 font-normal text-[10px] py-0 h-5"
+                                title={TIPO_FINANCEIRO_LABEL[peca.tipoFinanceiro]}
+                            >
+                                <TipoIcon className="h-3 w-3" />
+                                {TIPO_FINANCEIRO_LABEL[peca.tipoFinanceiro]}
+                            </Badge>
+                            {(onAddToCenario || onCreateCenarioAndAdd) && (
+                                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-5 px-1.5 text-[10px] gap-1 border-primary/40 text-primary hover:bg-primary/10"
+                                            title="Adicionar a um cenário"
+                                        >
+                                            <Plus className="h-3 w-3" />
+                                            Cenário
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent align="start" className="w-64 p-1">
+                                        <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold flex items-center gap-1">
+                                            <Layers className="h-3 w-3" />
+                                            Adicionar a cenário
+                                        </div>
+                                        {cenariosOptions && cenariosOptions.length > 0 ? (
+                                            <div className="max-h-56 overflow-y-auto">
+                                                {cenariosOptions.map((c) => (
+                                                    <button
+                                                        key={c.id}
+                                                        type="button"
+                                                        disabled={c.jaTem}
+                                                        onClick={() => {
+                                                            onAddToCenario?.(c.id);
+                                                            setPopoverOpen(false);
+                                                        }}
+                                                        className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between gap-2"
+                                                    >
+                                                        <span className="truncate">{c.nome}</span>
+                                                        {c.jaTem && (
+                                                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
+                                                                <Check className="h-3 w-3" />
+                                                                já incluída
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="px-2 py-2 text-xs text-muted-foreground">
+                                                Nenhum cenário criado ainda.
+                                            </div>
+                                        )}
+                                        {onCreateCenarioAndAdd && (
+                                            <>
+                                                <div className="my-1 border-t" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        onCreateCenarioAndAdd();
+                                                        setPopoverOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accent flex items-center gap-1.5 text-primary font-medium"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                    Criar novo cenário com esta peça
+                                                </button>
+                                            </>
+                                        )}
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                        </div>
                         <div className="flex items-center gap-2 text-[11px] tabular-nums">
                             <span className="text-muted-foreground">
                                 C: <span className="text-foreground">{fmtCurrencyCompact(peca.custo)}</span>
