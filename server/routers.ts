@@ -2061,64 +2061,64 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.reorderCenarioPecas(input.orderedIds);
         return { success: true };
+      }),
 
-        // IA — extração de peça a partir de texto/imagem (não persiste; só devolve)
-        extractFromText: adminProcedure
-          .input(z.object({ texto: z.string().min(5) }))
-          .mutation(async ({ input }) => {
-            return await extractPecaFromText(input.texto);
-          }),
-          extractFromImage: adminProcedure
-            .input(
-              z.object({
-                fileData: z.string().min(10),
-                mimeType: z.string().min(3),
-              })
-            )
-            .mutation(async ({ input }) => {
-              const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-              if (!allowed.includes(input.mimeType)) {
-                throw new TRPCError({ code: "BAD_REQUEST", message: "Formato de imagem não suportado. Use PNG, JPG, WEBP ou GIF." });
-              }
-              return await extractPecaFromImage(input.fileData, input.mimeType);
-            }),
+    // IA — extração de peça a partir de texto/imagem (não persiste; só devolve)
+    extractFromText: adminProcedure
+      .input(z.object({ texto: z.string().min(5) }))
+      .mutation(async ({ input }) => {
+        return await extractPecaFromText(input.texto);
+      }),
+    extractFromImage: adminProcedure
+      .input(
+        z.object({
+          fileData: z.string().min(10),
+          mimeType: z.string().min(3),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+        if (!allowed.includes(input.mimeType)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Formato de imagem não suportado. Use PNG, JPG, WEBP ou GIF." });
+        }
+        return await extractPecaFromImage(input.fileData, input.mimeType);
+      }),
 
-            // Propostas (snapshots cliente-safe)
-            listPropostas: adminProcedure
-              .input(z.object({ cotacaoId: z.number() }))
-              .query(async ({ input }) => {
-                return await db.listCwPropostas(input.cotacaoId);
-              }),
-              getProposta: adminProcedure
-                .input(z.object({ id: z.number() }))
-                .query(async ({ input }) => {
-                  const p = await db.getCwPropostaById(input.id);
-                  if (!p) return null;
-                  return { ...p, snapshot: JSON.parse(p.snapshotJson) as db.PropostaSnapshot };
-                }),
-                generateProposta: adminProcedure
-                  .input(
-                    z.object({
-                      cotacaoId: z.number(),
-                      titulo: z.string().optional().nullable(),
-                      validadeData: z.string().optional().nullable(),
-                    })
-                  )
-                  .mutation(async ({ input, ctx }) => {
-                    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
-                    return await db.generateCwProposta(
-                      input.cotacaoId,
-                      ctx.user.id,
-                      input.titulo ?? null,
-                      input.validadeData ?? null
-                    );
-                  }),
-                  deleteProposta: adminProcedure
-                    .input(z.object({ id: z.number() }))
-                    .mutation(async ({ input }) => {
-                      await db.deleteCwProposta(input.id);
-                      return { success: true };
-                    }),
+    // Propostas (snapshots cliente-safe)
+    listPropostas: adminProcedure
+      .input(z.object({ cotacaoId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.listCwPropostas(input.cotacaoId);
+      }),
+    getProposta: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const p = await db.getCwPropostaById(input.id);
+        if (!p) return null;
+        return { ...p, snapshot: JSON.parse(p.snapshotJson) as db.PropostaSnapshot };
+      }),
+    generateProposta: adminProcedure
+      .input(
+        z.object({
+          cotacaoId: z.number(),
+          titulo: z.string().optional().nullable(),
+          validadeData: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+        return await db.generateCwProposta(
+          input.cotacaoId,
+          ctx.user.id,
+          input.titulo ?? null,
+          input.validadeData ?? null
+        );
+      }),
+    deleteProposta: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCwProposta(input.id);
+        return { success: true };
       }),
   }),
 });
