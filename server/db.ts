@@ -1106,7 +1106,7 @@ export async function createProperty(data: any) {
       city, state_region, country, postal_code,
       latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2, active, is_featured, mostrarNoSite, mostrarNaTv
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.name,
     data.slug,
@@ -3824,6 +3824,18 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
     console.warn(`[XploreTV:DB] Slow hydration: ${totalMs}ms — timings: ${JSON.stringify(timings)}`);
   }
 
+  return result;
+}
+
+// Lista todas as cotações do workspace (cw_cotacoes)
+export async function listCwCotacoes() {
+  const db = await getDb();
+  if (!db) return [];
+  // Importa o schema correto
+  // @ts-ignore
+  const { cwCotacoes } = await import("../drizzle/schema");
+  // Busca todas as cotações, ordenando por mais recente
+  const result = await db.select().from(cwCotacoes).orderBy(desc(cwCotacoes.criadoEm));
   return result;
 }
 
