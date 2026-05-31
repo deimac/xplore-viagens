@@ -159,10 +159,11 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
         setForm((f) => {
             const next = { ...f, ...p };
             // Validação: dataSaida não pode ser anterior a hoje
-            if (next.dataSaida) {
+            const datePart = splitDateTime(next.dataSaida).date;
+            if (datePart) {
                 const now = new Date();
                 now.setHours(0, 0, 0, 0);
-                const d = new Date(next.dataSaida);
+                const d = new Date(datePart);
                 if (d < now) {
                     setDateError("A data de ida não pode ser anterior a hoje.");
                 } else {
@@ -182,9 +183,31 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
     }
     function joinDateTime(date: string, time: string) {
         if (!date && !time) return "";
-        // Se já existe hora válida, mantém, senão usa 00:00
-        let t = time && /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
-        return `${date}${date ? "T" + t : ""}`;
+        if (!date) return `T${time}`;
+        if (!time) return date;
+        return `${date}T${time}`;
+    }
+    function normalizeDatetimeForSubmit(dt: string): string {
+        if (!dt) return "";
+        const { date, time } = splitDateTime(dt);
+        if (!date) return "";
+        let t = time;
+        if (!t) t = "00:00";
+        else if (/^\d{2}$/.test(t)) t = `${t}:00`;
+        else if (!/^\d{2}:\d{2}$/.test(t)) t = "00:00";
+        return `${date}T${t}`;
+    }
+    function prepareFormForSubmit(f: PecaForm): PecaForm {
+        return {
+            ...f,
+            dataSaida: normalizeDatetimeForSubmit(f.dataSaida),
+            dataChegada: normalizeDatetimeForSubmit(f.dataChegada),
+            segmentos: f.segmentos.map((s) => ({
+                ...s,
+                saida: normalizeDatetimeForSubmit(s.saida),
+                chegada: normalizeDatetimeForSubmit(s.chegada),
+            })),
+        };
     }
     const patchSeg = (idx: number, p: Partial<Segmento>) =>
         setForm((f) => {
@@ -201,10 +224,11 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
 
     // Validação após extração IA ou edição inicial
     useEffect(() => {
-        if (form.dataSaida) {
+        const datePart = splitDateTime(form.dataSaida).date;
+        if (datePart) {
             const now = new Date();
             now.setHours(0, 0, 0, 0);
-            const d = new Date(form.dataSaida);
+            const d = new Date(datePart);
             if (d < now) {
                 setDateError("A data de ida não pode ser anterior a hoje.");
             } else {
@@ -568,7 +592,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancelar
                     </Button>
-                    <Button onClick={() => onSubmit(form)} disabled={isSubmitting || !!dateError}>
+                    <Button onClick={() => onSubmit(prepareFormForSubmit(form))} disabled={isSubmitting || !!dateError}>
                         {isSubmitting ? "Salvando..." : editingId ? "Salvar alterações" : "Criar peça"}
                     </Button>
                 </SheetFooter>
