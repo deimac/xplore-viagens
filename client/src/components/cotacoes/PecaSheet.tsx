@@ -23,6 +23,7 @@ import {
 import { Plus, X, Plane, Banknote, ListChecks, Info } from "lucide-react";
 import type { PecaCompleta } from "./types";
 import { calcLucro, fmtCurrencyCompact } from "@/lib/cotacoes/calc";
+import { InputMask, maskHour } from "@/components/ui/InputMask";
 
 export type Segmento = {
     ordem: number;
@@ -154,6 +155,16 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
     }, [open, initialForm]);
 
     const patch = (p: Partial<PecaForm>) => setForm((f) => ({ ...f, ...p }));
+    // Helpers para data/hora
+    function splitDateTime(dt: string) {
+        if (!dt) return { date: "", time: "" };
+        const [d, t] = dt.split("T");
+        return { date: d ?? "", time: (t ?? "").slice(0, 5) };
+    }
+    function joinDateTime(date: string, time: string) {
+        if (!date && !time) return "";
+        return `${date}${time ? "T" + time : "T00:00"}`;
+    }
     const patchSeg = (idx: number, p: Partial<Segmento>) =>
         setForm((f) => {
             const segs = [...f.segmentos];
@@ -220,18 +231,40 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                 <Field label="Destino">
                                     <Input value={form.destino} onChange={(e) => patch({ destino: e.target.value })} />
                                 </Field>
-                                <Field label="Saída">
+                                <Field label="Data saída">
                                     <Input
-                                        type="datetime-local"
-                                        value={form.dataSaida}
-                                        onChange={(e) => patch({ dataSaida: e.target.value })}
+                                        type="date"
+                                        value={splitDateTime(form.dataSaida).date}
+                                        onChange={e => patch({ dataSaida: joinDateTime(e.target.value, splitDateTime(form.dataSaida).time) })}
                                     />
                                 </Field>
-                                <Field label="Chegada">
+                                <Field label="Hora saída">
+                                    <InputMask
+                                        type="text"
+                                        inputMode="numeric"
+                                        mask={maskHour}
+                                        maxLength={5}
+                                        placeholder="HH:MM"
+                                        value={splitDateTime(form.dataSaida).time}
+                                        onChange={e => patch({ dataSaida: joinDateTime(splitDateTime(form.dataSaida).date, e.target.value) })}
+                                    />
+                                </Field>
+                                <Field label="Data chegada">
                                     <Input
-                                        type="datetime-local"
-                                        value={form.dataChegada}
-                                        onChange={(e) => patch({ dataChegada: e.target.value })}
+                                        type="date"
+                                        value={splitDateTime(form.dataChegada).date}
+                                        onChange={e => patch({ dataChegada: joinDateTime(e.target.value, splitDateTime(form.dataChegada).time) })}
+                                    />
+                                </Field>
+                                <Field label="Hora chegada">
+                                    <InputMask
+                                        type="text"
+                                        inputMode="numeric"
+                                        mask={maskHour}
+                                        maxLength={5}
+                                        placeholder="HH:MM"
+                                        value={splitDateTime(form.dataChegada).time}
+                                        onChange={e => patch({ dataChegada: joinDateTime(splitDateTime(form.dataChegada).date, e.target.value) })}
                                     />
                                 </Field>
                                 <Field label="Companhias">
@@ -250,11 +283,18 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     />
                                 </Field>
                                 <Field label="Classe">
-                                    <Input
+                                    <Select
                                         value={form.classe}
-                                        onChange={(e) => patch({ classe: e.target.value })}
-                                        placeholder="Econômica, Executiva..."
-                                    />
+                                        onValueChange={(v) => patch({ classe: v })}
+                                    >
+                                        <SelectTrigger className="h-8 w-full text-sm" />
+                                        <SelectContent>
+                                            <SelectItem value="Econômica">Econômica</SelectItem>
+                                            <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
+                                            <SelectItem value="Executiva">Executiva</SelectItem>
+                                            <SelectItem value="Primeira">Primeira</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </Field>
                                 <Field label="Bagagem">
                                     <Input
@@ -332,8 +372,8 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                             {lucro != null && (
                                 <div
                                     className={`rounded-md border p-3 text-sm ${lucro >= 0
-                                            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                                            : "bg-rose-50 border-rose-200 text-rose-800"
+                                        ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                                        : "bg-rose-50 border-rose-200 text-rose-800"
                                         }`}
                                 >
                                     <span className="font-medium">Lucro previsto:</span>{" "}
@@ -417,20 +457,45 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                                 onChange={(e) => patchSeg(idx, { numeroVoo: e.target.value })}
                                             />
                                             <Input
-                                                type="datetime-local"
-                                                value={s.saida}
-                                                onChange={(e) => patchSeg(idx, { saida: e.target.value })}
+                                                type="date"
+                                                value={splitDateTime(s.saida).date}
+                                                onChange={e => patchSeg(idx, { saida: joinDateTime(e.target.value, splitDateTime(s.saida).time) })}
+                                            />
+                                            <InputMask
+                                                type="text"
+                                                inputMode="numeric"
+                                                mask={maskHour}
+                                                maxLength={5}
+                                                placeholder="HH:MM"
+                                                value={splitDateTime(s.saida).time}
+                                                onChange={e => patchSeg(idx, { saida: joinDateTime(splitDateTime(s.saida).date, e.target.value) })}
                                             />
                                             <Input
-                                                type="datetime-local"
-                                                value={s.chegada}
-                                                onChange={(e) => patchSeg(idx, { chegada: e.target.value })}
+                                                type="date"
+                                                value={splitDateTime(s.chegada).date}
+                                                onChange={e => patchSeg(idx, { chegada: joinDateTime(e.target.value, splitDateTime(s.chegada).time) })}
                                             />
-                                            <Input
-                                                placeholder="Classe"
+                                            <InputMask
+                                                type="text"
+                                                inputMode="numeric"
+                                                mask={maskHour}
+                                                maxLength={5}
+                                                placeholder="HH:MM"
+                                                value={splitDateTime(s.chegada).time}
+                                                onChange={e => patchSeg(idx, { chegada: joinDateTime(splitDateTime(s.chegada).date, e.target.value) })}
+                                            />
+                                            <Select
                                                 value={s.classe}
-                                                onChange={(e) => patchSeg(idx, { classe: e.target.value })}
-                                            />
+                                                onValueChange={(v) => patchSeg(idx, { classe: v })}
+                                            >
+                                                <SelectTrigger className="h-8 w-full text-xs" />
+                                                <SelectContent>
+                                                    <SelectItem value="Econômica">Econômica</SelectItem>
+                                                    <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
+                                                    <SelectItem value="Executiva">Executiva</SelectItem>
+                                                    <SelectItem value="Primeira">Primeira</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                             <Input
                                                 placeholder="Bagagem"
                                                 value={s.bagagem}
