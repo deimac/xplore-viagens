@@ -21,8 +21,10 @@ export interface ExtractedSegmento {
     aeroportoDestino?: string | null;
     cidadeOrigem?: string | null;
     cidadeDestino?: string | null;
-    saida?: string | null; // ISO datetime
-    chegada?: string | null;
+    dataSaida?: string | null;
+    horaSaida?: string | null;
+    dataChegada?: string | null;
+    horaChegada?: string | null;
     companhia?: string | null;
     numeroVoo?: string | null;
     classe?: string | null;
@@ -35,7 +37,9 @@ export interface ExtractedPeca {
     origem?: string | null;
     destino?: string | null;
     dataSaida?: string | null;
+    horaSaida?: string | null;
     dataChegada?: string | null;
+    horaChegada?: string | null;
     duracaoMinutos?: number | null;
     qtdConexoes?: number;
     companhias?: string | null;
@@ -53,8 +57,10 @@ const PECA_SCHEMA = {
         titulo: { type: ["string", "null"] },
         origem: { type: ["string", "null"], description: "Cidade ou aeroporto de origem da peça inteira" },
         destino: { type: ["string", "null"], description: "Cidade ou aeroporto de destino final da peça" },
-        dataSaida: { type: ["string", "null"], description: "ISO 8601 sem timezone, ex 2026-06-15T22:35" },
+        dataSaida: { type: ["string", "null"], description: "Data (YYYY-MM-DD)" },
+        horaSaida: { type: ["string", "null"], description: "Hora (HH:MM)" },
         dataChegada: { type: ["string", "null"] },
+        horaChegada: { type: ["string", "null"] },
         duracaoMinutos: { type: ["integer", "null"] },
         qtdConexoes: { type: "integer", minimum: 0 },
         companhias: { type: ["string", "null"], description: "Lista resumida de cias, ex 'Gol, TAP'" },
@@ -72,8 +78,10 @@ const PECA_SCHEMA = {
                     aeroportoDestino: { type: ["string", "null"] },
                     cidadeOrigem: { type: ["string", "null"] },
                     cidadeDestino: { type: ["string", "null"] },
-                    saida: { type: ["string", "null"] },
-                    chegada: { type: ["string", "null"] },
+                    dataSaida: { type: ["string", "null"] },
+                    horaSaida: { type: ["string", "null"] },
+                    dataChegada: { type: ["string", "null"] },
+                    horaChegada: { type: ["string", "null"] },
                     companhia: { type: ["string", "null"] },
                     numeroVoo: { type: ["string", "null"] },
                     classe: { type: ["string", "null"] },

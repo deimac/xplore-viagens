@@ -3912,10 +3912,10 @@ export async function getCwCotacaoFull(id: number): Promise<CwCotacaoFull | null
   const pecaIds = pecas.map((p) => p.id);
   const segmentos = pecaIds.length
     ? ((await database
-        .select()
-        .from(cwSegmentos)
-        .where(inArray(cwSegmentos.pecaId, pecaIds))
-        .orderBy(cwSegmentos.pecaId, cwSegmentos.ordem)) as CwSegmento[])
+      .select()
+      .from(cwSegmentos)
+      .where(inArray(cwSegmentos.pecaId, pecaIds))
+      .orderBy(cwSegmentos.pecaId, cwSegmentos.ordem)) as CwSegmento[])
     : [];
 
   const pecasComSegmentos: CwPecaComSegmentos[] = pecas.map((p) => ({
@@ -3932,10 +3932,10 @@ export async function getCwCotacaoFull(id: number): Promise<CwCotacaoFull | null
   const cenarioIds = cenarios.map((c) => c.id);
   const cenarioPecasRows = cenarioIds.length
     ? ((await database
-        .select()
-        .from(cwCenarioPecas)
-        .where(inArray(cwCenarioPecas.cenarioId, cenarioIds))
-        .orderBy(cwCenarioPecas.cenarioId, cwCenarioPecas.ordem)) as CwCenarioPeca[])
+      .select()
+      .from(cwCenarioPecas)
+      .where(inArray(cwCenarioPecas.cenarioId, cenarioIds))
+      .orderBy(cwCenarioPecas.cenarioId, cwCenarioPecas.ordem)) as CwCenarioPeca[])
     : [];
 
   const cenariosComPecas: CwCenarioComPecas[] = cenarios.map((c) => ({
@@ -4073,7 +4073,9 @@ export interface PropostaSnapshot {
       origem: string | null;
       destino: string | null;
       dataSaida: string | null;
+      horaSaida: string | null;
       dataChegada: string | null;
+      horaChegada: string | null;
       duracaoMinutos: number | null;
       qtdConexoes: number;
       companhias: string | null;
@@ -4086,8 +4088,10 @@ export interface PropostaSnapshot {
         aeroportoDestino: string | null;
         cidadeOrigem: string | null;
         cidadeDestino: string | null;
-        saida: string | null;
-        chegada: string | null;
+        dataSaida: string | null;
+        horaSaida: string | null;
+        dataChegada: string | null;
+        horaChegada: string | null;
         companhia: string | null;
         numeroVoo: string | null;
         classe: string | null;
