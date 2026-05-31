@@ -280,10 +280,17 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     <div className="text-xs text-red-600 font-medium -mt-2 mb-2">{dateError}</div>
                                 )}
                                 <Field label="Hora saída">
-                                    <Input
-                                        type="time"
+                                    <InputMask
+                                        type="text"
+                                        inputMode="numeric"
+                                        mask={maskHour}
+                                        maxLength={5}
+                                        placeholder="00:00"
                                         value={splitDateTime(form.dataSaida).time}
-                                        onChange={e => patch({ dataSaida: joinDateTime(splitDateTime(form.dataSaida).date, e.target.value) })}
+                                        onChange={e => {
+                                            const masked = maskHour(e.target.value);
+                                            patch({ dataSaida: joinDateTime(splitDateTime(form.dataSaida).date, masked) });
+                                        }}
                                     />
                                 </Field>
                                 <Field label="Data chegada">
@@ -294,10 +301,17 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     />
                                 </Field>
                                 <Field label="Hora chegada">
-                                    <Input
-                                        type="time"
+                                    <InputMask
+                                        type="text"
+                                        inputMode="numeric"
+                                        mask={maskHour}
+                                        maxLength={5}
+                                        placeholder="00:00"
                                         value={splitDateTime(form.dataChegada).time}
-                                        onChange={e => patch({ dataChegada: joinDateTime(splitDateTime(form.dataChegada).date, e.target.value) })}
+                                        onChange={e => {
+                                            const masked = maskHour(e.target.value);
+                                            patch({ dataChegada: joinDateTime(splitDateTime(form.dataChegada).date, masked) });
+                                        }}
                                     />
                                 </Field>
                                 <Field label="Companhias">
@@ -496,20 +510,34 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                                 value={splitDateTime(s.saida).date}
                                                 onChange={e => patchSeg(idx, { saida: joinDateTime(e.target.value, splitDateTime(s.saida).time) })}
                                             />
-                                            <Input
-                                                type="time"
+                                            <InputMask
+                                                type="text"
+                                                inputMode="numeric"
+                                                mask={maskHour}
+                                                maxLength={5}
+                                                placeholder="00:00"
                                                 value={splitDateTime(s.saida).time}
-                                                onChange={e => patchSeg(idx, { saida: joinDateTime(splitDateTime(s.saida).date, e.target.value) })}
+                                                onChange={e => {
+                                                    const masked = maskHour(e.target.value);
+                                                    patchSeg(idx, { saida: joinDateTime(splitDateTime(s.saida).date, masked) });
+                                                }}
                                             />
                                             <Input
                                                 type="date"
                                                 value={splitDateTime(s.chegada).date}
                                                 onChange={e => patchSeg(idx, { chegada: joinDateTime(e.target.value, splitDateTime(s.chegada).time) })}
                                             />
-                                            <Input
-                                                type="time"
+                                            <InputMask
+                                                type="text"
+                                                inputMode="numeric"
+                                                mask={maskHour}
+                                                maxLength={5}
+                                                placeholder="00:00"
                                                 value={splitDateTime(s.chegada).time}
-                                                onChange={e => patchSeg(idx, { chegada: joinDateTime(splitDateTime(s.chegada).date, e.target.value) })}
+                                                onChange={e => {
+                                                    const masked = maskHour(e.target.value);
+                                                    patchSeg(idx, { chegada: joinDateTime(splitDateTime(s.chegada).date, masked) });
+                                                }}
                                             />
                                             <Select
                                                 value={s.classe}
