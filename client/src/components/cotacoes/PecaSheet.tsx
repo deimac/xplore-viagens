@@ -149,12 +149,31 @@ interface Props {
 
 export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit, isSubmitting }: Props) {
     const [form, setForm] = useState<PecaForm>(initialForm);
+    const [dateError, setDateError] = useState<string | null>(null);
 
     useEffect(() => {
         if (open) setForm(initialForm);
     }, [open, initialForm]);
 
-    const patch = (p: Partial<PecaForm>) => setForm((f) => ({ ...f, ...p }));
+    const patch = (p: Partial<PecaForm>) => {
+        setForm((f) => {
+            const next = { ...f, ...p };
+            // Validação: dataSaida não pode ser anterior a hoje
+            if (next.dataSaida) {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                const d = new Date(next.dataSaida);
+                if (d < now) {
+                    setDateError("A data de ida não pode ser anterior a hoje.");
+                } else {
+                    setDateError(null);
+                }
+            } else {
+                setDateError(null);
+            }
+            return next;
+        });
+    };
     // Helpers para data/hora
     function splitDateTime(dt: string) {
         if (!dt) return { date: "", time: "" };
@@ -163,7 +182,9 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
     }
     function joinDateTime(date: string, time: string) {
         if (!date && !time) return "";
-        return `${date}${time ? "T" + time : "T00:00"}`;
+        // Se já existe hora válida, mantém, senão usa 00:00
+        let t = time && /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
+        return `${date}${date ? "T" + t : ""}`;
     }
     const patchSeg = (idx: number, p: Partial<Segmento>) =>
         setForm((f) => {
@@ -177,6 +198,22 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
         setForm((f) => ({ ...f, segmentos: [...f.segmentos, emptySegmento(f.segmentos.length)] }));
 
     const lucro = calcLucro(form.custo, form.venda);
+
+    // Validação após extração IA ou edição inicial
+    useEffect(() => {
+        if (form.dataSaida) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const d = new Date(form.dataSaida);
+            if (d < now) {
+                setDateError("A data de ida não pode ser anterior a hoje.");
+            } else {
+                setDateError(null);
+            }
+        } else {
+            setDateError(null);
+        }
+    }, [form.dataSaida]);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -234,17 +271,21 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                 <Field label="Data saída">
                                     <Input
                                         type="date"
+                                        min={new Date().toISOString().slice(0, 10)}
                                         value={splitDateTime(form.dataSaida).date}
                                         onChange={e => patch({ dataSaida: joinDateTime(e.target.value, splitDateTime(form.dataSaida).time) })}
                                     />
                                 </Field>
+                                {dateError && (
+                                    <div className="text-xs text-red-600 font-medium -mt-2 mb-2">{dateError}</div>
+                                )}
                                 <Field label="Hora saída">
                                     <InputMask
                                         type="text"
                                         inputMode="numeric"
                                         mask={maskHour}
                                         maxLength={5}
-                                        placeholder="HH:MM"
+                                        placeholder="00:00"
                                         value={splitDateTime(form.dataSaida).time}
                                         onChange={e => patch({ dataSaida: joinDateTime(splitDateTime(form.dataSaida).date, e.target.value) })}
                                     />
@@ -262,7 +303,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                         inputMode="numeric"
                                         mask={maskHour}
                                         maxLength={5}
-                                        placeholder="HH:MM"
+                                        placeholder="00:00"
                                         value={splitDateTime(form.dataChegada).time}
                                         onChange={e => patch({ dataChegada: joinDateTime(splitDateTime(form.dataChegada).date, e.target.value) })}
                                     />
@@ -466,7 +507,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                                 inputMode="numeric"
                                                 mask={maskHour}
                                                 maxLength={5}
-                                                placeholder="HH:MM"
+                                                placeholder="00:00"
                                                 value={splitDateTime(s.saida).time}
                                                 onChange={e => patchSeg(idx, { saida: joinDateTime(splitDateTime(s.saida).date, e.target.value) })}
                                             />
@@ -480,7 +521,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                                 inputMode="numeric"
                                                 mask={maskHour}
                                                 maxLength={5}
-                                                placeholder="HH:MM"
+                                                placeholder="00:00"
                                                 value={splitDateTime(s.chegada).time}
                                                 onChange={e => patchSeg(idx, { chegada: joinDateTime(splitDateTime(s.chegada).date, e.target.value) })}
                                             />
@@ -513,7 +554,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancelar
                     </Button>
-                    <Button onClick={() => onSubmit(form)} disabled={isSubmitting}>
+                    <Button onClick={() => onSubmit(form)} disabled={isSubmitting || !!dateError}>
                         {isSubmitting ? "Salvando..." : editingId ? "Salvar alterações" : "Criar peça"}
                     </Button>
                 </SheetFooter>
