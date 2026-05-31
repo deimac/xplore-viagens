@@ -37,25 +37,36 @@ export function ImportIaDialog({
     const [texto, setTexto] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Drag-and-drop state
+
+    // Drag-and-drop global para o modal
     const [dragActive, setDragActive] = useState(false);
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(true);
-    };
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-    };
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-        const f = e.dataTransfer.files?.[0];
-        if (f) onExtractImage(f);
-    };
+    // Adiciona/remover listeners globais quando o modal está aberto
+    React.useEffect(() => {
+        if (!open) return;
+        const handleWindowDragOver = (e: DragEvent) => {
+            e.preventDefault();
+            setDragActive(true);
+        };
+        const handleWindowDrop = (e: DragEvent) => {
+            e.preventDefault();
+            setDragActive(false);
+            if (e.dataTransfer?.files?.length) {
+                const f = e.dataTransfer.files[0];
+                if (f) onExtractImage(f);
+            }
+        };
+        const handleWindowDragLeave = (e: DragEvent) => {
+            setDragActive(false);
+        };
+        window.addEventListener("dragover", handleWindowDragOver);
+        window.addEventListener("drop", handleWindowDrop);
+        window.addEventListener("dragleave", handleWindowDragLeave);
+        return () => {
+            window.removeEventListener("dragover", handleWindowDragOver);
+            window.removeEventListener("drop", handleWindowDrop);
+            window.removeEventListener("dragleave", handleWindowDragLeave);
+        };
+    }, [open, onExtractImage]);
 
     return (
         <Dialog
@@ -133,14 +144,13 @@ export function ImportIaDialog({
                         />
                         <div
                             className={`rounded-lg border-2 border-dashed p-8 text-center space-y-3 transition-colors ${dragActive ? "border-primary bg-primary/10" : ""}`}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
                         >
                             <Upload className="h-10 w-10 text-muted-foreground mx-auto" />
-                            <div className="text-sm text-muted-foreground">
-                                PNG, JPG, WEBP ou GIF<br />
-                                <span className="font-medium text-primary">Arraste a imagem aqui</span> ou
+                            <div className="text-base font-semibold text-primary mb-1">
+                                Arraste a imagem aqui para importar
+                            </div>
+                            <div className="text-sm text-muted-foreground mb-2">
+                                PNG, JPG, WEBP ou GIF
                             </div>
                             <Button
                                 onClick={() => fileInputRef.current?.click()}
@@ -159,6 +169,13 @@ export function ImportIaDialog({
                                     </>
                                 )}
                             </Button>
+                            {dragActive && (
+                                <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+                                    <div className="bg-primary/80 text-white text-lg font-bold px-8 py-6 rounded-2xl shadow-xl border-4 border-white animate-pulse">
+                                        Solte a imagem para importar
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </TabsContent>
                 </Tabs>
