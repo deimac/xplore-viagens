@@ -280,12 +280,8 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     <div className="text-xs text-red-600 font-medium -mt-2 mb-2">{dateError}</div>
                                 )}
                                 <Field label="Hora saída">
-                                    <InputMask
-                                        type="text"
-                                        inputMode="numeric"
-                                        mask={maskHour}
-                                        maxLength={5}
-                                        placeholder="00:00"
+                                    <Input
+                                        type="time"
                                         value={splitDateTime(form.dataSaida).time}
                                         onChange={e => patch({ dataSaida: joinDateTime(splitDateTime(form.dataSaida).date, e.target.value) })}
                                     />
@@ -298,12 +294,8 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     />
                                 </Field>
                                 <Field label="Hora chegada">
-                                    <InputMask
-                                        type="text"
-                                        inputMode="numeric"
-                                        mask={maskHour}
-                                        maxLength={5}
-                                        placeholder="00:00"
+                                    <Input
+                                        type="time"
                                         value={splitDateTime(form.dataChegada).time}
                                         onChange={e => patch({ dataChegada: joinDateTime(splitDateTime(form.dataChegada).date, e.target.value) })}
                                     />
@@ -328,7 +320,9 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                         value={form.classe}
                                         onValueChange={(v) => patch({ classe: v })}
                                     >
-                                        <SelectTrigger className="h-8 w-full text-sm" />
+                                        <SelectTrigger className="h-8 w-full text-sm">
+                                            <SelectValue placeholder="Selecione a classe" />
+                                        </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Econômica">Econômica</SelectItem>
                                             <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
@@ -502,12 +496,8 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                                 value={splitDateTime(s.saida).date}
                                                 onChange={e => patchSeg(idx, { saida: joinDateTime(e.target.value, splitDateTime(s.saida).time) })}
                                             />
-                                            <InputMask
-                                                type="text"
-                                                inputMode="numeric"
-                                                mask={maskHour}
-                                                maxLength={5}
-                                                placeholder="00:00"
+                                            <Input
+                                                type="time"
                                                 value={splitDateTime(s.saida).time}
                                                 onChange={e => patchSeg(idx, { saida: joinDateTime(splitDateTime(s.saida).date, e.target.value) })}
                                             />
@@ -516,12 +506,8 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                                 value={splitDateTime(s.chegada).date}
                                                 onChange={e => patchSeg(idx, { chegada: joinDateTime(e.target.value, splitDateTime(s.chegada).time) })}
                                             />
-                                            <InputMask
-                                                type="text"
-                                                inputMode="numeric"
-                                                mask={maskHour}
-                                                maxLength={5}
-                                                placeholder="00:00"
+                                            <Input
+                                                type="time"
                                                 value={splitDateTime(s.chegada).time}
                                                 onChange={e => patchSeg(idx, { chegada: joinDateTime(splitDateTime(s.chegada).date, e.target.value) })}
                                             />
