@@ -2,6 +2,7 @@ import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer, Plane } from "lucide-react";
+import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
 
 function fmtCurrency(v: number | null | undefined): string {
     if (v == null) return "Sob consulta";
@@ -157,9 +158,10 @@ export default function PropostaViewPage() {
                                                             <div className="text-xs text-muted-foreground">{p.destino || p.segmentos[p.segmentos.length - 1]?.aeroportoDestino || ""}</div>
                                                         </div>
                                                     </div>
-                                                    {p.bagagem && (
+                                                    {fmtBagagemPeca(p) && (
                                                         <div className="text-xs">
-                                                            <span className="text-muted-foreground">Bagagem:</span> <span className="font-medium">{p.bagagem}</span>
+                                                            <span className="text-muted-foreground">Bagagem:</span>{" "}
+                                                            <span className="font-medium">{fmtBagagemPeca(p)}</span>
                                                         </div>
                                                     )}
                                                 </div>

@@ -1,6 +1,7 @@
 // Cálculos e formatadores compartilhados do Workspace de Cotações.
 
 import type { PecaCompleta, CenarioCompleto } from "@/components/cotacoes/types";
+import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
 
 export function toNumber(v: string | number | null | undefined): number | null {
     if (v == null || v === "") return null;
@@ -114,7 +115,8 @@ export function calcCenarioTotais(cenario: CenarioCompleto, pecasById: Map<numbe
             tempoMinutos += dur;
             temTempo = true;
         }
-        if (p.bagagem) bagagemSet.add(p.bagagem);
+        const bagagemResumo = fmtBagagemPeca(p);
+        if (bagagemResumo) bagagemSet.add(bagagemResumo);
         if (p.companhias) {
             p.companhias.split(/[,/+]/).forEach((c) => {
                 const t = c.trim();
@@ -155,7 +157,7 @@ export function matchesText(p: PecaCompleta, term: string): boolean {
         p.companhias,
         p.fonte,
         p.classe,
-        p.bagagem,
+        fmtBagagemPeca(p),
         ...p.segmentos.flatMap((s) => [s.aeroportoOrigem, s.aeroportoDestino, s.companhia, s.numeroVoo]),
     ]
         .filter(Boolean)

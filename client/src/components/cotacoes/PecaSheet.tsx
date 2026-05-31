@@ -28,6 +28,7 @@ import {
     splitIsoDatetime,
     splitStoredDatetime,
 } from "@/lib/cotacoes/datetimeForm";
+import { normalizeBagagemCounts } from "@/lib/cotacoes/bagagem";
 
 export type Segmento = {
     ordem: number;
@@ -56,7 +57,9 @@ export type PecaForm = {
     dataChegadaTime: string;
     qtdConexoes: number;
     companhias: string;
-    bagagem: string;
+    itemPessoal: number;
+    bagagemMao: number;
+    bagagemDespachada: number;
     classe: string;
     tipoFinanceiro: "milhas" | "pagante" | "misto";
     custo: number | "";
@@ -95,7 +98,9 @@ export const emptyPeca = (): PecaForm => ({
     dataChegadaTime: "",
     qtdConexoes: 0,
     companhias: "",
-    bagagem: "",
+    itemPessoal: 1,
+    bagagemMao: 0,
+    bagagemDespachada: 0,
     classe: "",
     tipoFinanceiro: "pagante",
     custo: "",
@@ -120,7 +125,11 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
         dataChegadaTime: chegada.time,
         qtdConexoes: p.qtdConexoes ?? 0,
         companhias: p.companhias ?? "",
-        bagagem: p.bagagem ?? "",
+        ...normalizeBagagemCounts({
+            itemPessoal: p.itemPessoal,
+            bagagemMao: p.bagagemMao,
+            bagagemDespachada: p.bagagemDespachada,
+        }),
         classe: p.classe ?? "",
         tipoFinanceiro: p.tipoFinanceiro,
         custo: p.custo != null ? Number(p.custo) : "",
@@ -348,13 +357,47 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                         </SelectContent>
                                     </Select>
                                 </Field>
-                                <Field label="Bagagem">
-                                    <Input
-                                        value={form.bagagem}
-                                        onChange={(e) => patch({ bagagem: e.target.value })}
-                                        placeholder="23kg + 10kg"
-                                    />
+                                <div className="col-span-2">
+                                    <Field label="Bagagem">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Item pessoal</Label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                value={form.itemPessoal}
+                                                onChange={(e) =>
+                                                    patch({ itemPessoal: Math.max(0, Number(e.target.value) || 0) })
+                                                }
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Mão</Label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                value={form.bagagemMao}
+                                                onChange={(e) =>
+                                                    patch({ bagagemMao: Math.max(0, Number(e.target.value) || 0) })
+                                                }
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Despachada</Label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                value={form.bagagemDespachada}
+                                                onChange={(e) =>
+                                                    patch({
+                                                        bagagemDespachada: Math.max(0, Number(e.target.value) || 0),
+                                                    })
+                                                }
+                                            />
+                                        </div>
+                                    </div>
                                 </Field>
+                                </div>
                             </div>
                             <Field label="Observações">
                                 <Textarea
@@ -599,7 +642,11 @@ export function extractedToPecaForm(extracted: Record<string, unknown>): PecaFor
             (extracted.qtdConexoes as number) ??
             (segmentos.length > 0 ? Math.max(0, segmentos.length - 1) : 0),
         companhias: (extracted.companhias as string) ?? "",
-        bagagem: (extracted.bagagem as string) ?? "",
+        ...normalizeBagagemCounts({
+            itemPessoal: extracted.itemPessoal as number | null | undefined,
+            bagagemMao: extracted.bagagemMao as number | null | undefined,
+            bagagemDespachada: extracted.bagagemDespachada as number | null | undefined,
+        }),
         classe: (extracted.classe as string) ?? "",
         tipoFinanceiro: "pagante",
         custo: "",

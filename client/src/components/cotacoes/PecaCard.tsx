@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { PecaCompleta } from "./types";
 import { TIPO_FINANCEIRO_LABEL } from "./types";
+import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
 import {
     calcLucro,
     fmtCurrencyCompact,
@@ -142,10 +143,10 @@ export function PecaCard({
                             <Shuffle className="h-3 w-3" />
                             {peca.qtdConexoes} con
                         </span>
-                        {peca.bagagem && (
+                        {fmtBagagemPeca(peca) && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80 truncate max-w-[140px]">
                                 <Luggage className="h-3 w-3" />
-                                <span className="truncate">{peca.bagagem}</span>
+                                <span className="truncate">{fmtBagagemPeca(peca)}</span>
                             </span>
                         )}
                         {peca.companhias && (

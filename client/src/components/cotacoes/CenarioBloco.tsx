@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Plane, Clock, Luggage, X, GripVertical, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PecaCompleta, CenarioPecaLink } from "./types";
+import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
 import { fmtTime, fmtDuration, pecaDurationMinutes } from "@/lib/cotacoes/calc";
 
 interface Props {
@@ -77,10 +78,10 @@ export function CenarioBloco({ link, peca, cenarioId, ordem, onRemove, onClick }
                             </span>
                         )}
                         {peca.qtdConexoes > 0 && <span>· {peca.qtdConexoes} con</span>}
-                        {peca.bagagem && (
+                        {fmtBagagemPeca(peca) && (
                             <span className="inline-flex items-center gap-0.5 truncate max-w-[140px]">
                                 <Luggage className="h-3 w-3" />
-                                <span className="truncate">{peca.bagagem}</span>
+                                <span className="truncate">{fmtBagagemPeca(peca)}</span>
                             </span>
                         )}
                     </div>

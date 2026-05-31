@@ -39,7 +39,9 @@ export interface ExtractedPeca {
     duracaoMinutos?: number | null;
     qtdConexoes?: number;
     companhias?: string | null;
-    bagagem?: string | null;
+    itemPessoal?: number | null;
+    bagagemMao?: number | null;
+    bagagemDespachada?: number | null;
     classe?: string | null;
     observacoes?: string | null;
     segmentos: ExtractedSegmento[];
@@ -58,7 +60,21 @@ const PECA_SCHEMA = {
         duracaoMinutos: { type: ["integer", "null"] },
         qtdConexoes: { type: "integer", minimum: 0 },
         companhias: { type: ["string", "null"], description: "Lista resumida de cias, ex 'Gol, TAP'" },
-        bagagem: { type: ["string", "null"] },
+        itemPessoal: {
+            type: ["integer", "null"],
+            minimum: 0,
+            description: "Quantidade de item pessoal (mochila/bolsa pequena). Use 1 se incluso e não especificado.",
+        },
+        bagagemMao: {
+            type: ["integer", "null"],
+            minimum: 0,
+            description: "Quantidade de bagagens de mão (carry-on)",
+        },
+        bagagemDespachada: {
+            type: ["integer", "null"],
+            minimum: 0,
+            description: "Quantidade de bagagens despachadas (porão)",
+        },
         classe: { type: ["string", "null"] },
         observacoes: { type: ["string", "null"] },
         segmentos: {
@@ -98,7 +114,12 @@ Regras:
 - "ordem" dos segmentos começa em 0 e é sequencial.
 - "qtdConexoes" = quantidade de segmentos - 1.
 - Campos não identificáveis devem ser null (não invente).
-- Bagagem: extraia exatamente como aparece (ex: "23kg + 10kg", "1 mala 23kg").
+- Bagagem: informe QUANTIDADES inteiras em itemPessoal, bagagemMao e bagagemDespachada.
+  - itemPessoal: mochila/item pessoal (padrão 1 se incluso e não especificado).
+  - bagagemMao: malas de mão / carry-on.
+  - bagagemDespachada: malas despachadas / porão.
+  - Ex.: "1 mala 23kg + 1 mão" → itemPessoal=1, bagagemMao=1, bagagemDespachada=1.
+  - Se não houver bagagem inclusa, use 0 nos campos correspondentes.
 - Companhia: nome completo se possível (ex: "Gol", "TAP Air Portugal", "Latam").
 - Se a imagem/texto tiver múltiplos itinerários distintos (ex: ida e volta separadas), extraia apenas o PRIMEIRO/PRINCIPAL como uma peça única; a peça deve ser unidade indivisível.
 - "confianca" 0-1: avalie sua certeza da extração.
@@ -109,6 +130,16 @@ export interface Extractor {
     name: string;
     fromText: (text: string) => Promise<ExtractedPeca>;
     fromImage: (imageDataUrl: string) => Promise<ExtractedPeca>;
+}
+
+function normalizeExtractedPeca(parsed: ExtractedPeca): ExtractedPeca {
+    if (!Array.isArray(parsed.segmentos)) parsed.segmentos = [];
+    return {
+        ...parsed,
+        itemPessoal: parsed.itemPessoal ?? 1,
+        bagagemMao: parsed.bagagemMao ?? 0,
+        bagagemDespachada: parsed.bagagemDespachada ?? 0,
+    };
 }
 
 function parseStructuredOutput(content: unknown): ExtractedPeca {
@@ -123,8 +154,7 @@ function parseStructuredOutput(content: unknown): ExtractedPeca {
     if (!text) throw new Error("LLM retornou conteúdo vazio");
     try {
         const parsed = JSON.parse(text) as ExtractedPeca;
-        if (!Array.isArray(parsed.segmentos)) parsed.segmentos = [];
-        return parsed;
+        return normalizeExtractedPeca(parsed);
     } catch (err) {
         throw new Error(`Falha ao parsear JSON da extração: ${(err as Error).message}`);
     }

@@ -388,8 +388,10 @@ export const cwPecas = mysqlTable("cw_pecas", {
   duracaoMinutos: int("duracao_minutos"),
   qtdConexoes: int("qtd_conexoes").default(0).notNull(),
   companhias: varchar("companhias", { length: 255 }),
-  bagagem: varchar("bagagem", { length: 255 }),
   classe: varchar("classe", { length: 40 }),
+  itemPessoal: int("item_pessoal").default(1).notNull(),
+  bagagemMao: int("bagagem_mao").default(0).notNull(),
+  bagagemDespachada: int("bagagem_despachada").default(0).notNull(),
   tipoFinanceiro: mysqlEnum("tipo_financeiro", ["milhas", "pagante", "misto"])
     .default("pagante")
     .notNull(),
