@@ -58,10 +58,7 @@ export default function DeleteConfirmDialog({
                     <Button
                         type="button"
                         variant="destructive"
-                        onClick={() => {
-                            onConfirm();
-                            onOpenChange(false);
-                        }}
+                        onClick={onConfirm}
                         disabled={isLoading}
                     >
                         {isLoading ? "Excluindo..." : "Excluir"}

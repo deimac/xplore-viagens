@@ -38,10 +38,14 @@ import {
     type PecaForm,
 } from "@/components/cotacoes/PecaSheet";
 import { PecaCard } from "@/components/cotacoes/PecaCard";
-import type {
-    CenarioCompleto,
-    PecaCompleta,
-} from "@/components/cotacoes/types";
+import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
+import type { CenarioCompleto, PecaCompleta } from "@/components/cotacoes/types";
+
+type DeleteTarget =
+    | { type: "peca-library"; peca: PecaCompleta }
+    | { type: "peca-cenario"; linkId: number; label: string; cenarioNome: string }
+    | { type: "cenario"; cenario: CenarioCompleto }
+    | { type: "proposta"; id: number; titulo: string };
 
 interface CotacaoEditState {
     open: boolean;
@@ -109,6 +113,9 @@ export default function CotacaoDetailPage() {
     const [propostaOpen, setPropostaOpen] = useState(false);
     const [cotacaoEdit, setCotacaoEdit] = useState<CotacaoEditState>(emptyCotacaoEdit);
     const [activeDragPecaId, setActiveDragPecaId] = useState<number | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+
+    const closeDeleteDialog = () => setDeleteTarget(null);
 
     const invalidate = () => {
         utils.cotacoesWorkspace.getFull.invalidate({ id: cotacaoId });
@@ -142,9 +149,11 @@ export default function CotacaoDetailPage() {
     });
     const deletePeca = trpc.cotacoesWorkspace.deletePeca.useMutation({
         onSuccess: () => {
-            toast.success("Peça removida");
+            toast.success("Peça excluída");
             invalidate();
+            closeDeleteDialog();
         },
+        onError: (e) => toast.error(e.message),
     });
     const reorderPecas = trpc.cotacoesWorkspace.reorderPecas.useMutation({ onSuccess: invalidate });
 
@@ -164,16 +173,23 @@ export default function CotacaoDetailPage() {
     });
     const deleteCenario = trpc.cotacoesWorkspace.deleteCenario.useMutation({
         onSuccess: () => {
-            toast.success("Cenário removido");
+            toast.success("Cenário excluído");
             invalidate();
+            closeDeleteDialog();
         },
+        onError: (e) => toast.error(e.message),
     });
     const addPecaMut = trpc.cotacoesWorkspace.addPecaToCenario.useMutation({
         onSuccess: invalidate,
         onError: (e) => toast.error(e.message),
     });
     const removePecaMut = trpc.cotacoesWorkspace.removePecaFromCenario.useMutation({
-        onSuccess: invalidate,
+        onSuccess: () => {
+            toast.success("Peça removida do cenário");
+            invalidate();
+            closeDeleteDialog();
+        },
+        onError: (e) => toast.error(e.message),
     });
     const reorderCenarioPecasMut = trpc.cotacoesWorkspace.reorderCenarioPecas.useMutation({
         onSuccess: invalidate,
@@ -205,7 +221,14 @@ export default function CotacaoDetailPage() {
         },
         onError: (e) => toast.error(e.message),
     });
-    const deleteProposta = trpc.cotacoesWorkspace.deleteProposta.useMutation({ onSuccess: invalidate });
+    const deleteProposta = trpc.cotacoesWorkspace.deleteProposta.useMutation({
+        onSuccess: () => {
+            toast.success("Proposta excluída");
+            invalidate();
+            closeDeleteDialog();
+        },
+        onError: (e) => toast.error(e.message),
+    });
 
     // -------- Derivados --------
     const pecasById = useMemo(() => {
@@ -286,9 +309,86 @@ export default function CotacaoDetailPage() {
     };
 
     const handleDeletePeca = (peca: PecaCompleta) => {
-        if (!confirm(`Remover a peça "${peca.titulo || `${peca.origem}→${peca.destino}`}"? Será desvinculada de todos os cenários.`)) return;
-        deletePeca.mutate({ id: peca.id });
+        setDeleteTarget({
+            type: "peca-library",
+            peca,
+        });
     };
+
+    const handleRemovePecaFromCenario = (cenarioId: number, linkId: number) => {
+        const cenario = data?.cenarios.find((c) => c.id === cenarioId);
+        const link = cenario?.pecas.find((l) => l.id === linkId);
+        const peca = link ? pecasById.get(link.pecaId) : undefined;
+        const label = peca?.titulo || `${peca?.origem ?? "?"}→${peca?.destino ?? "?"}`;
+        setDeleteTarget({
+            type: "peca-cenario",
+            linkId,
+            label,
+            cenarioNome: cenario?.nome ?? "cenário",
+        });
+    };
+
+    const handleDeleteCenario = (c: CenarioCompleto) => {
+        setDeleteTarget({ type: "cenario", cenario: c });
+    };
+
+    const handleDeleteProposta = (id: number, titulo: string) => {
+        setDeleteTarget({ type: "proposta", id, titulo });
+    };
+
+    const confirmDelete = () => {
+        if (!deleteTarget) return;
+        switch (deleteTarget.type) {
+            case "peca-library":
+                deletePeca.mutate({ id: deleteTarget.peca.id });
+                break;
+            case "peca-cenario":
+                removePecaMut.mutate({ id: deleteTarget.linkId });
+                break;
+            case "cenario":
+                deleteCenario.mutate({ id: deleteTarget.cenario.id });
+                break;
+            case "proposta":
+                deleteProposta.mutate({ id: deleteTarget.id });
+                break;
+        }
+    };
+
+    const deleteDialogProps = (() => {
+        if (!deleteTarget) return null;
+        switch (deleteTarget.type) {
+            case "peca-library": {
+                const nome =
+                    deleteTarget.peca.titulo ||
+                    `${deleteTarget.peca.origem ?? "?"}→${deleteTarget.peca.destino ?? "?"}`;
+                return {
+                    title: "Excluir peça",
+                    description: `Excluir "${nome}"? A peça será removida da biblioteca e desvinculada de todos os cenários.`,
+                };
+            }
+            case "peca-cenario":
+                return {
+                    title: "Remover peça do cenário",
+                    description: `Remover "${deleteTarget.label}" do cenário "${deleteTarget.cenarioNome}"? A peça continuará na biblioteca.`,
+                };
+            case "cenario":
+                return {
+                    title: "Excluir cenário",
+                    description: `Excluir o cenário "${deleteTarget.cenario.nome}"? Os vínculos com peças serão removidos.`,
+                };
+            case "proposta":
+                return {
+                    title: "Excluir proposta",
+                    description: `Excluir a proposta "${deleteTarget.titulo}"? Esta ação não pode ser desfeita.`,
+                };
+        }
+    })();
+
+    const isDeleting =
+        deletePeca.isPending ||
+        removePecaMut.isPending ||
+        deleteCenario.isPending ||
+        deleteProposta.isPending;
 
     const handleAddPecaToCenario = (peca: PecaCompleta, cenarioId: number) => {
         if (!data) return;
@@ -335,11 +435,6 @@ export default function CotacaoDetailPage() {
 
     const handleEditCenario = (c: CenarioCompleto) =>
         setCenarioDialog({ open: true, editingId: c.id, nome: c.nome, descricao: c.descricao ?? "" });
-
-    const handleDeleteCenario = (c: CenarioCompleto) => {
-        if (!confirm(`Remover o cenário "${c.nome}"?`)) return;
-        deleteCenario.mutate({ id: c.id });
-    };
 
     const handleToggleSelecionado = (c: CenarioCompleto) =>
         updateCenario.mutate({
@@ -559,9 +654,9 @@ export default function CotacaoDetailPage() {
                                     <button
                                         type="button"
                                         title="Excluir proposta"
-                                        onClick={() => {
-                                            if (confirm("Excluir esta proposta?")) deleteProposta.mutate({ id: p.id });
-                                        }}
+                                        onClick={() =>
+                                            handleDeleteProposta(p.id, p.titulo || `#${p.id}`)
+                                        }
                                         className="text-rose-500 hover:text-rose-700"
                                     >
                                         <Trash2 className="h-3 w-3" />
@@ -594,7 +689,7 @@ export default function CotacaoDetailPage() {
                                 onEditCenario={handleEditCenario}
                                 onDeleteCenario={handleDeleteCenario}
                                 onToggleSelecionado={handleToggleSelecionado}
-                                onRemoveLink={(_cenarioId, linkId) => removePecaMut.mutate({ id: linkId })}
+                                onRemoveLink={handleRemovePecaFromCenario}
                                 onClickPeca={openEditPeca}
                             />
                             <ComparadorBar cenarios={cenarios} pecasById={pecasById} />
@@ -685,6 +780,17 @@ export default function CotacaoDetailPage() {
                 }}
                 isSubmitting={updateCotacao.isPending}
             />
+
+            {deleteDialogProps && (
+                <DeleteConfirmDialog
+                    open={deleteTarget != null}
+                    onOpenChange={(open) => !open && closeDeleteDialog()}
+                    title={deleteDialogProps.title}
+                    description={deleteDialogProps.description}
+                    onConfirm={confirmDelete}
+                    isLoading={isDeleting}
+                />
+            )}
         </AdminLayout>
     );
 }

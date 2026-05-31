@@ -87,10 +87,15 @@ export function CenarioBloco({ link, peca, cenarioId, ordem, onRemove, onClick }
                 </button>
 
                 <Button
+                    type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 m-1 text-muted-foreground/60 opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
-                    onClick={onRemove}
+                    className="h-7 w-7 m-1 shrink-0 text-muted-foreground/70 hover:text-destructive"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onRemove();
+                    }}
                     title="Remover do cenário"
                 >
                     <X className="h-3.5 w-3.5" />
