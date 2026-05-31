@@ -1106,7 +1106,7 @@ export async function createProperty(data: any) {
       city, state_region, country, postal_code,
       latitude, longitude, max_guests, bedrooms, beds, bathrooms, xp, area_m2, active, is_featured, mostrarNoSite, mostrarNaTv
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.name,
     data.slug,
@@ -2910,7 +2910,7 @@ export async function listXpAdminMovimentacoes(params: {
             m.id_users, u.name AS admin_nome,
             m.id_codigo, cd.codigo,
             m.id_tipo_movimentacao, t.nome AS tipo_nome, t.tipo_operacao,
-            m.xp, m.saldo_apos, m.descricao, m.codigo_ref, m.data_compra, m.valor_referencia, m.data_movimentacao,
+            m.xp, m.saldo_apos, m.descricao, m.codigo_ref, m.valor_referencia, m.data_compra, m.data_movimentacao,
             DATE_ADD(m.data_movimentacao, INTERVAL t.dias_expiracao DAY) AS data_expiracao
      FROM xp_movimentacoes m
      JOIN clientes c ON c.id = m.id_cliente
@@ -3837,5 +3837,59 @@ export async function listCwCotacoes() {
   // Busca todas as cotações, ordenando por mais recente
   const result = await db.select().from(cwCotacoes).orderBy(desc(cwCotacoes.criadoEm));
   return result;
+}
+
+// Retorna cotação completa: cotacao, pecas (com segmentos), cenarios (com links de peças) do workspace.
+export async function getCwCotacaoFull(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  // Importa os schemas
+  // @ts-ignore
+  const { cwCotacoes, cwPecas, cwSegmentos, cwCenarios, cwCenarioPecas } = await import("../drizzle/schema");
+
+  // Busca cotação
+  const cotacaoArr = await db.select().from(cwCotacoes).where(eq(cwCotacoes.id, id)).limit(1);
+  if (!cotacaoArr.length) return null;
+  const cotacao = cotacaoArr[0];
+
+  // Busca peças da cotação
+  const pecas = await db.select().from(cwPecas).where(eq(cwPecas.cotacaoId, id));
+
+  // Busca segmentos de todas as peças
+  const pecaIds = pecas.map(p => p.id);
+  let segmentos: any[] = [];
+  if (pecaIds.length) {
+    segmentos = await db.select().from(cwSegmentos).where(inArray(cwSegmentos.pecaId, pecaIds));
+  }
+  // Agrupa segmentos por peça
+  const segmentosByPeca: Record<number, any[]> = {};
+  for (const seg of segmentos) {
+    if (!segmentosByPeca[seg.pecaId]) segmentosByPeca[seg.pecaId] = [];
+    segmentosByPeca[seg.pecaId].push(seg);
+  }
+  // Anexa segmentos às peças
+  const pecasComSegmentos = pecas.map(p => ({ ...p, segmentos: segmentosByPeca[p.id] || [] }));
+
+  // Busca cenários da cotação
+  const cenarios = await db.select().from(cwCenarios).where(eq(cwCenarios.cotacaoId, id));
+  const cenarioIds = cenarios.map(c => c.id);
+  let cenarioPecas: any[] = [];
+  if (cenarioIds.length) {
+    cenarioPecas = await db.select().from(cwCenarioPecas).where(inArray(cwCenarioPecas.cenarioId, cenarioIds));
+  }
+  // Agrupa links de peças por cenário
+  const pecasByCenario: Record<number, any[]> = {};
+  for (const link of cenarioPecas) {
+    if (!pecasByCenario[link.cenarioId]) pecasByCenario[link.cenarioId] = [];
+    pecasByCenario[link.cenarioId].push(link);
+  }
+  // Anexa links às cenários
+  const cenariosComPecas = cenarios.map(c => ({ ...c, pecas: pecasByCenario[c.id] || [] }));
+
+  return {
+    cotacao,
+    pecas: pecasComSegmentos,
+    cenarios: cenariosComPecas,
+  };
 }
 
