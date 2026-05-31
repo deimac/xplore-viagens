@@ -37,6 +37,26 @@ export function ImportIaDialog({
     const [texto, setTexto] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Drag-and-drop state
+    const [dragActive, setDragActive] = useState(false);
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(true);
+    };
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+    };
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) onExtractImage(f);
+    };
+
     return (
         <Dialog
             open={open}
@@ -111,9 +131,17 @@ export function ImportIaDialog({
                                 e.target.value = "";
                             }}
                         />
-                        <div className="rounded-lg border-2 border-dashed p-8 text-center space-y-3">
+                        <div
+                            className={`rounded-lg border-2 border-dashed p-8 text-center space-y-3 transition-colors ${dragActive ? "border-primary bg-primary/10" : ""}`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
                             <Upload className="h-10 w-10 text-muted-foreground mx-auto" />
-                            <div className="text-sm text-muted-foreground">PNG, JPG, WEBP ou GIF</div>
+                            <div className="text-sm text-muted-foreground">
+                                PNG, JPG, WEBP ou GIF<br />
+                                <span className="font-medium text-primary">Arraste a imagem aqui</span> ou
+                            </div>
                             <Button
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isExtractingImage}
