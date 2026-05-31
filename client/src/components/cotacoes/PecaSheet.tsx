@@ -23,7 +23,11 @@ import {
 import { Plus, X, Plane, Banknote, ListChecks, Info } from "lucide-react";
 import type { PecaCompleta } from "./types";
 import { calcLucro, fmtCurrencyCompact } from "@/lib/cotacoes/calc";
-import { InputMask, maskHour } from "@/components/ui/InputMask";
+import {
+    combineDateTimeForSubmit,
+    splitIsoDatetime,
+    splitStoredDatetime,
+} from "@/lib/cotacoes/datetimeForm";
 
 export type Segmento = {
     ordem: number;
@@ -31,8 +35,10 @@ export type Segmento = {
     aeroportoDestino: string;
     cidadeOrigem: string;
     cidadeDestino: string;
-    saida: string;
-    chegada: string;
+    saidaDate: string;
+    saidaTime: string;
+    chegadaDate: string;
+    chegadaTime: string;
     companhia: string;
     numeroVoo: string;
     classe: string;
@@ -44,8 +50,10 @@ export type PecaForm = {
     titulo: string;
     origem: string;
     destino: string;
-    dataSaida: string;
-    dataChegada: string;
+    dataSaidaDate: string;
+    dataSaidaTime: string;
+    dataChegadaDate: string;
+    dataChegadaTime: string;
     qtdConexoes: number;
     companhias: string;
     bagagem: string;
@@ -66,8 +74,10 @@ export const emptySegmento = (ordem = 0): Segmento => ({
     aeroportoDestino: "",
     cidadeOrigem: "",
     cidadeDestino: "",
-    saida: "",
-    chegada: "",
+    saidaDate: "",
+    saidaTime: "",
+    chegadaDate: "",
+    chegadaTime: "",
     companhia: "",
     numeroVoo: "",
     classe: "",
@@ -79,8 +89,10 @@ export const emptyPeca = (): PecaForm => ({
     titulo: "",
     origem: "",
     destino: "",
-    dataSaida: "",
-    dataChegada: "",
+    dataSaidaDate: "",
+    dataSaidaTime: "",
+    dataChegadaDate: "",
+    dataChegadaTime: "",
     qtdConexoes: 0,
     companhias: "",
     bagagem: "",
@@ -95,21 +107,17 @@ export const emptyPeca = (): PecaForm => ({
     segmentos: [],
 });
 
-export function toDatetimeLocal(value: string | Date | null | undefined): string {
-    if (!value) return "";
-    const d = typeof value === "string" ? new Date(value) : value;
-    if (isNaN(d.getTime())) return "";
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export function pecaToForm(p: PecaCompleta): PecaForm {
+    const saida = splitStoredDatetime(p.dataSaida);
+    const chegada = splitStoredDatetime(p.dataChegada);
     return {
         titulo: p.titulo ?? "",
         origem: p.origem ?? "",
         destino: p.destino ?? "",
-        dataSaida: toDatetimeLocal(p.dataSaida),
-        dataChegada: toDatetimeLocal(p.dataChegada),
+        dataSaidaDate: saida.date,
+        dataSaidaTime: saida.time,
+        dataChegadaDate: chegada.date,
+        dataChegadaTime: chegada.time,
         qtdConexoes: p.qtdConexoes ?? 0,
         companhias: p.companhias ?? "",
         bagagem: p.bagagem ?? "",
@@ -121,19 +129,39 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
         estrategia: p.estrategia ?? "",
         status: p.status,
         observacoes: p.observacoes ?? "",
-        segmentos: p.segmentos.map((s, i) => ({
-            ordem: s.ordem ?? i,
-            aeroportoOrigem: s.aeroportoOrigem ?? "",
-            aeroportoDestino: s.aeroportoDestino ?? "",
-            cidadeOrigem: s.cidadeOrigem ?? "",
-            cidadeDestino: s.cidadeDestino ?? "",
-            saida: toDatetimeLocal(s.saida),
-            chegada: toDatetimeLocal(s.chegada),
-            companhia: s.companhia ?? "",
-            numeroVoo: s.numeroVoo ?? "",
-            classe: s.classe ?? "",
-            bagagem: s.bagagem ?? "",
-            duracaoConexaoMinutos: s.duracaoConexaoMinutos ?? "",
+        segmentos: p.segmentos.map((s, i) => {
+            const segSaida = splitStoredDatetime(s.saida);
+            const segChegada = splitStoredDatetime(s.chegada);
+            return {
+                ordem: s.ordem ?? i,
+                aeroportoOrigem: s.aeroportoOrigem ?? "",
+                aeroportoDestino: s.aeroportoDestino ?? "",
+                cidadeOrigem: s.cidadeOrigem ?? "",
+                cidadeDestino: s.cidadeDestino ?? "",
+                saidaDate: segSaida.date,
+                saidaTime: segSaida.time,
+                chegadaDate: segChegada.date,
+                chegadaTime: segChegada.time,
+                companhia: s.companhia ?? "",
+                numeroVoo: s.numeroVoo ?? "",
+                classe: s.classe ?? "",
+                bagagem: s.bagagem ?? "",
+                duracaoConexaoMinutos: s.duracaoConexaoMinutos ?? "",
+            };
+        }),
+    };
+}
+
+/** Converte o formulário (campos separados) para payload com datetime ISO. */
+export function pecaFormToPayload(form: PecaForm) {
+    return {
+        ...form,
+        dataSaida: combineDateTimeForSubmit(form.dataSaidaDate, form.dataSaidaTime),
+        dataChegada: combineDateTimeForSubmit(form.dataChegadaDate, form.dataChegadaTime),
+        segmentos: form.segmentos.map((s) => ({
+            ...s,
+            saida: combineDateTimeForSubmit(s.saidaDate, s.saidaTime),
+            chegada: combineDateTimeForSubmit(s.chegadaDate, s.chegadaTime),
         })),
     };
 }
@@ -158,12 +186,10 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
     const patch = (p: Partial<PecaForm>) => {
         setForm((f) => {
             const next = { ...f, ...p };
-            // Validação: dataSaida não pode ser anterior a hoje
-            const datePart = splitDateTime(next.dataSaida).date;
-            if (datePart) {
+            if (next.dataSaidaDate) {
                 const now = new Date();
                 now.setHours(0, 0, 0, 0);
-                const d = new Date(datePart);
+                const d = new Date(next.dataSaidaDate);
                 if (d < now) {
                     setDateError("A data de ida não pode ser anterior a hoje.");
                 } else {
@@ -175,40 +201,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
             return next;
         });
     };
-    // Helpers para data/hora
-    function splitDateTime(dt: string) {
-        if (!dt) return { date: "", time: "" };
-        const [d, t] = dt.split("T");
-        return { date: d ?? "", time: (t ?? "").slice(0, 5) };
-    }
-    function joinDateTime(date: string, time: string) {
-        if (!date && !time) return "";
-        if (!date) return `T${time}`;
-        if (!time) return date;
-        return `${date}T${time}`;
-    }
-    function normalizeDatetimeForSubmit(dt: string): string {
-        if (!dt) return "";
-        const { date, time } = splitDateTime(dt);
-        if (!date) return "";
-        let t = time;
-        if (!t) t = "00:00";
-        else if (/^\d{2}$/.test(t)) t = `${t}:00`;
-        else if (!/^\d{2}:\d{2}$/.test(t)) t = "00:00";
-        return `${date}T${t}`;
-    }
-    function prepareFormForSubmit(f: PecaForm): PecaForm {
-        return {
-            ...f,
-            dataSaida: normalizeDatetimeForSubmit(f.dataSaida),
-            dataChegada: normalizeDatetimeForSubmit(f.dataChegada),
-            segmentos: f.segmentos.map((s) => ({
-                ...s,
-                saida: normalizeDatetimeForSubmit(s.saida),
-                chegada: normalizeDatetimeForSubmit(s.chegada),
-            })),
-        };
-    }
+
     const patchSeg = (idx: number, p: Partial<Segmento>) =>
         setForm((f) => {
             const segs = [...f.segmentos];
@@ -222,13 +215,11 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
 
     const lucro = calcLucro(form.custo, form.venda);
 
-    // Validação após extração IA ou edição inicial
     useEffect(() => {
-        const datePart = splitDateTime(form.dataSaida).date;
-        if (datePart) {
+        if (form.dataSaidaDate) {
             const now = new Date();
             now.setHours(0, 0, 0, 0);
-            const d = new Date(datePart);
+            const d = new Date(form.dataSaidaDate);
             if (d < now) {
                 setDateError("A data de ida não pode ser anterior a hoje.");
             } else {
@@ -237,7 +228,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
         } else {
             setDateError(null);
         }
-    }, [form.dataSaida]);
+    }, [form.dataSaidaDate]);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -296,46 +287,34 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     <Input
                                         type="date"
                                         min={new Date().toISOString().slice(0, 10)}
-                                        value={splitDateTime(form.dataSaida).date}
-                                        onChange={e => patch({ dataSaida: joinDateTime(e.target.value, splitDateTime(form.dataSaida).time) })}
+                                        value={form.dataSaidaDate}
+                                        onChange={(e) => patch({ dataSaidaDate: e.target.value })}
+                                    />
+                                </Field>
+                                <Field label="Hora saída">
+                                    <Input
+                                        type="time"
+                                        value={form.dataSaidaTime}
+                                        onChange={(e) => patch({ dataSaidaTime: e.target.value })}
                                     />
                                 </Field>
                                 {dateError && (
-                                    <div className="text-xs text-red-600 font-medium -mt-2 mb-2">{dateError}</div>
+                                    <div className="col-span-2 text-xs text-red-600 font-medium -mt-2">
+                                        {dateError}
+                                    </div>
                                 )}
-                                <Field label="Hora saída">
-                                    <InputMask
-                                        type="text"
-                                        inputMode="numeric"
-                                        mask={maskHour}
-                                        maxLength={5}
-                                        placeholder="00:00"
-                                        value={splitDateTime(form.dataSaida).time}
-                                        onChange={e => {
-                                            const masked = maskHour(e.target.value);
-                                            patch({ dataSaida: joinDateTime(splitDateTime(form.dataSaida).date, masked) });
-                                        }}
-                                    />
-                                </Field>
                                 <Field label="Data chegada">
                                     <Input
                                         type="date"
-                                        value={splitDateTime(form.dataChegada).date}
-                                        onChange={e => patch({ dataChegada: joinDateTime(e.target.value, splitDateTime(form.dataChegada).time) })}
+                                        value={form.dataChegadaDate}
+                                        onChange={(e) => patch({ dataChegadaDate: e.target.value })}
                                     />
                                 </Field>
                                 <Field label="Hora chegada">
-                                    <InputMask
-                                        type="text"
-                                        inputMode="numeric"
-                                        mask={maskHour}
-                                        maxLength={5}
-                                        placeholder="00:00"
-                                        value={splitDateTime(form.dataChegada).time}
-                                        onChange={e => {
-                                            const masked = maskHour(e.target.value);
-                                            patch({ dataChegada: joinDateTime(splitDateTime(form.dataChegada).date, masked) });
-                                        }}
+                                    <Input
+                                        type="time"
+                                        value={form.dataChegadaTime}
+                                        onChange={(e) => patch({ dataChegadaTime: e.target.value })}
                                     />
                                 </Field>
                                 <Field label="Companhias">
@@ -531,37 +510,23 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                             />
                                             <Input
                                                 type="date"
-                                                value={splitDateTime(s.saida).date}
-                                                onChange={e => patchSeg(idx, { saida: joinDateTime(e.target.value, splitDateTime(s.saida).time) })}
+                                                value={s.saidaDate}
+                                                onChange={(e) => patchSeg(idx, { saidaDate: e.target.value })}
                                             />
-                                            <InputMask
-                                                type="text"
-                                                inputMode="numeric"
-                                                mask={maskHour}
-                                                maxLength={5}
-                                                placeholder="00:00"
-                                                value={splitDateTime(s.saida).time}
-                                                onChange={e => {
-                                                    const masked = maskHour(e.target.value);
-                                                    patchSeg(idx, { saida: joinDateTime(splitDateTime(s.saida).date, masked) });
-                                                }}
+                                            <Input
+                                                type="time"
+                                                value={s.saidaTime}
+                                                onChange={(e) => patchSeg(idx, { saidaTime: e.target.value })}
                                             />
                                             <Input
                                                 type="date"
-                                                value={splitDateTime(s.chegada).date}
-                                                onChange={e => patchSeg(idx, { chegada: joinDateTime(e.target.value, splitDateTime(s.chegada).time) })}
+                                                value={s.chegadaDate}
+                                                onChange={(e) => patchSeg(idx, { chegadaDate: e.target.value })}
                                             />
-                                            <InputMask
-                                                type="text"
-                                                inputMode="numeric"
-                                                mask={maskHour}
-                                                maxLength={5}
-                                                placeholder="00:00"
-                                                value={splitDateTime(s.chegada).time}
-                                                onChange={e => {
-                                                    const masked = maskHour(e.target.value);
-                                                    patchSeg(idx, { chegada: joinDateTime(splitDateTime(s.chegada).date, masked) });
-                                                }}
+                                            <Input
+                                                type="time"
+                                                value={s.chegadaTime}
+                                                onChange={(e) => patchSeg(idx, { chegadaTime: e.target.value })}
                                             />
                                             <Select
                                                 value={s.classe}
@@ -592,7 +557,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancelar
                     </Button>
-                    <Button onClick={() => onSubmit(prepareFormForSubmit(form))} disabled={isSubmitting || !!dateError}>
+                    <Button onClick={() => onSubmit(form)} disabled={isSubmitting || !!dateError}>
                         {isSubmitting ? "Salvando..." : editingId ? "Salvar alterações" : "Criar peça"}
                     </Button>
                 </SheetFooter>
@@ -608,4 +573,60 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
             {children}
         </div>
     );
+}
+
+/** @deprecated use splitStoredDatetime from datetimeForm */
+export function toDatetimeLocal(value: string | Date | null | undefined): string {
+    const { date, time } = splitStoredDatetime(value);
+    if (!date) return "";
+    return time ? `${date}T${time}` : date;
+}
+
+/** Monta formulário a partir de dados extraídos pela IA. */
+export function extractedToPecaForm(extracted: Record<string, unknown>): PecaForm {
+    const saida = splitIsoDatetime(extracted.dataSaida as string | undefined);
+    const chegada = splitIsoDatetime(extracted.dataChegada as string | undefined);
+    const segmentos = Array.isArray(extracted.segmentos) ? extracted.segmentos : [];
+    return {
+        titulo: (extracted.titulo as string) ?? "",
+        origem: (extracted.origem as string) ?? "",
+        destino: (extracted.destino as string) ?? "",
+        dataSaidaDate: saida.date,
+        dataSaidaTime: saida.time,
+        dataChegadaDate: chegada.date,
+        dataChegadaTime: chegada.time,
+        qtdConexoes:
+            (extracted.qtdConexoes as number) ??
+            (segmentos.length > 0 ? Math.max(0, segmentos.length - 1) : 0),
+        companhias: (extracted.companhias as string) ?? "",
+        bagagem: (extracted.bagagem as string) ?? "",
+        classe: (extracted.classe as string) ?? "",
+        tipoFinanceiro: "pagante",
+        custo: "",
+        venda: "",
+        fonte: "",
+        estrategia: "",
+        status: "pesquisa",
+        observacoes: (extracted.observacoes as string) ?? "",
+        segmentos: segmentos.map((raw: Record<string, unknown>, i: number) => {
+            const segSaida = splitIsoDatetime(raw.saida as string | undefined);
+            const segChegada = splitIsoDatetime(raw.chegada as string | undefined);
+            return {
+                ordem: (raw.ordem as number) ?? i,
+                aeroportoOrigem: String(raw.aeroportoOrigem ?? "").toUpperCase(),
+                aeroportoDestino: String(raw.aeroportoDestino ?? "").toUpperCase(),
+                cidadeOrigem: (raw.cidadeOrigem as string) ?? "",
+                cidadeDestino: (raw.cidadeDestino as string) ?? "",
+                saidaDate: segSaida.date,
+                saidaTime: segSaida.time,
+                chegadaDate: segChegada.date,
+                chegadaTime: segChegada.time,
+                companhia: (raw.companhia as string) ?? "",
+                numeroVoo: (raw.numeroVoo as string) ?? "",
+                classe: (raw.classe as string) ?? "",
+                bagagem: (raw.bagagem as string) ?? "",
+                duracaoConexaoMinutos: (raw.duracaoConexaoMinutos as number | "") ?? "",
+            };
+        }),
+    };
 }

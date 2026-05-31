@@ -32,8 +32,9 @@ import { PropostaDialog } from "@/components/cotacoes/PropostaDialog";
 import {
     PecaSheet,
     emptyPeca,
+    extractedToPecaForm,
+    pecaFormToPayload,
     pecaToForm,
-    toDatetimeLocal,
     type PecaForm,
 } from "@/components/cotacoes/PecaSheet";
 import { PecaCard } from "@/components/cotacoes/PecaCard";
@@ -226,51 +227,18 @@ export default function CotacaoDetailPage() {
     const openEditPeca = (peca: PecaCompleta) =>
         setPecaSheet({ open: true, editingId: peca.id, initialForm: pecaToForm(peca) });
 
-    const openPecaFromExtraction = (extracted: any) => {
-        const form: PecaForm = {
-            titulo: extracted.titulo ?? "",
-            origem: extracted.origem ?? "",
-            destino: extracted.destino ?? "",
-            dataSaida: toDatetimeLocal(extracted.dataSaida),
-            dataChegada: toDatetimeLocal(extracted.dataChegada),
-            qtdConexoes:
-                extracted.qtdConexoes ??
-                (Array.isArray(extracted.segmentos) ? Math.max(0, extracted.segmentos.length - 1) : 0),
-            companhias: extracted.companhias ?? "",
-            bagagem: extracted.bagagem ?? "",
-            classe: extracted.classe ?? "",
-            tipoFinanceiro: "pagante",
-            custo: "",
-            venda: "",
-            fonte: "",
-            estrategia: "",
-            status: "pesquisa",
-            observacoes: extracted.observacoes ?? "",
-            segmentos: (extracted.segmentos ?? []).map((s: any, i: number) => ({
-                ordem: s.ordem ?? i,
-                aeroportoOrigem: (s.aeroportoOrigem ?? "").toUpperCase(),
-                aeroportoDestino: (s.aeroportoDestino ?? "").toUpperCase(),
-                cidadeOrigem: s.cidadeOrigem ?? "",
-                cidadeDestino: s.cidadeDestino ?? "",
-                saida: toDatetimeLocal(s.saida),
-                chegada: toDatetimeLocal(s.chegada),
-                companhia: s.companhia ?? "",
-                numeroVoo: s.numeroVoo ?? "",
-                classe: s.classe ?? "",
-                bagagem: s.bagagem ?? "",
-                duracaoConexaoMinutos: s.duracaoConexaoMinutos ?? "",
-            })),
-        };
-        setPecaSheet({ open: true, editingId: null, initialForm: form });
+    const openPecaFromExtraction = (extracted: Record<string, unknown>) => {
+        setPecaSheet({ open: true, editingId: null, initialForm: extractedToPecaForm(extracted) });
     };
 
     const submitPeca = (form: PecaForm) => {
+        const dt = pecaFormToPayload(form);
         const payload = {
             titulo: form.titulo || undefined,
             origem: form.origem || undefined,
             destino: form.destino || undefined,
-            dataSaida: form.dataSaida || undefined,
-            dataChegada: form.dataChegada || undefined,
+            dataSaida: dt.dataSaida || undefined,
+            dataChegada: dt.dataChegada || undefined,
             qtdConexoes: Number(form.qtdConexoes) || 0,
             companhias: form.companhias || undefined,
             bagagem: form.bagagem || undefined,
@@ -282,7 +250,7 @@ export default function CotacaoDetailPage() {
             estrategia: form.estrategia || undefined,
             status: form.status,
             observacoes: form.observacoes || undefined,
-            segmentos: form.segmentos.map((s, i) => ({
+            segmentos: dt.segmentos.map((s, i) => ({
                 ordem: i,
                 aeroportoOrigem: s.aeroportoOrigem || undefined,
                 aeroportoDestino: s.aeroportoDestino || undefined,
