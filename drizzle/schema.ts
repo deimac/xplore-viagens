@@ -404,6 +404,8 @@ export const cwPecas = mysqlTable("cw_pecas", {
   tipoFinanceiro: mysqlEnum("tipo_financeiro", ["milhas", "pagante", "misto"])
     .default("pagante")
     .notNull(),
+  qtdMilhas: int("qtd_milhas"),
+  valorMilheiro: decimal("valor_milheiro", { precision: 10, scale: 2 }),
   custo: decimal("custo", { precision: 10, scale: 2 }),
   venda: decimal("venda", { precision: 10, scale: 2 }),
   fonte: varchar("fonte", { length: 80 }),

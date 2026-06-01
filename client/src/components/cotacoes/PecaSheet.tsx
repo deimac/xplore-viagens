@@ -70,8 +70,10 @@ export type PecaForm = {
     bagagemMao: number;
     bagagemDespachada: number;
     tipoFinanceiro: "milhas" | "pagante" | "misto";
-    custo: number | "";
-    venda: number | "";
+    qtdMilhas: string;
+    valorMilheiro: string;
+    custo: string;
+    venda: string;
     fonte: string;
     estrategia: string;
     status: "pesquisa" | "favorita";
@@ -126,6 +128,8 @@ export const emptyPeca = (): PecaForm => ({
     bagagemMao: 0,
     bagagemDespachada: 0,
     tipoFinanceiro: "pagante",
+    qtdMilhas: "",
+    valorMilheiro: "",
     custo: "",
     venda: "",
     fonte: "",
@@ -204,8 +208,10 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
             bagagemDespachada: p.bagagemDespachada,
         }),
         tipoFinanceiro: p.tipoFinanceiro,
-        custo: p.custo != null ? Number(p.custo) : "",
-        venda: p.venda != null ? Number(p.venda) : "",
+        qtdMilhas: formatMilhasInput((p as any).qtdMilhas != null ? String((p as any).qtdMilhas) : ""),
+        valorMilheiro: formatCurrencyInput((p as any).valorMilheiro != null ? String((p as any).valorMilheiro) : ""),
+        custo: formatCurrencyInput(p.custo != null ? String(p.custo) : ""),
+        venda: formatCurrencyInput(p.venda != null ? String(p.venda) : ""),
         fonte: p.fonte ?? "",
         estrategia: p.estrategia ?? "",
         status: p.status,
@@ -251,8 +257,10 @@ export function pecaFormToPayload(form: PecaForm) {
         bagagemMao: form.bagagemMao,
         bagagemDespachada: form.bagagemDespachada,
         tipoFinanceiro: form.tipoFinanceiro,
-        custo: form.custo,
-        venda: form.venda,
+        qtdMilhas: parseMilhasInput(form.qtdMilhas),
+        valorMilheiro: parseCurrencyInput(form.valorMilheiro),
+        custo: parseCurrencyInput(form.custo),
+        venda: parseCurrencyInput(form.venda),
         fonte: form.fonte,
         estrategia: form.estrategia,
         status: form.status,
@@ -357,7 +365,8 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
         setResumoTab("ida");
     };
 
-    const lucro = calcLucro(form.custo, form.venda);
+    const lucro = calcLucro(parseCurrencyInput(form.custo), parseCurrencyInput(form.venda));
+    const milhasEnabled = form.tipoFinanceiro === "milhas";
 
     useEffect(() => {
         setDateError(validateDates(form));
@@ -545,24 +554,42 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                         </SelectContent>
                                     </Select>
                                 </Field>
+                                <Field label="Qtd. milhas">
+                                    <Input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="Ex: 175.300"
+                                        value={form.qtdMilhas}
+                                        disabled={!milhasEnabled}
+                                        onChange={(e) => patch({ qtdMilhas: formatMilhasInput(e.target.value) })}
+                                    />
+                                </Field>
+                                <Field label="Valor milheiro">
+                                    <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder="R$ 0,00"
+                                        value={form.valorMilheiro}
+                                        disabled={!milhasEnabled}
+                                        onChange={(e) => patch({ valorMilheiro: formatCurrencyInput(e.target.value) })}
+                                    />
+                                </Field>
                                 <Field label="Custo (R$)">
                                     <Input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder="R$ 0,00"
                                         value={form.custo}
-                                        onChange={(e) =>
-                                            patch({ custo: e.target.value === "" ? "" : Number(e.target.value) })
-                                        }
+                                        onChange={(e) => patch({ custo: formatCurrencyInput(e.target.value) })}
                                     />
                                 </Field>
                                 <Field label="Venda (R$)">
                                     <Input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
+                                        inputMode="decimal"
+                                        placeholder="R$ 0,00"
                                         value={form.venda}
-                                        onChange={(e) =>
-                                            patch({ venda: e.target.value === "" ? "" : Number(e.target.value) })
-                                        }
+                                        onChange={(e) => patch({ venda: formatCurrencyInput(e.target.value) })}
                                     />
                                 </Field>
                             </div>
@@ -708,6 +735,10 @@ export function extractedToPecaForm(
         titulo: (extracted.titulo as string) ?? start.titulo,
         ...bagagemMerged,
         observacoes: (extracted.observacoes as string) ?? start.observacoes,
+        qtdMilhas: start.qtdMilhas,
+        valorMilheiro: start.valorMilheiro,
+        custo: start.custo,
+        venda: start.venda,
     };
 
     const resumoIda = {
@@ -786,6 +817,37 @@ export function extractedToPecaForm(
                 ? voltaSegsRaw.map(mapSegmento)
                 : start.segmentosVolta,
     };
+}
+
+function formatCurrencyInput(value: string): string {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "";
+    const number = Number(digits) / 100;
+    return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+    }).format(number);
+}
+
+function parseCurrencyInput(value: string): number | null {
+    if (!value) return null;
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return null;
+    return Number(digits) / 100;
+}
+
+function formatMilhasInput(value: string): string {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "";
+    return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Number(digits));
+}
+
+function parseMilhasInput(value: string): number | null {
+    if (!value) return null;
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return null;
+    return Number(digits);
 }
 
 function validateDates(form: PecaForm): string | null {

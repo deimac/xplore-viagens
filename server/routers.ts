@@ -1902,6 +1902,8 @@ export const appRouter = router({
           companhiasVolta: z.string().optional().nullable(),
           classeVolta: z.string().optional().nullable(),
           tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).default("pagante"),
+          qtdMilhas: z.number().int().optional().nullable(),
+          valorMilheiro: z.number().optional().nullable(),
           custo: z.number().optional().nullable(),
           venda: z.number().optional().nullable(),
           fonte: z.string().optional().nullable(),
@@ -1938,6 +1940,7 @@ export const appRouter = router({
             dataChegada: pecaData.dataChegada ? new Date(pecaData.dataChegada) : null,
             dataSaidaVolta: pecaData.dataSaidaVolta ? new Date(pecaData.dataSaidaVolta) : null,
             dataChegadaVolta: pecaData.dataChegadaVolta ? new Date(pecaData.dataChegadaVolta) : null,
+            valorMilheiro: pecaData.valorMilheiro != null ? String(pecaData.valorMilheiro) : null,
             custo: pecaData.custo != null ? String(pecaData.custo) : null,
             venda: pecaData.venda != null ? String(pecaData.venda) : null,
           } as any,
@@ -1975,6 +1978,8 @@ export const appRouter = router({
             companhiasVolta: z.string().optional().nullable(),
             classeVolta: z.string().optional().nullable(),
             tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).optional(),
+            qtdMilhas: z.number().int().optional().nullable(),
+            valorMilheiro: z.number().optional().nullable(),
             custo: z.number().optional().nullable(),
             venda: z.number().optional().nullable(),
             fonte: z.string().optional().nullable(),
@@ -2009,6 +2014,7 @@ export const appRouter = router({
         if ("dataChegada" in patch) patch.dataChegada = patch.dataChegada ? new Date(patch.dataChegada) : null;
         if ("dataSaidaVolta" in patch) patch.dataSaidaVolta = patch.dataSaidaVolta ? new Date(patch.dataSaidaVolta) : null;
         if ("dataChegadaVolta" in patch) patch.dataChegadaVolta = patch.dataChegadaVolta ? new Date(patch.dataChegadaVolta) : null;
+        if ("valorMilheiro" in patch) patch.valorMilheiro = patch.valorMilheiro != null ? String(patch.valorMilheiro) : null;
         if ("custo" in patch) patch.custo = patch.custo != null ? String(patch.custo) : null;
         if ("venda" in patch) patch.venda = patch.venda != null ? String(patch.venda) : null;
         const segs = input.segmentos?.map((s) => ({

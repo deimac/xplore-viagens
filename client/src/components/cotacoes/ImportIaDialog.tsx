@@ -104,7 +104,7 @@ export function ImportIaDialog({
                         Cole um texto ou envie um print da cotação. A IA extrai os dados; você revisa antes de salvar.
                     </DialogDescription>
                 </DialogHeader>
-                <Tabs defaultValue="texto">
+                <Tabs defaultValue="print">
                     <div className="mb-3 rounded-md border p-3 bg-muted/20">
                         <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5">
                             <ArrowRightLeft className="h-3.5 w-3.5" />
