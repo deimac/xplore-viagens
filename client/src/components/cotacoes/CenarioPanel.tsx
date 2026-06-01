@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CenarioBloco, IntervaloEntreBlocos } from "./CenarioBloco";
 import type { CenarioCompleto, PecaCompleta } from "./types";
-import { calcCenarioTotais, fmtCurrencyCompact, fmtDuration } from "@/lib/cotacoes/calc";
+import { calcCenarioTotais, fmtCurrencyCompact, fmtDuration, getResumoDirecao } from "@/lib/cotacoes/calc";
 
 interface Props {
     cenario: CenarioCompleto;
@@ -159,7 +159,7 @@ export function CenarioPanel({
                                         {intervalo && (
                                             <IntervaloEntreBlocos
                                                 minutos={intervalo.minutos}
-                                                aeroporto={peca.origem ?? undefined}
+                                                aeroporto={getResumoDirecao(peca, "ida").origem ?? undefined}
                                             />
                                         )}
                                         <CenarioBloco

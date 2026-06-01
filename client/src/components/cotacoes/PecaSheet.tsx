@@ -30,6 +30,8 @@ import {
 } from "@/lib/cotacoes/datetimeForm";
 import { normalizeBagagemCounts } from "@/lib/cotacoes/bagagem";
 
+type Direcao = "ida" | "volta";
+
 export type Segmento = {
     ordem: number;
     aeroportoOrigem: string;
@@ -47,8 +49,7 @@ export type Segmento = {
     duracaoConexaoMinutos: number | "";
 };
 
-export type PecaForm = {
-    titulo: string;
+type ResumoDirecaoForm = {
     origem: string;
     destino: string;
     dataSaidaDate: string;
@@ -57,10 +58,17 @@ export type PecaForm = {
     dataChegadaTime: string;
     qtdConexoes: number;
     companhias: string;
+    classe: string;
+};
+
+export type PecaForm = {
+    titulo: string;
+    temVolta: boolean;
+    resumoIda: ResumoDirecaoForm;
+    resumoVolta: ResumoDirecaoForm;
     itemPessoal: number;
     bagagemMao: number;
     bagagemDespachada: number;
-    classe: string;
     tipoFinanceiro: "milhas" | "pagante" | "misto";
     custo: number | "";
     venda: number | "";
@@ -68,7 +76,8 @@ export type PecaForm = {
     estrategia: string;
     status: "pesquisa" | "favorita";
     observacoes: string;
-    segmentos: Segmento[];
+    segmentosIda: Segmento[];
+    segmentosVolta: Segmento[];
 };
 
 export const emptySegmento = (ordem = 0): Segmento => ({
@@ -90,18 +99,32 @@ export const emptySegmento = (ordem = 0): Segmento => ({
 
 export const emptyPeca = (): PecaForm => ({
     titulo: "",
-    origem: "",
-    destino: "",
-    dataSaidaDate: "",
-    dataSaidaTime: "",
-    dataChegadaDate: "",
-    dataChegadaTime: "",
-    qtdConexoes: 0,
-    companhias: "",
+    temVolta: false,
+    resumoIda: {
+        origem: "",
+        destino: "",
+        dataSaidaDate: "",
+        dataSaidaTime: "",
+        dataChegadaDate: "",
+        dataChegadaTime: "",
+        qtdConexoes: 0,
+        companhias: "",
+        classe: "",
+    },
+    resumoVolta: {
+        origem: "",
+        destino: "",
+        dataSaidaDate: "",
+        dataSaidaTime: "",
+        dataChegadaDate: "",
+        dataChegadaTime: "",
+        qtdConexoes: 0,
+        companhias: "",
+        classe: "",
+    },
     itemPessoal: 1,
     bagagemMao: 0,
     bagagemDespachada: 0,
-    classe: "",
     tipoFinanceiro: "pagante",
     custo: "",
     venda: "",
@@ -109,28 +132,77 @@ export const emptyPeca = (): PecaForm => ({
     estrategia: "",
     status: "pesquisa",
     observacoes: "",
-    segmentos: [],
+    segmentosIda: [],
+    segmentosVolta: [],
 });
 
 export function pecaToForm(p: PecaCompleta): PecaForm {
-    const saida = splitStoredDatetime(p.dataSaida);
-    const chegada = splitStoredDatetime(p.dataChegada);
+    const idaSaida = splitStoredDatetime(p.dataSaida);
+    const idaChegada = splitStoredDatetime(p.dataChegada);
+    const voltaSaida = splitStoredDatetime((p as any).dataSaidaVolta);
+    const voltaChegada = splitStoredDatetime((p as any).dataChegadaVolta);
+    const temVolta =
+        Boolean((p as any).temVolta) ||
+        Boolean((p as any).origemVolta) ||
+        Boolean((p as any).destinoVolta) ||
+        Boolean((p as any).dataSaidaVolta) ||
+        Boolean((p as any).dataChegadaVolta) ||
+        p.segmentos.some((s: any) => s.direcao === "volta");
+
+    const segsIda = p.segmentos.filter((s: any) => (s.direcao ?? "ida") === "ida");
+    const segsVolta = p.segmentos.filter((s: any) => s.direcao === "volta");
+
+    const mapSegmento = (s: any, i: number): Segmento => {
+        const segSaida = splitStoredDatetime(s.saida);
+        const segChegada = splitStoredDatetime(s.chegada);
+        return {
+            ordem: s.ordem ?? i,
+            aeroportoOrigem: s.aeroportoOrigem ?? "",
+            aeroportoDestino: s.aeroportoDestino ?? "",
+            cidadeOrigem: s.cidadeOrigem ?? "",
+            cidadeDestino: s.cidadeDestino ?? "",
+            saidaDate: segSaida.date,
+            saidaTime: segSaida.time,
+            chegadaDate: segChegada.date,
+            chegadaTime: segChegada.time,
+            companhia: s.companhia ?? "",
+            numeroVoo: s.numeroVoo ?? "",
+            classe: s.classe ?? "",
+            bagagem: s.bagagem ?? "",
+            duracaoConexaoMinutos: s.duracaoConexaoMinutos ?? "",
+        };
+    };
+
     return {
         titulo: p.titulo ?? "",
-        origem: p.origem ?? "",
-        destino: p.destino ?? "",
-        dataSaidaDate: saida.date,
-        dataSaidaTime: saida.time,
-        dataChegadaDate: chegada.date,
-        dataChegadaTime: chegada.time,
-        qtdConexoes: p.qtdConexoes ?? 0,
-        companhias: p.companhias ?? "",
+        temVolta,
+        resumoIda: {
+            origem: p.origem ?? "",
+            destino: p.destino ?? "",
+            dataSaidaDate: idaSaida.date,
+            dataSaidaTime: idaSaida.time,
+            dataChegadaDate: idaChegada.date,
+            dataChegadaTime: idaChegada.time,
+            qtdConexoes: p.qtdConexoes ?? 0,
+            companhias: p.companhias ?? "",
+            classe: p.classe ?? "",
+        },
+        resumoVolta: {
+            origem: (p as any).origemVolta ?? "",
+            destino: (p as any).destinoVolta ?? "",
+            dataSaidaDate: voltaSaida.date,
+            dataSaidaTime: voltaSaida.time,
+            dataChegadaDate: voltaChegada.date,
+            dataChegadaTime: voltaChegada.time,
+            qtdConexoes: (p as any).qtdConexoesVolta ?? 0,
+            companhias: (p as any).companhiasVolta ?? "",
+            classe: (p as any).classeVolta ?? "",
+        },
         ...normalizeBagagemCounts({
             itemPessoal: p.itemPessoal,
             bagagemMao: p.bagagemMao,
             bagagemDespachada: p.bagagemDespachada,
         }),
-        classe: p.classe ?? "",
         tipoFinanceiro: p.tipoFinanceiro,
         custo: p.custo != null ? Number(p.custo) : "",
         venda: p.venda != null ? Number(p.venda) : "",
@@ -138,40 +210,57 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
         estrategia: p.estrategia ?? "",
         status: p.status,
         observacoes: p.observacoes ?? "",
-        segmentos: p.segmentos.map((s, i) => {
-            const segSaida = splitStoredDatetime(s.saida);
-            const segChegada = splitStoredDatetime(s.chegada);
-            return {
-                ordem: s.ordem ?? i,
-                aeroportoOrigem: s.aeroportoOrigem ?? "",
-                aeroportoDestino: s.aeroportoDestino ?? "",
-                cidadeOrigem: s.cidadeOrigem ?? "",
-                cidadeDestino: s.cidadeDestino ?? "",
-                saidaDate: segSaida.date,
-                saidaTime: segSaida.time,
-                chegadaDate: segChegada.date,
-                chegadaTime: segChegada.time,
-                companhia: s.companhia ?? "",
-                numeroVoo: s.numeroVoo ?? "",
-                classe: s.classe ?? "",
-                bagagem: s.bagagem ?? "",
-                duracaoConexaoMinutos: s.duracaoConexaoMinutos ?? "",
-            };
-        }),
+        segmentosIda: segsIda.map(mapSegmento),
+        segmentosVolta: segsVolta.map(mapSegmento),
     };
 }
 
 /** Converte o formulário (campos separados) para payload com datetime ISO. */
 export function pecaFormToPayload(form: PecaForm) {
-    return {
-        ...form,
-        dataSaida: combineDateTimeForSubmit(form.dataSaidaDate, form.dataSaidaTime),
-        dataChegada: combineDateTimeForSubmit(form.dataChegadaDate, form.dataChegadaTime),
-        segmentos: form.segmentos.map((s) => ({
+    const mapSegs = (segmentos: Segmento[], direcao: Direcao) =>
+        segmentos.map((s, idx) => ({
             ...s,
+            direcao,
+            ordem: idx,
             saida: combineDateTimeForSubmit(s.saidaDate, s.saidaTime),
             chegada: combineDateTimeForSubmit(s.chegadaDate, s.chegadaTime),
-        })),
+        }));
+
+    return {
+        titulo: form.titulo,
+        temVolta: form.temVolta,
+        origem: form.resumoIda.origem,
+        destino: form.resumoIda.destino,
+        dataSaida: combineDateTimeForSubmit(form.resumoIda.dataSaidaDate, form.resumoIda.dataSaidaTime),
+        dataChegada: combineDateTimeForSubmit(form.resumoIda.dataChegadaDate, form.resumoIda.dataChegadaTime),
+        qtdConexoes: form.resumoIda.qtdConexoes,
+        companhias: form.resumoIda.companhias,
+        classe: form.resumoIda.classe,
+        origemVolta: form.temVolta ? form.resumoVolta.origem : null,
+        destinoVolta: form.temVolta ? form.resumoVolta.destino : null,
+        dataSaidaVolta: form.temVolta
+            ? combineDateTimeForSubmit(form.resumoVolta.dataSaidaDate, form.resumoVolta.dataSaidaTime)
+            : null,
+        dataChegadaVolta: form.temVolta
+            ? combineDateTimeForSubmit(form.resumoVolta.dataChegadaDate, form.resumoVolta.dataChegadaTime)
+            : null,
+        qtdConexoesVolta: form.temVolta ? form.resumoVolta.qtdConexoes : 0,
+        companhiasVolta: form.temVolta ? form.resumoVolta.companhias : null,
+        classeVolta: form.temVolta ? form.resumoVolta.classe : null,
+        itemPessoal: form.itemPessoal,
+        bagagemMao: form.bagagemMao,
+        bagagemDespachada: form.bagagemDespachada,
+        tipoFinanceiro: form.tipoFinanceiro,
+        custo: form.custo,
+        venda: form.venda,
+        fonte: form.fonte,
+        estrategia: form.estrategia,
+        status: form.status,
+        observacoes: form.observacoes,
+        segmentos: [
+            ...mapSegs(form.segmentosIda, "ida"),
+            ...(form.temVolta ? mapSegs(form.segmentosVolta, "volta") : []),
+        ],
     };
 }
 
@@ -187,57 +276,94 @@ interface Props {
 export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit, isSubmitting }: Props) {
     const [form, setForm] = useState<PecaForm>(initialForm);
     const [dateError, setDateError] = useState<string | null>(null);
+    const [resumoTab, setResumoTab] = useState<Direcao>("ida");
 
     useEffect(() => {
-        if (open) setForm(initialForm);
+        if (open) {
+            setForm(initialForm);
+            setResumoTab("ida");
+        }
     }, [open, initialForm]);
 
     const patch = (p: Partial<PecaForm>) => {
         setForm((f) => {
             const next = { ...f, ...p };
-            if (next.dataSaidaDate) {
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
-                const d = new Date(next.dataSaidaDate);
-                if (d < now) {
-                    setDateError("A data de ida não pode ser anterior a hoje.");
-                } else {
-                    setDateError(null);
-                }
-            } else {
-                setDateError(null);
-            }
+            setDateError(validateDates(next));
             return next;
         });
     };
 
-    const patchSeg = (idx: number, p: Partial<Segmento>) =>
+    const patchResumo = (direcao: Direcao, p: Partial<ResumoDirecaoForm>) => {
         setForm((f) => {
-            const segs = [...f.segmentos];
-            segs[idx] = { ...segs[idx], ...p };
-            return { ...f, segmentos: segs };
+            const key = direcao === "ida" ? "resumoIda" : "resumoVolta";
+            const next = {
+                ...f,
+                [key]: { ...f[key], ...p },
+            } as PecaForm;
+            setDateError(validateDates(next));
+            return next;
         });
-    const removeSeg = (idx: number) =>
-        setForm((f) => ({ ...f, segmentos: f.segmentos.filter((_, i) => i !== idx) }));
-    const addSeg = () =>
-        setForm((f) => ({ ...f, segmentos: [...f.segmentos, emptySegmento(f.segmentos.length)] }));
+    };
+
+    const patchSeg = (direcao: Direcao, idx: number, p: Partial<Segmento>) =>
+        setForm((f) => {
+            const key = direcao === "ida" ? "segmentosIda" : "segmentosVolta";
+            const segs = [...f[key]];
+            segs[idx] = { ...segs[idx], ...p };
+            return { ...f, [key]: segs } as PecaForm;
+        });
+    const removeSeg = (direcao: Direcao, idx: number) =>
+        setForm((f) => {
+            const key = direcao === "ida" ? "segmentosIda" : "segmentosVolta";
+            return { ...f, [key]: f[key].filter((_, i) => i !== idx) } as PecaForm;
+        });
+    const addSeg = (direcao: Direcao) =>
+        setForm((f) => {
+            const key = direcao === "ida" ? "segmentosIda" : "segmentosVolta";
+            return {
+                ...f,
+                [key]: [...f[key], emptySegmento(f[key].length)],
+            } as PecaForm;
+        });
+
+    const addVolta = () => {
+        setForm((f) => {
+            const next: PecaForm = {
+                ...f,
+                temVolta: true,
+                resumoVolta: {
+                    ...f.resumoVolta,
+                    origem: f.resumoVolta.origem || f.resumoIda.destino,
+                    destino: f.resumoVolta.destino || f.resumoIda.origem,
+                },
+            };
+            setDateError(validateDates(next));
+            return next;
+        });
+        setResumoTab("volta");
+    };
+
+    const removeVolta = () => {
+        setForm((f) => {
+            const next: PecaForm = {
+                ...f,
+                temVolta: false,
+                resumoVolta: emptyPeca().resumoVolta,
+                segmentosVolta: [],
+            };
+            setDateError(validateDates(next));
+            return next;
+        });
+        setResumoTab("ida");
+    };
 
     const lucro = calcLucro(form.custo, form.venda);
 
     useEffect(() => {
-        if (form.dataSaidaDate) {
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            const d = new Date(form.dataSaidaDate);
-            if (d < now) {
-                setDateError("A data de ida não pode ser anterior a hoje.");
-            } else {
-                setDateError(null);
-            }
-        } else {
-            setDateError(null);
-        }
-    }, [form.dataSaidaDate]);
+        setDateError(validateDates(form));
+    }, [form]);
+
+    const totalSegmentos = form.segmentosIda.length + (form.temVolta ? form.segmentosVolta.length : 0);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -251,7 +377,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                         {editingId ? "Editar peça" : "Nova peça"}
                     </SheetTitle>
                     <SheetDescription>
-                        Bloco indivisível de voos. Pode conter múltiplos segmentos internos.
+                        Bloco indivisível do cenário com resumo por direção (ida e volta opcional).
                     </SheetDescription>
                 </SheetHeader>
 
@@ -269,9 +395,9 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                             <TabsTrigger value="segmentos" className="gap-1.5">
                                 <ListChecks className="h-3.5 w-3.5" />
                                 Segmentos
-                                {form.segmentos.length > 0 && (
+                                {totalSegmentos > 0 && (
                                     <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-                                        {form.segmentos.length}
+                                        {totalSegmentos}
                                     </Badge>
                                 )}
                             </TabsTrigger>
@@ -285,80 +411,58 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     placeholder="Ex: MGF→LIS Gol Smiles"
                                 />
                             </Field>
-                            <div className="grid grid-cols-2 gap-3">
-                                <Field label="Origem">
-                                    <Input value={form.origem} onChange={(e) => patch({ origem: e.target.value })} />
-                                </Field>
-                                <Field label="Destino">
-                                    <Input value={form.destino} onChange={(e) => patch({ destino: e.target.value })} />
-                                </Field>
-                                <Field label="Data saída">
-                                    <Input
-                                        type="date"
-                                        min={new Date().toISOString().slice(0, 10)}
-                                        value={form.dataSaidaDate}
-                                        onChange={(e) => patch({ dataSaidaDate: e.target.value })}
-                                    />
-                                </Field>
-                                <Field label="Hora saída">
-                                    <Input
-                                        type="time"
-                                        value={form.dataSaidaTime}
-                                        onChange={(e) => patch({ dataSaidaTime: e.target.value })}
-                                    />
-                                </Field>
-                                {dateError && (
-                                    <div className="col-span-2 text-xs text-red-600 font-medium -mt-2">
-                                        {dateError}
+                            <div className="grid grid-cols-1 gap-3">
+                                <div className="rounded-md border bg-muted/20 p-3 space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                            Resumo dos voos
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            {!form.temVolta ? (
+                                                <Button size="sm" variant="outline" onClick={addVolta} className="h-7">
+                                                    Adicionar volta
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-7 text-muted-foreground"
+                                                    onClick={removeVolta}
+                                                >
+                                                    Remover volta
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                                <Field label="Data chegada">
-                                    <Input
-                                        type="date"
-                                        value={form.dataChegadaDate}
-                                        onChange={(e) => patch({ dataChegadaDate: e.target.value })}
-                                    />
-                                </Field>
-                                <Field label="Hora chegada">
-                                    <Input
-                                        type="time"
-                                        value={form.dataChegadaTime}
-                                        onChange={(e) => patch({ dataChegadaTime: e.target.value })}
-                                    />
-                                </Field>
-                                <Field label="Companhias">
-                                    <Input
-                                        value={form.companhias}
-                                        onChange={(e) => patch({ companhias: e.target.value })}
-                                        placeholder="Gol, TAP..."
-                                    />
-                                </Field>
-                                <Field label="Conexões">
-                                    <Input
-                                        type="number"
-                                        min={0}
-                                        value={form.qtdConexoes}
-                                        onChange={(e) => patch({ qtdConexoes: Number(e.target.value) })}
-                                    />
-                                </Field>
-                                <Field label="Classe">
-                                    <Select
-                                        value={form.classe}
-                                        onValueChange={(v) => patch({ classe: v })}
-                                    >
-                                        <SelectTrigger className="h-8 w-full text-sm">
-                                            <SelectValue placeholder="Selecione a classe" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Econômica">Econômica</SelectItem>
-                                            <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
-                                            <SelectItem value="Executiva">Executiva</SelectItem>
-                                            <SelectItem value="Primeira">Primeira</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
-                                <div className="col-span-2">
-                                    <Field label="Bagagem">
+
+                                    <Tabs value={resumoTab} onValueChange={(v) => setResumoTab(v as Direcao)}>
+                                        <TabsList className={`grid w-full ${form.temVolta ? "grid-cols-2" : "grid-cols-1"}`}>
+                                            <TabsTrigger value="ida">Ida</TabsTrigger>
+                                            {form.temVolta && <TabsTrigger value="volta">Volta</TabsTrigger>}
+                                        </TabsList>
+                                        <TabsContent value="ida" className="pt-3">
+                                            <ResumoDirecaoFields
+                                                resumo={form.resumoIda}
+                                                onPatch={(p) => patchResumo("ida", p)}
+                                                minDate={new Date().toISOString().slice(0, 10)}
+                                            />
+                                        </TabsContent>
+                                        {form.temVolta && (
+                                            <TabsContent value="volta" className="pt-3">
+                                                <ResumoDirecaoFields
+                                                    resumo={form.resumoVolta}
+                                                    onPatch={(p) => patchResumo("volta", p)}
+                                                />
+                                            </TabsContent>
+                                        )}
+                                    </Tabs>
+
+                                    {dateError && (
+                                        <div className="text-xs text-red-600 font-medium -mt-1">{dateError}</div>
+                                    )}
+                                </div>
+
+                                <Field label="Bagagem">
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="space-y-1">
                                             <Label className="text-[10px] text-muted-foreground">Item pessoal</Label>
@@ -397,7 +501,6 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                         </div>
                                     </div>
                                 </Field>
-                                </div>
                             </div>
                             <Field label="Observações">
                                 <Textarea
@@ -497,100 +600,26 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                         </TabsContent>
 
                         <TabsContent value="segmentos" className="space-y-3 pt-4">
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs text-muted-foreground">
-                                    Detalhamento por trecho. Opcional, mas útil para conexões.
-                                </p>
-                                <Button size="sm" variant="outline" onClick={addSeg} className="gap-1">
-                                    <Plus className="h-3.5 w-3.5" />
-                                    Adicionar
-                                </Button>
-                            </div>
-                            {form.segmentos.length === 0 ? (
-                                <div className="rounded-md border-2 border-dashed p-6 text-center text-xs text-muted-foreground">
-                                    Sem segmentos detalhados.
-                                </div>
-                            ) : (
-                                form.segmentos.map((s, idx) => (
-                                    <div key={idx} className="rounded-md border p-3 space-y-2 bg-card">
-                                        <div className="flex items-center justify-between">
-                                            <Badge variant="outline" className="text-[10px]">
-                                                Segmento {idx + 1}
-                                            </Badge>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-6 w-6"
-                                                onClick={() => removeSeg(idx)}
-                                            >
-                                                <X className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                            <Input
-                                                placeholder="De (IATA)"
-                                                value={s.aeroportoOrigem}
-                                                onChange={(e) =>
-                                                    patchSeg(idx, { aeroportoOrigem: e.target.value.toUpperCase() })
-                                                }
-                                            />
-                                            <Input
-                                                placeholder="Para (IATA)"
-                                                value={s.aeroportoDestino}
-                                                onChange={(e) =>
-                                                    patchSeg(idx, { aeroportoDestino: e.target.value.toUpperCase() })
-                                                }
-                                            />
-                                            <Input
-                                                placeholder="Cia"
-                                                value={s.companhia}
-                                                onChange={(e) => patchSeg(idx, { companhia: e.target.value })}
-                                            />
-                                            <Input
-                                                placeholder="Voo"
-                                                value={s.numeroVoo}
-                                                onChange={(e) => patchSeg(idx, { numeroVoo: e.target.value })}
-                                            />
-                                            <Input
-                                                type="date"
-                                                value={s.saidaDate}
-                                                onChange={(e) => patchSeg(idx, { saidaDate: e.target.value })}
-                                            />
-                                            <Input
-                                                type="time"
-                                                value={s.saidaTime}
-                                                onChange={(e) => patchSeg(idx, { saidaTime: e.target.value })}
-                                            />
-                                            <Input
-                                                type="date"
-                                                value={s.chegadaDate}
-                                                onChange={(e) => patchSeg(idx, { chegadaDate: e.target.value })}
-                                            />
-                                            <Input
-                                                type="time"
-                                                value={s.chegadaTime}
-                                                onChange={(e) => patchSeg(idx, { chegadaTime: e.target.value })}
-                                            />
-                                            <Select
-                                                value={s.classe}
-                                                onValueChange={(v) => patchSeg(idx, { classe: v })}
-                                            >
-                                                <SelectTrigger className="h-8 w-full text-xs" />
-                                                <SelectContent>
-                                                    <SelectItem value="Econômica">Econômica</SelectItem>
-                                                    <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
-                                                    <SelectItem value="Executiva">Executiva</SelectItem>
-                                                    <SelectItem value="Primeira">Primeira</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <Input
-                                                placeholder="Bagagem"
-                                                value={s.bagagem}
-                                                onChange={(e) => patchSeg(idx, { bagagem: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                ))
+                            <p className="text-xs text-muted-foreground">
+                                Segmentos detalhados separados por direção.
+                            </p>
+
+                            <SegmentosDirecaoSection
+                                titulo="Segmentos da ida"
+                                segmentos={form.segmentosIda}
+                                onAdd={() => addSeg("ida")}
+                                onRemove={(idx) => removeSeg("ida", idx)}
+                                onPatch={(idx, p) => patchSeg("ida", idx, p)}
+                            />
+
+                            {form.temVolta && (
+                                <SegmentosDirecaoSection
+                                    titulo="Segmentos da volta"
+                                    segmentos={form.segmentosVolta}
+                                    onAdd={() => addSeg("volta")}
+                                    onRemove={(idx) => removeSeg("volta", idx)}
+                                    onPatch={(idx, p) => patchSeg("volta", idx, p)}
+                                />
                             )}
                         </TabsContent>
                     </Tabs>
@@ -626,12 +655,63 @@ export function toDatetimeLocal(value: string | Date | null | undefined): string
 }
 
 /** Monta formulário a partir de dados extraídos pela IA. */
-export function extractedToPecaForm(extracted: Record<string, unknown>): PecaForm {
+export function extractedToPecaForm(
+    extracted: Record<string, unknown>,
+    target: Direcao = "ida",
+    base?: PecaForm
+): PecaForm {
+    const start = base ? { ...base } : emptyPeca();
     const saida = splitIsoDatetime(extracted.dataSaida as string | undefined);
     const chegada = splitIsoDatetime(extracted.dataChegada as string | undefined);
     const segmentos = Array.isArray(extracted.segmentos) ? extracted.segmentos : [];
-    return {
-        titulo: (extracted.titulo as string) ?? "",
+    const idaSegsRaw = segmentos.filter((raw: any) => (raw?.direcao ?? "ida") === "ida");
+    const voltaSegsRaw = segmentos.filter((raw: any) => raw?.direcao === "volta");
+
+    const mapSegmento = (raw: Record<string, unknown>, i: number): Segmento => {
+        const segSaida = splitIsoDatetime(raw.saida as string | undefined);
+        const segChegada = splitIsoDatetime(raw.chegada as string | undefined);
+        return {
+            ordem: (raw.ordem as number) ?? i,
+            aeroportoOrigem: String(raw.aeroportoOrigem ?? "").toUpperCase(),
+            aeroportoDestino: String(raw.aeroportoDestino ?? "").toUpperCase(),
+            cidadeOrigem: (raw.cidadeOrigem as string) ?? "",
+            cidadeDestino: (raw.cidadeDestino as string) ?? "",
+            saidaDate: segSaida.date,
+            saidaTime: segSaida.time,
+            chegadaDate: segChegada.date,
+            chegadaTime: segChegada.time,
+            companhia: (raw.companhia as string) ?? "",
+            numeroVoo: (raw.numeroVoo as string) ?? "",
+            classe: (raw.classe as string) ?? "",
+            bagagem: (raw.bagagem as string) ?? "",
+            duracaoConexaoMinutos: (raw.duracaoConexaoMinutos as number | "") ?? "",
+        };
+    };
+
+    const hasBagagemFromExtraction =
+        extracted.itemPessoal != null ||
+        extracted.bagagemMao != null ||
+        extracted.bagagemDespachada != null;
+    const bagagemMerged = hasBagagemFromExtraction
+        ? normalizeBagagemCounts({
+            itemPessoal: extracted.itemPessoal as number | null | undefined,
+            bagagemMao: extracted.bagagemMao as number | null | undefined,
+            bagagemDespachada: extracted.bagagemDespachada as number | null | undefined,
+        })
+        : {
+            itemPessoal: start.itemPessoal,
+            bagagemMao: start.bagagemMao,
+            bagagemDespachada: start.bagagemDespachada,
+        };
+
+    const baseRes = {
+        titulo: (extracted.titulo as string) ?? start.titulo,
+        ...bagagemMerged,
+        observacoes: (extracted.observacoes as string) ?? start.observacoes,
+    };
+
+    const resumoIda = {
+        ...start.resumoIda,
         origem: (extracted.origem as string) ?? "",
         destino: (extracted.destino as string) ?? "",
         dataSaidaDate: saida.date,
@@ -640,40 +720,264 @@ export function extractedToPecaForm(extracted: Record<string, unknown>): PecaFor
         dataChegadaTime: chegada.time,
         qtdConexoes:
             (extracted.qtdConexoes as number) ??
-            (segmentos.length > 0 ? Math.max(0, segmentos.length - 1) : 0),
+            (idaSegsRaw.length > 0 ? Math.max(0, idaSegsRaw.length - 1) : 0),
         companhias: (extracted.companhias as string) ?? "",
-        ...normalizeBagagemCounts({
-            itemPessoal: extracted.itemPessoal as number | null | undefined,
-            bagagemMao: extracted.bagagemMao as number | null | undefined,
-            bagagemDespachada: extracted.bagagemDespachada as number | null | undefined,
-        }),
         classe: (extracted.classe as string) ?? "",
-        tipoFinanceiro: "pagante",
-        custo: "",
-        venda: "",
-        fonte: "",
-        estrategia: "",
-        status: "pesquisa",
-        observacoes: (extracted.observacoes as string) ?? "",
-        segmentos: segmentos.map((raw: Record<string, unknown>, i: number) => {
-            const segSaida = splitIsoDatetime(raw.saida as string | undefined);
-            const segChegada = splitIsoDatetime(raw.chegada as string | undefined);
-            return {
-                ordem: (raw.ordem as number) ?? i,
-                aeroportoOrigem: String(raw.aeroportoOrigem ?? "").toUpperCase(),
-                aeroportoDestino: String(raw.aeroportoDestino ?? "").toUpperCase(),
-                cidadeOrigem: (raw.cidadeOrigem as string) ?? "",
-                cidadeDestino: (raw.cidadeDestino as string) ?? "",
-                saidaDate: segSaida.date,
-                saidaTime: segSaida.time,
-                chegadaDate: segChegada.date,
-                chegadaTime: segChegada.time,
-                companhia: (raw.companhia as string) ?? "",
-                numeroVoo: (raw.numeroVoo as string) ?? "",
-                classe: (raw.classe as string) ?? "",
-                bagagem: (raw.bagagem as string) ?? "",
-                duracaoConexaoMinutos: (raw.duracaoConexaoMinutos as number | "") ?? "",
-            };
-        }),
     };
+
+    const resumoVolta = {
+        ...start.resumoVolta,
+        origem: (extracted.origem as string) ?? "",
+        destino: (extracted.destino as string) ?? "",
+        dataSaidaDate: saida.date,
+        dataSaidaTime: saida.time,
+        dataChegadaDate: chegada.date,
+        dataChegadaTime: chegada.time,
+        qtdConexoes:
+            (extracted.qtdConexoes as number) ??
+            (voltaSegsRaw.length > 0 ? Math.max(0, voltaSegsRaw.length - 1) : 0),
+        companhias: (extracted.companhias as string) ?? "",
+        classe: (extracted.classe as string) ?? "",
+    };
+
+    if (target === "volta") {
+        return {
+            ...start,
+            ...baseRes,
+            temVolta: true,
+            resumoVolta,
+            segmentosVolta: (voltaSegsRaw.length ? voltaSegsRaw : idaSegsRaw).map(mapSegmento),
+        };
+    }
+
+    return {
+        ...start,
+        ...baseRes,
+        temVolta: start.temVolta || Boolean(extracted.temVolta) || voltaSegsRaw.length > 0,
+        resumoIda,
+        resumoVolta:
+            start.temVolta || Boolean(extracted.temVolta) || voltaSegsRaw.length > 0
+                ? {
+                    ...start.resumoVolta,
+                    origem: (extracted.origemVolta as string) ?? start.resumoVolta.origem,
+                    destino: (extracted.destinoVolta as string) ?? start.resumoVolta.destino,
+                    dataSaidaDate:
+                        splitIsoDatetime(extracted.dataSaidaVolta as string | undefined).date ||
+                        start.resumoVolta.dataSaidaDate,
+                    dataSaidaTime:
+                        splitIsoDatetime(extracted.dataSaidaVolta as string | undefined).time ||
+                        start.resumoVolta.dataSaidaTime,
+                    dataChegadaDate:
+                        splitIsoDatetime(extracted.dataChegadaVolta as string | undefined).date ||
+                        start.resumoVolta.dataChegadaDate,
+                    dataChegadaTime:
+                        splitIsoDatetime(extracted.dataChegadaVolta as string | undefined).time ||
+                        start.resumoVolta.dataChegadaTime,
+                    qtdConexoes:
+                        (extracted.qtdConexoesVolta as number) ??
+                        (start.resumoVolta.qtdConexoes || (voltaSegsRaw.length ? Math.max(0, voltaSegsRaw.length - 1) : 0)),
+                    companhias: (extracted.companhiasVolta as string) ?? start.resumoVolta.companhias,
+                    classe: (extracted.classeVolta as string) ?? start.resumoVolta.classe,
+                }
+                : start.resumoVolta,
+        segmentosIda: idaSegsRaw.map(mapSegmento),
+        segmentosVolta:
+            voltaSegsRaw.length > 0
+                ? voltaSegsRaw.map(mapSegmento)
+                : start.segmentosVolta,
+    };
+}
+
+function validateDates(form: PecaForm): string | null {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    if (form.resumoIda.dataSaidaDate) {
+        const ida = new Date(form.resumoIda.dataSaidaDate);
+        if (ida < now) return "A data de ida não pode ser anterior a hoje.";
+    }
+    if (form.temVolta && form.resumoVolta.dataSaidaDate && form.resumoIda.dataSaidaDate) {
+        const ida = new Date(form.resumoIda.dataSaidaDate);
+        const volta = new Date(form.resumoVolta.dataSaidaDate);
+        if (volta < ida) return "A data da volta não pode ser anterior à ida.";
+    }
+    return null;
+}
+
+function ResumoDirecaoFields({
+    resumo,
+    onPatch,
+    minDate,
+}: {
+    resumo: ResumoDirecaoForm;
+    onPatch: (patch: Partial<ResumoDirecaoForm>) => void;
+    minDate?: string;
+}) {
+    return (
+        <div className="grid grid-cols-2 gap-3">
+            <Field label="Origem">
+                <Input value={resumo.origem} onChange={(e) => onPatch({ origem: e.target.value })} />
+            </Field>
+            <Field label="Destino">
+                <Input value={resumo.destino} onChange={(e) => onPatch({ destino: e.target.value })} />
+            </Field>
+            <Field label="Data saída">
+                <Input
+                    type="date"
+                    min={minDate}
+                    value={resumo.dataSaidaDate}
+                    onChange={(e) => onPatch({ dataSaidaDate: e.target.value })}
+                />
+            </Field>
+            <Field label="Hora saída">
+                <Input
+                    type="time"
+                    value={resumo.dataSaidaTime}
+                    onChange={(e) => onPatch({ dataSaidaTime: e.target.value })}
+                />
+            </Field>
+            <Field label="Data chegada">
+                <Input
+                    type="date"
+                    value={resumo.dataChegadaDate}
+                    onChange={(e) => onPatch({ dataChegadaDate: e.target.value })}
+                />
+            </Field>
+            <Field label="Hora chegada">
+                <Input
+                    type="time"
+                    value={resumo.dataChegadaTime}
+                    onChange={(e) => onPatch({ dataChegadaTime: e.target.value })}
+                />
+            </Field>
+            <Field label="Companhias">
+                <Input
+                    value={resumo.companhias}
+                    onChange={(e) => onPatch({ companhias: e.target.value })}
+                    placeholder="Gol, TAP..."
+                />
+            </Field>
+            <Field label="Conexões">
+                <Input
+                    type="number"
+                    min={0}
+                    value={resumo.qtdConexoes}
+                    onChange={(e) => onPatch({ qtdConexoes: Number(e.target.value) || 0 })}
+                />
+            </Field>
+            <Field label="Classe">
+                <Select value={resumo.classe} onValueChange={(v) => onPatch({ classe: v })}>
+                    <SelectTrigger className="h-8 w-full text-sm">
+                        <SelectValue placeholder="Selecione a classe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Econômica">Econômica</SelectItem>
+                        <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
+                        <SelectItem value="Executiva">Executiva</SelectItem>
+                        <SelectItem value="Primeira">Primeira</SelectItem>
+                    </SelectContent>
+                </Select>
+            </Field>
+        </div>
+    );
+}
+
+function SegmentosDirecaoSection({
+    titulo,
+    segmentos,
+    onAdd,
+    onRemove,
+    onPatch,
+}: {
+    titulo: string;
+    segmentos: Segmento[];
+    onAdd: () => void;
+    onRemove: (idx: number) => void;
+    onPatch: (idx: number, patch: Partial<Segmento>) => void;
+}) {
+    return (
+        <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{titulo}</p>
+                <Button size="sm" variant="outline" onClick={onAdd} className="gap-1">
+                    <Plus className="h-3.5 w-3.5" />
+                    Adicionar
+                </Button>
+            </div>
+
+            {segmentos.length === 0 ? (
+                <div className="rounded-md border-2 border-dashed p-5 text-center text-xs text-muted-foreground">
+                    Sem segmentos detalhados.
+                </div>
+            ) : (
+                segmentos.map((s, idx) => (
+                    <div key={idx} className="rounded-md border p-3 space-y-2 bg-card">
+                        <div className="flex items-center justify-between">
+                            <Badge variant="outline" className="text-[10px]">
+                                Segmento {idx + 1}
+                            </Badge>
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => onRemove(idx)}>
+                                <X className="h-3.5 w-3.5" />
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <Input
+                                placeholder="De (IATA)"
+                                value={s.aeroportoOrigem}
+                                onChange={(e) => onPatch(idx, { aeroportoOrigem: e.target.value.toUpperCase() })}
+                            />
+                            <Input
+                                placeholder="Para (IATA)"
+                                value={s.aeroportoDestino}
+                                onChange={(e) => onPatch(idx, { aeroportoDestino: e.target.value.toUpperCase() })}
+                            />
+                            <Input
+                                placeholder="Cia"
+                                value={s.companhia}
+                                onChange={(e) => onPatch(idx, { companhia: e.target.value })}
+                            />
+                            <Input
+                                placeholder="Voo"
+                                value={s.numeroVoo}
+                                onChange={(e) => onPatch(idx, { numeroVoo: e.target.value })}
+                            />
+                            <Input
+                                type="date"
+                                value={s.saidaDate}
+                                onChange={(e) => onPatch(idx, { saidaDate: e.target.value })}
+                            />
+                            <Input
+                                type="time"
+                                value={s.saidaTime}
+                                onChange={(e) => onPatch(idx, { saidaTime: e.target.value })}
+                            />
+                            <Input
+                                type="date"
+                                value={s.chegadaDate}
+                                onChange={(e) => onPatch(idx, { chegadaDate: e.target.value })}
+                            />
+                            <Input
+                                type="time"
+                                value={s.chegadaTime}
+                                onChange={(e) => onPatch(idx, { chegadaTime: e.target.value })}
+                            />
+                            <Select value={s.classe} onValueChange={(v) => onPatch(idx, { classe: v })}>
+                                <SelectTrigger className="h-8 w-full text-xs" />
+                                <SelectContent>
+                                    <SelectItem value="Econômica">Econômica</SelectItem>
+                                    <SelectItem value="Econômica Premium">Econômica Premium</SelectItem>
+                                    <SelectItem value="Executiva">Executiva</SelectItem>
+                                    <SelectItem value="Primeira">Primeira</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Input
+                                placeholder="Bagagem"
+                                value={s.bagagem}
+                                onChange={(e) => onPatch(idx, { bagagem: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+    );
 }

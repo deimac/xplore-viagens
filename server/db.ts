@@ -3861,6 +3861,12 @@ export async function getCwCotacaoFull(id: number) {
   if (pecaIds.length) {
     segmentos = await db.select().from(cwSegmentos).where(inArray(cwSegmentos.pecaId, pecaIds));
   }
+  segmentos.sort((a: any, b: any) => {
+    const da = a.direcao === "volta" ? 1 : 0;
+    const dbv = b.direcao === "volta" ? 1 : 0;
+    if (da !== dbv) return da - dbv;
+    return (a.ordem ?? 0) - (b.ordem ?? 0);
+  });
   // Agrupa segmentos por peça
   const segmentosByPeca: Record<number, any[]> = {};
   for (const seg of segmentos) {
@@ -3927,7 +3933,7 @@ export async function createCwPeca(pecaData: Record<string, unknown>, segmentos:
   const pecaId = Number(result[0].insertId);
   if (segmentos.length) {
     await db.insert(cwSegmentos).values(
-      segmentos.map((s, i) => ({ ...s, pecaId, ordem: s.ordem ?? i })) as any
+      segmentos.map((s, i) => ({ ...s, pecaId, direcao: s.direcao ?? "ida", ordem: s.ordem ?? i })) as any
     );
   }
   const [peca] = await db.select().from(cwPecas).where(eq(cwPecas.id, pecaId)).limit(1);
@@ -3949,7 +3955,7 @@ export async function updateCwPeca(
     await db.delete(cwSegmentos).where(eq(cwSegmentos.pecaId, id));
     if (segmentos.length) {
       await db.insert(cwSegmentos).values(
-        segmentos.map((s, i) => ({ ...s, pecaId: id, ordem: s.ordem ?? i })) as any
+        segmentos.map((s, i) => ({ ...s, pecaId: id, direcao: s.direcao ?? "ida", ordem: s.ordem ?? i })) as any
       );
     }
   }

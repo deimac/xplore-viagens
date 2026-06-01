@@ -110,6 +110,7 @@ export default function CotacaoDetailPage() {
     }>({ open: false, editingId: null, nome: "", descricao: "" });
 
     const [importOpen, setImportOpen] = useState(false);
+    const [importTarget, setImportTarget] = useState<"ida" | "volta">("ida");
     const [propostaOpen, setPropostaOpen] = useState(false);
     const [cotacaoEdit, setCotacaoEdit] = useState<CotacaoEditState>(emptyCotacaoEdit);
     const [activeDragPecaId, setActiveDragPecaId] = useState<number | null>(null);
@@ -251,23 +252,46 @@ export default function CotacaoDetailPage() {
         setPecaSheet({ open: true, editingId: peca.id, initialForm: pecaToForm(peca) });
 
     const openPecaFromExtraction = (extracted: Record<string, unknown>) => {
-        setPecaSheet({ open: true, editingId: null, initialForm: extractedToPecaForm(extracted) });
+        if (pecaSheet.open) {
+            const merged = extractedToPecaForm(extracted, importTarget, pecaSheet.initialForm);
+            setPecaSheet({
+                open: true,
+                editingId: pecaSheet.editingId,
+                initialForm: merged,
+            });
+            return;
+        }
+
+        setPecaSheet({
+            open: true,
+            editingId: null,
+            initialForm: extractedToPecaForm(extracted, "ida"),
+        });
+        setImportTarget("ida");
     };
 
     const submitPeca = (form: PecaForm) => {
         const dt = pecaFormToPayload(form);
         const payload = {
             titulo: form.titulo || undefined,
-            origem: form.origem || undefined,
-            destino: form.destino || undefined,
+            temVolta: form.temVolta,
+            origem: form.resumoIda.origem || undefined,
+            destino: form.resumoIda.destino || undefined,
             dataSaida: dt.dataSaida || undefined,
             dataChegada: dt.dataChegada || undefined,
-            qtdConexoes: Number(form.qtdConexoes) || 0,
-            companhias: form.companhias || undefined,
+            qtdConexoes: Number(form.resumoIda.qtdConexoes) || 0,
+            companhias: form.resumoIda.companhias || undefined,
+            classe: form.resumoIda.classe || undefined,
+            origemVolta: form.temVolta ? form.resumoVolta.origem || undefined : null,
+            destinoVolta: form.temVolta ? form.resumoVolta.destino || undefined : null,
+            dataSaidaVolta: form.temVolta ? dt.dataSaidaVolta || undefined : null,
+            dataChegadaVolta: form.temVolta ? dt.dataChegadaVolta || undefined : null,
+            qtdConexoesVolta: form.temVolta ? Number(form.resumoVolta.qtdConexoes) || 0 : 0,
+            companhiasVolta: form.temVolta ? form.resumoVolta.companhias || undefined : null,
+            classeVolta: form.temVolta ? form.resumoVolta.classe || undefined : null,
             itemPessoal: form.itemPessoal,
             bagagemMao: form.bagagemMao,
             bagagemDespachada: form.bagagemDespachada,
-            classe: form.classe || undefined,
             tipoFinanceiro: form.tipoFinanceiro,
             custo: form.custo === "" ? undefined : Number(form.custo),
             venda: form.venda === "" ? undefined : Number(form.venda),
@@ -275,8 +299,9 @@ export default function CotacaoDetailPage() {
             estrategia: form.estrategia || undefined,
             status: form.status,
             observacoes: form.observacoes || undefined,
-            segmentos: dt.segmentos.map((s, i) => ({
-                ordem: i,
+            segmentos: dt.segmentos.map((s) => ({
+                direcao: s.direcao,
+                ordem: s.ordem,
                 aeroportoOrigem: s.aeroportoOrigem || undefined,
                 aeroportoDestino: s.aeroportoDestino || undefined,
                 cidadeOrigem: s.cidadeOrigem || undefined,
@@ -466,14 +491,14 @@ export default function CotacaoDetailPage() {
             toast.error("Cole o texto da cotação primeiro");
             return;
         }
-        extractText.mutate({ texto });
+        extractText.mutate({ texto, target: importTarget });
     };
     const handleImportImage = (file: File) => {
         const reader = new FileReader();
         reader.onload = () => {
             const result = reader.result as string;
             const base64 = result.split(",")[1] || "";
-            extractImage.mutate({ fileData: base64, mimeType: file.type });
+            extractImage.mutate({ fileData: base64, mimeType: file.type, target: importTarget });
         };
         reader.readAsDataURL(file);
     };
@@ -738,6 +763,9 @@ export default function CotacaoDetailPage() {
             <ImportIaDialog
                 open={importOpen}
                 onOpenChange={setImportOpen}
+                target={importTarget}
+                onTargetChange={setImportTarget}
+                allowVoltaTarget={pecaSheet.open}
                 onExtractText={handleImportText}
                 onExtractImage={handleImportImage}
                 isExtractingText={extractText.isPending}

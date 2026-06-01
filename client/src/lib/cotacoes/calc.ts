@@ -3,6 +3,61 @@
 import type { PecaCompleta, CenarioCompleto } from "@/components/cotacoes/types";
 import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
 
+export type DirecaoPeca = "ida" | "volta";
+
+export function hasVolta(p: PecaCompleta): boolean {
+    return Boolean(
+        p.temVolta ||
+        p.origemVolta ||
+        p.destinoVolta ||
+        p.dataSaidaVolta ||
+        p.dataChegadaVolta ||
+        p.segmentos.some((s) => s.direcao === "volta")
+    );
+}
+
+export function getResumoDirecao(p: PecaCompleta, direcao: DirecaoPeca) {
+    if (direcao === "volta") {
+        return {
+            origem: p.origemVolta,
+            destino: p.destinoVolta,
+            dataSaida: p.dataSaidaVolta,
+            dataChegada: p.dataChegadaVolta,
+            qtdConexoes: p.qtdConexoesVolta,
+            companhias: p.companhiasVolta,
+            classe: p.classeVolta,
+            duracaoMinutos: p.duracaoMinutosVolta,
+        };
+    }
+
+    return {
+        origem: p.origem,
+        destino: p.destino,
+        dataSaida: p.dataSaida,
+        dataChegada: p.dataChegada,
+        qtdConexoes: p.qtdConexoes,
+        companhias: p.companhias,
+        classe: p.classe,
+        duracaoMinutos: p.duracaoMinutos,
+    };
+}
+
+export function getSegmentosDirecao(p: PecaCompleta, direcao: DirecaoPeca) {
+    if (direcao === "volta") {
+        return p.segmentos.filter((s) => s.direcao === "volta");
+    }
+    return p.segmentos.filter((s) => (s.direcao ?? "ida") === "ida");
+}
+
+export function getPecaTimelineBounds(p: PecaCompleta) {
+    const ida = getResumoDirecao(p, "ida");
+    const volta = getResumoDirecao(p, "volta");
+    return {
+        inicio: ida.dataSaida,
+        fim: hasVolta(p) ? (volta.dataChegada || ida.dataChegada) : ida.dataChegada,
+    };
+}
+
 export function toNumber(v: string | number | null | undefined): number | null {
     if (v == null || v === "") return null;
     const n = typeof v === "string" ? Number(v) : v;
@@ -50,8 +105,13 @@ export function diffMinutes(a: Date | string | null | undefined, b: Date | strin
 }
 
 export function pecaDurationMinutes(p: PecaCompleta): number | null {
-    if (p.duracaoMinutos != null) return p.duracaoMinutos;
-    return diffMinutes(p.dataSaida, p.dataChegada);
+    const ida = getResumoDirecao(p, "ida");
+    const volta = getResumoDirecao(p, "volta");
+    const idaDur = ida.duracaoMinutos ?? diffMinutes(ida.dataSaida, ida.dataChegada);
+    if (!hasVolta(p)) return idaDur;
+    const voltaDur = volta.duracaoMinutos ?? diffMinutes(volta.dataSaida, volta.dataChegada);
+    if (idaDur == null && voltaDur == null) return null;
+    return (idaDur ?? 0) + (voltaDur ?? 0);
 }
 
 export function fmtTime(value: Date | string | null | undefined): string {
@@ -123,10 +183,18 @@ export function calcCenarioTotais(cenario: CenarioCompleto, pecasById: Map<numbe
                 if (t) companhiasSet.add(t);
             });
         }
+        if (p.companhiasVolta) {
+            p.companhiasVolta.split(/[,/+]/).forEach((c) => {
+                const t = c.trim();
+                if (t) companhiasSet.add(t);
+            });
+        }
 
         if (i > 0) {
             const anterior = ordenadas[i - 1];
-            const intervalo = diffMinutes(anterior.dataChegada, p.dataSaida);
+            const prevBounds = getPecaTimelineBounds(anterior);
+            const curBounds = getPecaTimelineBounds(p);
+            const intervalo = diffMinutes(prevBounds.fim, curBounds.inicio);
             if (intervalo != null && intervalo > 0) {
                 intervalos.push({ pecaAnteriorId: anterior.id, pecaPosteriorId: p.id, minutos: intervalo });
                 tempoMinutos += intervalo;
@@ -154,9 +222,13 @@ export function matchesText(p: PecaCompleta, term: string): boolean {
         p.titulo,
         p.origem,
         p.destino,
+        p.origemVolta,
+        p.destinoVolta,
         p.companhias,
+        p.companhiasVolta,
         p.fonte,
         p.classe,
+        p.classeVolta,
         fmtBagagemPeca(p),
         ...p.segmentos.flatMap((s) => [s.aeroportoOrigem, s.aeroportoDestino, s.companhia, s.numeroVoo]),
     ]

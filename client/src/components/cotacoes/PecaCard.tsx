@@ -29,6 +29,8 @@ import {
     fmtCurrencyCompact,
     fmtDuration,
     fmtTime,
+    getResumoDirecao,
+    hasVolta,
     pecaDurationMinutes,
 } from "@/lib/cotacoes/calc";
 
@@ -81,6 +83,9 @@ export function PecaCard({
     const duracao = pecaDurationMinutes(peca);
     const TipoIcon = TIPO_ICON[peca.tipoFinanceiro];
     const isFavorita = peca.status === "favorita";
+    const ida = getResumoDirecao(peca, "ida");
+    const volta = getResumoDirecao(peca, "volta");
+    const temVolta = hasVolta(peca);
 
     return (
         <div
@@ -111,28 +116,23 @@ export function PecaCard({
                 </button>
 
                 <div className="flex-1 min-w-0 p-2.5 space-y-1.5">
-                    {/* Linha 1: trecho + horário */}
                     <div className="flex items-baseline justify-between gap-2">
                         <div className="font-semibold text-sm flex items-center gap-1 truncate">
                             <Plane className="h-3.5 w-3.5 text-primary shrink-0" />
-                            <span className="truncate">
-                                {peca.origem || "?"} → {peca.destino || "?"}
-                            </span>
+                            <span className="truncate">{peca.titulo || "Peça"}</span>
                         </div>
-                        {peca.dataSaida && (
+                        {ida.dataSaida && (
                             <span className="text-xs font-medium tabular-nums text-muted-foreground shrink-0">
-                                {fmtTime(peca.dataSaida)}
-                                {peca.dataChegada ? ` → ${fmtTime(peca.dataChegada)}` : ""}
+                                {fmtTime(ida.dataSaida)}
+                                {ida.dataChegada ? ` → ${fmtTime(ida.dataChegada)}` : ""}
                             </span>
                         )}
                     </div>
 
-                    {peca.titulo && (
-                        <div className="text-xs text-muted-foreground truncate">{peca.titulo}</div>
-                    )}
-
-                    {/* Linha 2: chips operacionais */}
                     <div className="flex items-center gap-1 flex-wrap text-[11px]">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80">
+                            {temVolta ? "Ida + volta" : "Somente ida"}
+                        </span>
                         {duracao != null && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80">
                                 <Clock className="h-3 w-3" />
@@ -141,7 +141,7 @@ export function PecaCard({
                         )}
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80">
                             <Shuffle className="h-3 w-3" />
-                            {peca.qtdConexoes} con
+                            {(ida.qtdConexoes ?? 0) + (temVolta ? volta.qtdConexoes ?? 0 : 0)} con
                         </span>
                         {fmtBagagemPeca(peca) && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80 truncate max-w-[140px]">
@@ -149,19 +149,34 @@ export function PecaCard({
                                 <span className="truncate">{fmtBagagemPeca(peca)}</span>
                             </span>
                         )}
-                        {peca.companhias && (
-                            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground/80 truncate max-w-[140px]">
-                                {peca.companhias}
-                            </span>
-                        )}
-                        {peca.classe && (
-                            <span className="px-1.5 py-0.5 rounded bg-muted text-foreground/80">
-                                {peca.classe}
-                            </span>
-                        )}
                     </div>
 
-                    {/* Linha 3: financeiro interno */}
+                    <div className="rounded-md border bg-muted/20 p-2 space-y-1">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Ida</div>
+                        <div className="text-xs font-medium truncate">
+                            {ida.origem || "?"} → {ida.destino || "?"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                            {ida.dataSaida ? fmtTime(ida.dataSaida) : "—"}
+                            {ida.dataChegada ? ` → ${fmtTime(ida.dataChegada)}` : ""}
+                            {ida.companhias ? ` • ${ida.companhias}` : ""}
+                        </div>
+                    </div>
+
+                    {temVolta && (
+                        <div className="rounded-md border bg-muted/20 p-2 space-y-1">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Volta</div>
+                            <div className="text-xs font-medium truncate">
+                                {volta.origem || "?"} → {volta.destino || "?"}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate">
+                                {volta.dataSaida ? fmtTime(volta.dataSaida) : "—"}
+                                {volta.dataChegada ? ` → ${fmtTime(volta.dataChegada)}` : ""}
+                                {volta.companhias ? ` • ${volta.companhias}` : ""}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-dashed">
                         <div className="flex items-center gap-1">
                             <Badge

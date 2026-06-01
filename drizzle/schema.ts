@@ -381,6 +381,7 @@ export const cwPecas = mysqlTable("cw_pecas", {
     .notNull()
     .references(() => cwCotacoes.id, { onDelete: "cascade" }),
   titulo: varchar("titulo", { length: 255 }),
+  temVolta: boolean("tem_volta").default(false).notNull(),
   origem: varchar("origem", { length: 120 }),
   destino: varchar("destino", { length: 120 }),
   dataSaida: timestamp("data_saida"),
@@ -389,6 +390,14 @@ export const cwPecas = mysqlTable("cw_pecas", {
   qtdConexoes: int("qtd_conexoes").default(0).notNull(),
   companhias: varchar("companhias", { length: 255 }),
   classe: varchar("classe", { length: 40 }),
+  origemVolta: varchar("origem_volta", { length: 120 }),
+  destinoVolta: varchar("destino_volta", { length: 120 }),
+  dataSaidaVolta: timestamp("data_saida_volta"),
+  dataChegadaVolta: timestamp("data_chegada_volta"),
+  duracaoMinutosVolta: int("duracao_minutos_volta"),
+  qtdConexoesVolta: int("qtd_conexoes_volta").default(0).notNull(),
+  companhiasVolta: varchar("companhias_volta", { length: 255 }),
+  classeVolta: varchar("classe_volta", { length: 40 }),
   itemPessoal: int("item_pessoal").default(1).notNull(),
   bagagemMao: int("bagagem_mao").default(0).notNull(),
   bagagemDespachada: int("bagagem_despachada").default(0).notNull(),
@@ -417,6 +426,7 @@ export const cwSegmentos = mysqlTable("cw_segmentos", {
   pecaId: int("peca_id")
     .notNull()
     .references(() => cwPecas.id, { onDelete: "cascade" }),
+  direcao: mysqlEnum("direcao", ["ida", "volta"]).default("ida").notNull(),
   ordem: int("ordem").default(0).notNull(),
   aeroportoOrigem: varchar("aeroporto_origem", { length: 10 }),
   aeroportoDestino: varchar("aeroporto_destino", { length: 10 }),

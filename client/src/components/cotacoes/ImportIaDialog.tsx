@@ -15,11 +15,23 @@ import {
     Image as ImageIcon,
     Upload,
     Loader2,
+    ArrowRightLeft,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    target: "ida" | "volta";
+    onTargetChange: (target: "ida" | "volta") => void;
+    allowVoltaTarget: boolean;
     onExtractText: (texto: string) => void;
     onExtractImage: (file: File) => void;
     isExtractingText: boolean;
@@ -29,6 +41,9 @@ interface Props {
 export function ImportIaDialog({
     open,
     onOpenChange,
+    target,
+    onTargetChange,
+    allowVoltaTarget,
     onExtractText,
     onExtractImage,
     isExtractingText,
@@ -43,6 +58,9 @@ export function ImportIaDialog({
     // Adiciona/remover listeners globais quando o modal está aberto
     React.useEffect(() => {
         if (!open) return;
+        if (!allowVoltaTarget && target === "volta") {
+            onTargetChange("ida");
+        }
         const handleWindowDragOver = (e: DragEvent) => {
             e.preventDefault();
             setDragActive(true);
@@ -66,7 +84,7 @@ export function ImportIaDialog({
             window.removeEventListener("drop", handleWindowDrop);
             window.removeEventListener("dragleave", handleWindowDragLeave);
         };
-    }, [open, onExtractImage]);
+    }, [open, onExtractImage, allowVoltaTarget, target, onTargetChange]);
 
     return (
         <Dialog
@@ -87,6 +105,32 @@ export function ImportIaDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <Tabs defaultValue="texto">
+                    <div className="mb-3 rounded-md border p-3 bg-muted/20">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5">
+                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                            Importar em
+                        </Label>
+                        <Select
+                            value={target}
+                            onValueChange={(v) => onTargetChange(v as "ida" | "volta")}
+                        >
+                            <SelectTrigger className="h-8 text-sm">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ida">Resumo e segmentos da ida</SelectItem>
+                                {allowVoltaTarget && (
+                                    <SelectItem value="volta">Resumo e segmentos da volta</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        {!allowVoltaTarget && (
+                            <p className="text-[11px] text-muted-foreground mt-1.5">
+                                Para importar direto na volta, abra uma peça primeiro e use Adicionar volta.
+                            </p>
+                        )}
+                    </div>
+
                     <TabsList className="grid grid-cols-2 w-full">
                         <TabsTrigger value="texto" className="gap-1.5">
                             <FileText className="h-4 w-4" />

@@ -47,12 +47,12 @@ export function PecaLibrary({
     const companhiasDisponiveis = useMemo(() => {
         const set = new Set<string>();
         pecas.forEach((p) => {
-            if (p.companhias) {
-                p.companhias.split(/[,/+]/).forEach((c) => {
+            [p.companhias, p.companhiasVolta].filter(Boolean).forEach((raw) => {
+                raw!.split(/[,/+]/).forEach((c) => {
                     const t = c.trim();
                     if (t) set.add(t);
                 });
-            }
+            });
         });
         return Array.from(set).sort();
     }, [pecas]);
@@ -61,6 +61,7 @@ export function PecaLibrary({
         const set = new Set<string>();
         pecas.forEach((p) => {
             if (p.origem) set.add(p.origem);
+            if (p.origemVolta) set.add(p.origemVolta);
         });
         return Array.from(set).sort();
     }, [pecas]);
@@ -79,9 +80,11 @@ export function PecaLibrary({
         return pecas.filter((p) => {
             if (soFavoritas && p.status !== "favorita") return false;
             if (filtroTipo !== "todos" && p.tipoFinanceiro !== filtroTipo) return false;
-            if (filtroOrigem !== "todas" && p.origem !== filtroOrigem) return false;
+            if (filtroOrigem !== "todas" && p.origem !== filtroOrigem && p.origemVolta !== filtroOrigem) return false;
             if (filtroCompanhia !== "todas") {
-                const has = p.companhias?.toLowerCase().includes(filtroCompanhia.toLowerCase());
+                const has = [p.companhias, p.companhiasVolta]
+                    .filter(Boolean)
+                    .some((v) => v!.toLowerCase().includes(filtroCompanhia.toLowerCase()));
                 if (!has) return false;
             }
             if (!matchesText(p, search)) return false;

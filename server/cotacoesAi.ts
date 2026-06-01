@@ -16,6 +16,7 @@
 import { invokeLLM, type Message } from "./_core/llm";
 
 export interface ExtractedSegmento {
+    direcao?: "ida" | "volta" | null;
     ordem: number;
     aeroportoOrigem?: string | null;
     aeroportoDestino?: string | null;
@@ -32,17 +33,26 @@ export interface ExtractedSegmento {
 
 export interface ExtractedPeca {
     titulo?: string | null;
+    temVolta?: boolean | null;
     origem?: string | null;
     destino?: string | null;
     dataSaida?: string | null;
     dataChegada?: string | null;
+    origemVolta?: string | null;
+    destinoVolta?: string | null;
+    dataSaidaVolta?: string | null;
+    dataChegadaVolta?: string | null;
     duracaoMinutos?: number | null;
+    duracaoMinutosVolta?: number | null;
     qtdConexoes?: number;
+    qtdConexoesVolta?: number;
     companhias?: string | null;
+    companhiasVolta?: string | null;
     itemPessoal?: number | null;
     bagagemMao?: number | null;
     bagagemDespachada?: number | null;
     classe?: string | null;
+    classeVolta?: string | null;
     observacoes?: string | null;
     segmentos: ExtractedSegmento[];
     confianca?: number | null;
@@ -53,13 +63,21 @@ const PECA_SCHEMA = {
     additionalProperties: false,
     properties: {
         titulo: { type: ["string", "null"] },
+        temVolta: { type: ["boolean", "null"] },
         origem: { type: ["string", "null"], description: "Cidade ou aeroporto de origem da peça inteira" },
         destino: { type: ["string", "null"], description: "Cidade ou aeroporto de destino final da peça" },
         dataSaida: { type: ["string", "null"], description: "ISO 8601 sem timezone, ex 2026-06-15T22:35" },
         dataChegada: { type: ["string", "null"] },
+        origemVolta: { type: ["string", "null"] },
+        destinoVolta: { type: ["string", "null"] },
+        dataSaidaVolta: { type: ["string", "null"] },
+        dataChegadaVolta: { type: ["string", "null"] },
         duracaoMinutos: { type: ["integer", "null"] },
+        duracaoMinutosVolta: { type: ["integer", "null"] },
         qtdConexoes: { type: "integer", minimum: 0 },
+        qtdConexoesVolta: { type: ["integer", "null"], minimum: 0 },
         companhias: { type: ["string", "null"], description: "Lista resumida de cias, ex 'Gol, TAP'" },
+        companhiasVolta: { type: ["string", "null"] },
         itemPessoal: {
             type: ["integer", "null"],
             minimum: 0,
@@ -76,6 +94,7 @@ const PECA_SCHEMA = {
             description: "Quantidade de bagagens despachadas (porão)",
         },
         classe: { type: ["string", "null"] },
+        classeVolta: { type: ["string", "null"] },
         observacoes: { type: ["string", "null"] },
         segmentos: {
             type: "array",
@@ -83,6 +102,7 @@ const PECA_SCHEMA = {
                 type: "object",
                 additionalProperties: false,
                 properties: {
+                    direcao: { type: ["string", "null"], enum: ["ida", "volta", null] },
                     ordem: { type: "integer" },
                     aeroportoOrigem: { type: ["string", "null"], description: "Código IATA 3 letras" },
                     aeroportoDestino: { type: ["string", "null"] },
@@ -122,6 +142,7 @@ Regras:
   - Se não houver bagagem inclusa, use 0 nos campos correspondentes.
 - Companhia: nome completo se possível (ex: "Gol", "TAP Air Portugal", "Latam").
 - Se a imagem/texto tiver múltiplos itinerários distintos (ex: ida e volta separadas), extraia apenas o PRIMEIRO/PRINCIPAL como uma peça única; a peça deve ser unidade indivisível.
+- Se houver ida e volta explícitas, você pode preencher campos de volta (origemVolta, destinoVolta, datas/cias/conexoes/classe da volta) e marcar segmentos com direcao.
 - "confianca" 0-1: avalie sua certeza da extração.
 
 Responda SEMPRE seguindo estritamente o JSON Schema fornecido.`;

@@ -4,7 +4,13 @@ import { Plane, Clock, Luggage, X, GripVertical, ArrowRight } from "lucide-react
 import { Button } from "@/components/ui/button";
 import type { PecaCompleta, CenarioPecaLink } from "./types";
 import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
-import { fmtTime, fmtDuration, pecaDurationMinutes } from "@/lib/cotacoes/calc";
+import {
+    fmtTime,
+    fmtDuration,
+    getResumoDirecao,
+    hasVolta,
+    pecaDurationMinutes,
+} from "@/lib/cotacoes/calc";
 
 interface Props {
     link: CenarioPecaLink;
@@ -28,6 +34,9 @@ export function CenarioBloco({ link, peca, cenarioId, ordem, onRemove, onClick }
     };
 
     const duracao = pecaDurationMinutes(peca);
+    const ida = getResumoDirecao(peca, "ida");
+    const volta = getResumoDirecao(peca, "volta");
+    const temVolta = hasVolta(peca);
 
     return (
         <div
@@ -57,27 +66,43 @@ export function CenarioBloco({ link, peca, cenarioId, ordem, onRemove, onClick }
                     <div className="flex items-baseline justify-between gap-2">
                         <div className="font-semibold text-sm flex items-center gap-1 truncate">
                             <Plane className="h-3.5 w-3.5 text-primary shrink-0" />
-                            <span className="truncate">{peca.origem || "?"}</span>
+                            <span className="truncate">{ida.origem || "?"}</span>
                             <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="truncate">{peca.destino || "?"}</span>
+                            <span className="truncate">{ida.destino || "?"}</span>
                         </div>
-                        {peca.dataSaida && (
+                        {ida.dataSaida && (
                             <span className="text-xs font-medium tabular-nums text-muted-foreground shrink-0">
-                                {fmtTime(peca.dataSaida)}
-                                {peca.dataChegada ? ` → ${fmtTime(peca.dataChegada)}` : ""}
+                                {fmtTime(ida.dataSaida)}
+                                {ida.dataChegada ? ` → ${fmtTime(ida.dataChegada)}` : ""}
                             </span>
                         )}
                     </div>
 
+                    {temVolta && (
+                        <div className="text-[11px] text-muted-foreground truncate">
+                            Volta: {volta.origem || "?"} → {volta.destino || "?"}
+                            {volta.dataSaida ? ` • ${fmtTime(volta.dataSaida)}` : ""}
+                            {volta.dataChegada ? ` → ${fmtTime(volta.dataChegada)}` : ""}
+                        </div>
+                    )}
+
                     <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
-                        {peca.companhias && <span className="truncate max-w-[180px]">{peca.companhias}</span>}
+                        {(ida.companhias || volta.companhias) && (
+                            <span className="truncate max-w-[180px]">
+                                {temVolta
+                                    ? [ida.companhias, volta.companhias].filter(Boolean).join(" / ")
+                                    : ida.companhias}
+                            </span>
+                        )}
                         {duracao != null && (
                             <span className="inline-flex items-center gap-0.5">
                                 <Clock className="h-3 w-3" />
                                 {fmtDuration(duracao)}
                             </span>
                         )}
-                        {peca.qtdConexoes > 0 && <span>· {peca.qtdConexoes} con</span>}
+                        {((ida.qtdConexoes ?? 0) + (temVolta ? volta.qtdConexoes ?? 0 : 0)) > 0 && (
+                            <span>· {(ida.qtdConexoes ?? 0) + (temVolta ? volta.qtdConexoes ?? 0 : 0)} con</span>
+                        )}
                         {fmtBagagemPeca(peca) && (
                             <span className="inline-flex items-center gap-0.5 truncate max-w-[140px]">
                                 <Luggage className="h-3 w-3" />

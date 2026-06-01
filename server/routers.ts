@@ -1881,6 +1881,7 @@ export const appRouter = router({
         z.object({
           cotacaoId: z.number(),
           titulo: z.string().optional().nullable(),
+          temVolta: z.boolean().default(false),
           origem: z.string().optional().nullable(),
           destino: z.string().optional().nullable(),
           dataSaida: z.string().optional().nullable(),
@@ -1892,6 +1893,14 @@ export const appRouter = router({
           bagagemMao: z.number().int().min(0).default(0),
           bagagemDespachada: z.number().int().min(0).default(0),
           classe: z.string().optional().nullable(),
+          origemVolta: z.string().optional().nullable(),
+          destinoVolta: z.string().optional().nullable(),
+          dataSaidaVolta: z.string().optional().nullable(),
+          dataChegadaVolta: z.string().optional().nullable(),
+          duracaoMinutosVolta: z.number().int().optional().nullable(),
+          qtdConexoesVolta: z.number().int().min(0).default(0),
+          companhiasVolta: z.string().optional().nullable(),
+          classeVolta: z.string().optional().nullable(),
           tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).default("pagante"),
           custo: z.number().optional().nullable(),
           venda: z.number().optional().nullable(),
@@ -1902,6 +1911,7 @@ export const appRouter = router({
           segmentos: z
             .array(
               z.object({
+                direcao: z.enum(["ida", "volta"]).default("ida"),
                 ordem: z.number().int().default(0),
                 aeroportoOrigem: z.string().optional().nullable(),
                 aeroportoDestino: z.string().optional().nullable(),
@@ -1926,6 +1936,8 @@ export const appRouter = router({
             ...pecaData,
             dataSaida: pecaData.dataSaida ? new Date(pecaData.dataSaida) : null,
             dataChegada: pecaData.dataChegada ? new Date(pecaData.dataChegada) : null,
+            dataSaidaVolta: pecaData.dataSaidaVolta ? new Date(pecaData.dataSaidaVolta) : null,
+            dataChegadaVolta: pecaData.dataChegadaVolta ? new Date(pecaData.dataChegadaVolta) : null,
             custo: pecaData.custo != null ? String(pecaData.custo) : null,
             venda: pecaData.venda != null ? String(pecaData.venda) : null,
           } as any,
@@ -1942,6 +1954,7 @@ export const appRouter = router({
           id: z.number(),
           patch: z.object({
             titulo: z.string().optional().nullable(),
+            temVolta: z.boolean().optional(),
             origem: z.string().optional().nullable(),
             destino: z.string().optional().nullable(),
             dataSaida: z.string().optional().nullable(),
@@ -1953,6 +1966,14 @@ export const appRouter = router({
             bagagemMao: z.number().int().min(0).optional(),
             bagagemDespachada: z.number().int().min(0).optional(),
             classe: z.string().optional().nullable(),
+            origemVolta: z.string().optional().nullable(),
+            destinoVolta: z.string().optional().nullable(),
+            dataSaidaVolta: z.string().optional().nullable(),
+            dataChegadaVolta: z.string().optional().nullable(),
+            duracaoMinutosVolta: z.number().int().optional().nullable(),
+            qtdConexoesVolta: z.number().int().min(0).optional(),
+            companhiasVolta: z.string().optional().nullable(),
+            classeVolta: z.string().optional().nullable(),
             tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).optional(),
             custo: z.number().optional().nullable(),
             venda: z.number().optional().nullable(),
@@ -1964,6 +1985,7 @@ export const appRouter = router({
           segmentos: z
             .array(
               z.object({
+                direcao: z.enum(["ida", "volta"]).default("ida"),
                 ordem: z.number().int().default(0),
                 aeroportoOrigem: z.string().optional().nullable(),
                 aeroportoDestino: z.string().optional().nullable(),
@@ -1985,6 +2007,8 @@ export const appRouter = router({
         const patch: any = { ...input.patch };
         if ("dataSaida" in patch) patch.dataSaida = patch.dataSaida ? new Date(patch.dataSaida) : null;
         if ("dataChegada" in patch) patch.dataChegada = patch.dataChegada ? new Date(patch.dataChegada) : null;
+        if ("dataSaidaVolta" in patch) patch.dataSaidaVolta = patch.dataSaidaVolta ? new Date(patch.dataSaidaVolta) : null;
+        if ("dataChegadaVolta" in patch) patch.dataChegadaVolta = patch.dataChegadaVolta ? new Date(patch.dataChegadaVolta) : null;
         if ("custo" in patch) patch.custo = patch.custo != null ? String(patch.custo) : null;
         if ("venda" in patch) patch.venda = patch.venda != null ? String(patch.venda) : null;
         const segs = input.segmentos?.map((s) => ({
@@ -2069,7 +2093,7 @@ export const appRouter = router({
 
     // IA — extração de peça a partir de texto/imagem (não persiste; só devolve)
     extractFromText: adminProcedure
-      .input(z.object({ texto: z.string().min(5) }))
+      .input(z.object({ texto: z.string().min(5), target: z.enum(["ida", "volta"]).optional() }))
       .mutation(async ({ input }) => {
         return await extractPecaFromText(input.texto);
       }),
@@ -2078,6 +2102,7 @@ export const appRouter = router({
         z.object({
           fileData: z.string().min(10),
           mimeType: z.string().min(3),
+          target: z.enum(["ida", "volta"]).optional(),
         })
       )
       .mutation(async ({ input }) => {
