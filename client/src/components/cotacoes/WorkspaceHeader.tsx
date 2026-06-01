@@ -142,7 +142,7 @@ export function WorkspaceHeader({
                 <div className="flex items-center gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={onImportIa} className="gap-1.5">
                         <Sparkles className="h-4 w-4" />
-                        Importar IA
+                        Nova peça via IA
                     </Button>
                     <Button size="sm" variant="outline" onClick={onNewPeca} className="gap-1.5">
                         <Plus className="h-4 w-4" />

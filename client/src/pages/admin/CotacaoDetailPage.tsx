@@ -27,12 +27,10 @@ import { PecaLibrary } from "@/components/cotacoes/PecaLibrary";
 import { CenariosMesa } from "@/components/cotacoes/CenariosMesa";
 import { ComparadorBar } from "@/components/cotacoes/ComparadorBar";
 import { CenarioDialog } from "@/components/cotacoes/CenarioDialog";
-import { ImportIaDialog } from "@/components/cotacoes/ImportIaDialog";
 import { PropostaDialog } from "@/components/cotacoes/PropostaDialog";
 import {
     PecaSheet,
     emptyPeca,
-    extractedToPecaForm,
     pecaFormToPayload,
     pecaToForm,
     type PecaForm,
@@ -109,8 +107,6 @@ export default function CotacaoDetailPage() {
         descricao: string;
     }>({ open: false, editingId: null, nome: "", descricao: "" });
 
-    const [importOpen, setImportOpen] = useState(false);
-    const [importTarget, setImportTarget] = useState<"ida" | "volta">("ida");
     const [propostaOpen, setPropostaOpen] = useState(false);
     const [cotacaoEdit, setCotacaoEdit] = useState<CotacaoEditState>(emptyCotacaoEdit);
     const [activeDragPecaId, setActiveDragPecaId] = useState<number | null>(null);
@@ -197,19 +193,9 @@ export default function CotacaoDetailPage() {
     });
 
     const extractText = trpc.cotacoesWorkspace.extractFromText.useMutation({
-        onSuccess: (res) => {
-            toast.success(`Extraído via ${res.providerUsado}`);
-            setImportOpen(false);
-            openPecaFromExtraction(res.peca);
-        },
         onError: (e) => toast.error(`Falha na extração: ${e.message}`),
     });
     const extractImage = trpc.cotacoesWorkspace.extractFromImage.useMutation({
-        onSuccess: (res) => {
-            toast.success(`Extraído via ${res.providerUsado}`);
-            setImportOpen(false);
-            openPecaFromExtraction(res.peca);
-        },
         onError: (e) => toast.error(`Falha na extração: ${e.message}`),
     });
 
@@ -248,26 +234,29 @@ export default function CotacaoDetailPage() {
     // -------- Handlers --------
     const openNewPeca = () => setPecaSheet({ open: true, editingId: null, initialForm: emptyPeca() });
 
+    const openNewPecaViaIa = () =>
+        setPecaSheet({ open: true, editingId: null, initialForm: emptyPeca() });
+
     const openEditPeca = (peca: PecaCompleta) =>
         setPecaSheet({ open: true, editingId: peca.id, initialForm: pecaToForm(peca) });
 
-    const openPecaFromExtraction = (extracted: Record<string, unknown>) => {
-        if (pecaSheet.open) {
-            const merged = extractedToPecaForm(extracted, importTarget, pecaSheet.initialForm);
-            setPecaSheet({
-                open: true,
-                editingId: pecaSheet.editingId,
-                initialForm: merged,
-            });
-            return;
-        }
+    const importFromText = async (texto: string, target: "ida" | "volta") => {
+        const res = await extractText.mutateAsync({ texto, target });
+        toast.success(`Extraído via ${res.providerUsado}`);
+        return res.peca as Record<string, unknown>;
+    };
 
-        setPecaSheet({
-            open: true,
-            editingId: null,
-            initialForm: extractedToPecaForm(extracted, "ida"),
+    const importFromImage = async (file: File, target: "ida" | "volta") => {
+        const reader = new FileReader();
+        const result = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
+            reader.readAsDataURL(file);
         });
-        setImportTarget("ida");
+        const base64 = result.split(",")[1] || "";
+        const res = await extractImage.mutateAsync({ fileData: base64, mimeType: file.type, target });
+        toast.success(`Extraído via ${res.providerUsado}`);
+        return res.peca as Record<string, unknown>;
     };
 
     const submitPeca = (form: PecaForm) => {
@@ -488,23 +477,6 @@ export default function CotacaoDetailPage() {
         }
     };
 
-    const handleImportText = (texto: string) => {
-        if (!texto.trim()) {
-            toast.error("Cole o texto da cotação primeiro");
-            return;
-        }
-        extractText.mutate({ texto, target: importTarget });
-    };
-    const handleImportImage = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = reader.result as string;
-            const base64 = result.split(",")[1] || "";
-            extractImage.mutate({ fileData: base64, mimeType: file.type, target: importTarget });
-        };
-        reader.readAsDataURL(file);
-    };
-
     const openEditCotacao = () => {
         if (!data) return;
         const c = data.cotacao;
@@ -647,7 +619,7 @@ export default function CotacaoDetailPage() {
                         selecionadosCount={cenariosSelecionados.length}
                         onChangeStatus={(status) => updateCotacao.mutate({ id: cotacao.id, patch: { status } })}
                         onNewPeca={openNewPeca}
-                        onImportIa={() => setImportOpen(true)}
+                        onImportIa={openNewPecaViaIa}
                         onNewCenario={handleNewCenario}
                         onGenerateProposta={() => setPropostaOpen(true)}
                         onEditCotacao={openEditCotacao}
@@ -701,7 +673,7 @@ export default function CotacaoDetailPage() {
                                 pecas={pecas}
                                 cenarios={cenarios}
                                 onNewPeca={openNewPeca}
-                                onImportIa={() => setImportOpen(true)}
+                                onImportIa={openNewPecaViaIa}
                                 onToggleFavorita={handleToggleFavorita}
                                 onEditPeca={openEditPeca}
                                 onDeletePeca={handleDeletePeca}
@@ -749,6 +721,10 @@ export default function CotacaoDetailPage() {
                 editingId={pecaSheet.editingId}
                 initialForm={pecaSheet.initialForm}
                 onSubmit={submitPeca}
+                onExtractText={importFromText}
+                onExtractImage={importFromImage}
+                isExtractingText={extractText.isPending}
+                isExtractingImage={extractImage.isPending}
                 isSubmitting={createPeca.isPending || updatePeca.isPending}
             />
 
@@ -760,18 +736,6 @@ export default function CotacaoDetailPage() {
                 initialDescricao={cenarioDialog.descricao}
                 onSubmit={submitCenario}
                 isSubmitting={createCenario.isPending || updateCenario.isPending}
-            />
-
-            <ImportIaDialog
-                open={importOpen}
-                onOpenChange={setImportOpen}
-                target={importTarget}
-                onTargetChange={setImportTarget}
-                allowVoltaTarget={pecaSheet.open}
-                onExtractText={handleImportText}
-                onExtractImage={handleImportImage}
-                isExtractingText={extractText.isPending}
-                isExtractingImage={extractImage.isPending}
             />
 
             <PropostaDialog

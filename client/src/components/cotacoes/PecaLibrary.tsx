@@ -125,7 +125,7 @@ export function PecaLibrary({
                             variant="ghost"
                             className="h-7 w-7"
                             onClick={onImportIa}
-                            title="Importar com IA"
+                            title="Nova peça via IA"
                         >
                             <Sparkles className="h-3.5 w-3.5" />
                         </Button>
@@ -233,7 +233,7 @@ export function PecaLibrary({
                         <div className="flex justify-center gap-2">
                             <Button size="sm" variant="outline" onClick={onImportIa} className="gap-1.5">
                                 <Sparkles className="h-3.5 w-3.5" />
-                                Importar IA
+                                Nova peça via IA
                             </Button>
                             <Button size="sm" onClick={onNewPeca} className="gap-1.5">
                                 <Plus className="h-3.5 w-3.5" />

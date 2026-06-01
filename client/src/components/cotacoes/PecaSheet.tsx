@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Sheet,
     SheetContent,
@@ -20,7 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Plane, Banknote, ListChecks, Info } from "lucide-react";
+import { Plus, X, Plane, Banknote, ListChecks, Info, Sparkles, Upload, Loader2, FileText, Image as ImageIcon } from "lucide-react";
 import type { PecaCompleta } from "./types";
 import { calcLucro, fmtCurrencyCompact } from "@/lib/cotacoes/calc";
 import {
@@ -278,18 +278,35 @@ interface Props {
     editingId: number | null;
     initialForm: PecaForm;
     onSubmit: (form: PecaForm) => void;
+    onExtractText: (texto: string, target: Direcao) => Promise<Record<string, unknown>>;
+    onExtractImage: (file: File, target: Direcao) => Promise<Record<string, unknown>>;
+    isExtractingText: boolean;
+    isExtractingImage: boolean;
     isSubmitting: boolean;
 }
 
-export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit, isSubmitting }: Props) {
+export function PecaSheet({
+    open,
+    onOpenChange,
+    editingId,
+    initialForm,
+    onSubmit,
+    onExtractText,
+    onExtractImage,
+    isExtractingText,
+    isExtractingImage,
+    isSubmitting,
+}: Props) {
     const [form, setForm] = useState<PecaForm>(initialForm);
     const [dateError, setDateError] = useState<string | null>(null);
     const [resumoTab, setResumoTab] = useState<Direcao>("ida");
+    const [mainTab, setMainTab] = useState<"resumo" | "financeiro" | "segmentos">("resumo");
 
     useEffect(() => {
         if (open) {
             setForm(initialForm);
             setResumoTab("ida");
+            setMainTab("resumo");
         }
     }, [open, initialForm]);
 
@@ -368,6 +385,16 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
     const lucro = calcLucro(parseCurrencyInput(form.custo), parseCurrencyInput(form.venda));
     const milhasEnabled = form.tipoFinanceiro === "milhas";
 
+    const handleExtractText = async (texto: string) => {
+        const extracted = await onExtractText(texto, resumoTab);
+        setForm((current) => extractedToPecaForm(extracted, resumoTab, current));
+    };
+
+    const handleExtractImage = async (file: File) => {
+        const extracted = await onExtractImage(file, resumoTab);
+        setForm((current) => extractedToPecaForm(extracted, resumoTab, current));
+    };
+
     useEffect(() => {
         setDateError(validateDates(form));
     }, [form]);
@@ -391,7 +418,7 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto px-6 py-4">
-                    <Tabs defaultValue="resumo" className="w-full">
+                    <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "resumo" | "financeiro" | "segmentos")} className="w-full">
                         <TabsList className="grid grid-cols-3 w-full">
                             <TabsTrigger value="resumo" className="gap-1.5">
                                 <Info className="h-3.5 w-3.5" />
@@ -469,6 +496,14 @@ export function PecaSheet({ open, onOpenChange, editingId, initialForm, onSubmit
                                     {dateError && (
                                         <div className="text-xs text-red-600 font-medium -mt-1">{dateError}</div>
                                     )}
+
+                                    <IaInlineImporter
+                                        target={resumoTab}
+                                        isExtractingText={isExtractingText}
+                                        isExtractingImage={isExtractingImage}
+                                        onExtractText={handleExtractText}
+                                        onExtractImage={handleExtractImage}
+                                    />
                                 </div>
 
                                 <Field label="Bagagem">
@@ -1040,6 +1075,100 @@ function SegmentosDirecaoSection({
                     </div>
                 ))
             )}
+        </div>
+    );
+}
+
+function IaInlineImporter({
+    target,
+    isExtractingText,
+    isExtractingImage,
+    onExtractText,
+    onExtractImage,
+}: {
+    target: Direcao;
+    isExtractingText: boolean;
+    isExtractingImage: boolean;
+    onExtractText: (texto: string) => Promise<void>;
+    onExtractImage: (file: File) => Promise<void>;
+}) {
+    const [modo, setModo] = useState<"print" | "texto">("print");
+    const [texto, setTexto] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const submitText = async () => {
+        const value = texto.trim();
+        if (!value) return;
+        await onExtractText(value);
+        setTexto("");
+    };
+
+    return (
+        <div className="rounded-md border bg-card p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Importar com IA na {target}
+                </div>
+                <div className="text-[11px] text-muted-foreground">Preenche resumo e segmentos da direção atual</div>
+            </div>
+
+            <Tabs value={modo} onValueChange={(v) => setModo(v as "print" | "texto")}>
+                <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger value="print" className="gap-1.5">
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        Print
+                    </TabsTrigger>
+                    <TabsTrigger value="texto" className="gap-1.5">
+                        <FileText className="h-3.5 w-3.5" />
+                        Texto
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="print" className="pt-3 space-y-2">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        aria-label="Selecionar imagem para importar via IA"
+                        title="Selecionar imagem para importar via IA"
+                        className="hidden"
+                        onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void onExtractImage(f);
+                            e.target.value = "";
+                        }}
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full gap-2"
+                        disabled={isExtractingImage}
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        {isExtractingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        {isExtractingImage ? "Extraindo print..." : "Selecionar print para importar"}
+                    </Button>
+                </TabsContent>
+
+                <TabsContent value="texto" className="pt-3 space-y-2">
+                    <Textarea
+                        rows={4}
+                        value={texto}
+                        onChange={(e) => setTexto(e.target.value)}
+                        placeholder="Cole o texto da cotação desta direção"
+                    />
+                    <Button
+                        type="button"
+                        className="w-full gap-2"
+                        disabled={isExtractingText || !texto.trim()}
+                        onClick={() => void submitText()}
+                    >
+                        {isExtractingText ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        {isExtractingText ? "Extraindo texto..." : "Importar texto na direção atual"}
+                    </Button>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
