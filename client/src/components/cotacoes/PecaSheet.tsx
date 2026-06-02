@@ -59,6 +59,9 @@ type ResumoDirecaoForm = {
     qtdConexoes: number;
     companhias: string;
     classe: string;
+    itemPessoal: number;
+    bagagemMao: number;
+    bagagemDespachada: number;
 };
 
 export type PecaForm = {
@@ -66,9 +69,6 @@ export type PecaForm = {
     temVolta: boolean;
     resumoIda: ResumoDirecaoForm;
     resumoVolta: ResumoDirecaoForm;
-    itemPessoal: number;
-    bagagemMao: number;
-    bagagemDespachada: number;
     tipoFinanceiro: "milhas" | "pagante" | "misto";
     qtdMilhas: string;
     valorMilheiro: string;
@@ -112,6 +112,9 @@ export const emptyPeca = (): PecaForm => ({
         qtdConexoes: 0,
         companhias: "",
         classe: "",
+        itemPessoal: 1,
+        bagagemMao: 0,
+        bagagemDespachada: 0,
     },
     resumoVolta: {
         origem: "",
@@ -123,10 +126,10 @@ export const emptyPeca = (): PecaForm => ({
         qtdConexoes: 0,
         companhias: "",
         classe: "",
+        itemPessoal: 1,
+        bagagemMao: 0,
+        bagagemDespachada: 0,
     },
-    itemPessoal: 1,
-    bagagemMao: 0,
-    bagagemDespachada: 0,
     tipoFinanceiro: "pagante",
     qtdMilhas: "",
     valorMilheiro: "",
@@ -190,6 +193,11 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
             qtdConexoes: p.qtdConexoes ?? 0,
             companhias: p.companhias ?? "",
             classe: p.classe ?? "",
+            ...normalizeBagagemCounts({
+                itemPessoal: p.itemPessoal,
+                bagagemMao: p.bagagemMao,
+                bagagemDespachada: p.bagagemDespachada,
+            }),
         },
         resumoVolta: {
             origem: (p as any).origemVolta ?? "",
@@ -201,12 +209,12 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
             qtdConexoes: (p as any).qtdConexoesVolta ?? 0,
             companhias: (p as any).companhiasVolta ?? "",
             classe: (p as any).classeVolta ?? "",
+            ...normalizeBagagemCounts({
+                itemPessoal: (p as any).itemPessoalVolta,
+                bagagemMao: (p as any).bagagemMaoVolta,
+                bagagemDespachada: (p as any).bagagemDespachadaVolta,
+            }),
         },
-        ...normalizeBagagemCounts({
-            itemPessoal: p.itemPessoal,
-            bagagemMao: p.bagagemMao,
-            bagagemDespachada: p.bagagemDespachada,
-        }),
         tipoFinanceiro: p.tipoFinanceiro,
         qtdMilhas: formatMilhasInput((p as any).qtdMilhas != null ? String((p as any).qtdMilhas) : ""),
         valorMilheiro: formatCurrencyInput((p as any).valorMilheiro != null ? String((p as any).valorMilheiro) : ""),
@@ -253,9 +261,12 @@ export function pecaFormToPayload(form: PecaForm) {
         qtdConexoesVolta: form.temVolta ? form.resumoVolta.qtdConexoes : 0,
         companhiasVolta: form.temVolta ? form.resumoVolta.companhias : null,
         classeVolta: form.temVolta ? form.resumoVolta.classe : null,
-        itemPessoal: form.itemPessoal,
-        bagagemMao: form.bagagemMao,
-        bagagemDespachada: form.bagagemDespachada,
+        itemPessoal: form.resumoIda.itemPessoal,
+        bagagemMao: form.resumoIda.bagagemMao,
+        bagagemDespachada: form.resumoIda.bagagemDespachada,
+        itemPessoalVolta: form.temVolta ? form.resumoVolta.itemPessoal : 1,
+        bagagemMaoVolta: form.temVolta ? form.resumoVolta.bagagemMao : 0,
+        bagagemDespachadaVolta: form.temVolta ? form.resumoVolta.bagagemDespachada : 0,
         tipoFinanceiro: form.tipoFinanceiro,
         qtdMilhas: parseMilhasInput(form.qtdMilhas),
         valorMilheiro: parseCurrencyInput(form.valorMilheiro),
@@ -360,6 +371,9 @@ export function PecaSheet({
                     ...f.resumoVolta,
                     origem: f.resumoVolta.origem || f.resumoIda.destino,
                     destino: f.resumoVolta.destino || f.resumoIda.origem,
+                    itemPessoal: f.resumoVolta.itemPessoal || f.resumoIda.itemPessoal,
+                    bagagemMao: f.resumoVolta.bagagemMao || f.resumoIda.bagagemMao,
+                    bagagemDespachada: f.resumoVolta.bagagemDespachada || f.resumoIda.bagagemDespachada,
                 },
             };
             setDateError(validateDates(next));
@@ -482,10 +496,18 @@ export function PecaSheet({
                                                 onPatch={(p) => patchResumo("ida", p)}
                                                 minDate={new Date().toISOString().slice(0, 10)}
                                             />
+                                            <BagagemDirecaoFields
+                                                resumo={form.resumoIda}
+                                                onPatch={(p) => patchResumo("ida", p)}
+                                            />
                                         </TabsContent>
                                         {form.temVolta && (
                                             <TabsContent value="volta" className="pt-3">
                                                 <ResumoDirecaoFields
+                                                    resumo={form.resumoVolta}
+                                                    onPatch={(p) => patchResumo("volta", p)}
+                                                />
+                                                <BagagemDirecaoFields
                                                     resumo={form.resumoVolta}
                                                     onPatch={(p) => patchResumo("volta", p)}
                                                 />
@@ -505,46 +527,6 @@ export function PecaSheet({
                                         onExtractImage={handleExtractImage}
                                     />
                                 </div>
-
-                                <Field label="Bagagem">
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px] text-muted-foreground">Item pessoal</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                value={form.itemPessoal}
-                                                onChange={(e) =>
-                                                    patch({ itemPessoal: Math.max(0, Number(e.target.value) || 0) })
-                                                }
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px] text-muted-foreground">Mão</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                value={form.bagagemMao}
-                                                onChange={(e) =>
-                                                    patch({ bagagemMao: Math.max(0, Number(e.target.value) || 0) })
-                                                }
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label className="text-[10px] text-muted-foreground">Despachada</Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                value={form.bagagemDespachada}
-                                                onChange={(e) =>
-                                                    patch({
-                                                        bagagemDespachada: Math.max(0, Number(e.target.value) || 0),
-                                                    })
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                </Field>
                             </div>
                             <Field label="Observações">
                                 <Textarea
@@ -575,9 +557,14 @@ export function PecaSheet({
                                 <Field label="Tipo">
                                     <Select
                                         value={form.tipoFinanceiro}
-                                        onValueChange={(v) =>
-                                            patch({ tipoFinanceiro: v as PecaForm["tipoFinanceiro"] })
-                                        }
+                                        onValueChange={(v) => {
+                                            const nextType = v as PecaForm["tipoFinanceiro"];
+                                            patch({
+                                                tipoFinanceiro: nextType,
+                                                qtdMilhas: nextType === "milhas" ? form.qtdMilhas : "",
+                                                valorMilheiro: nextType === "milhas" ? form.valorMilheiro : "",
+                                            });
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -592,7 +579,7 @@ export function PecaSheet({
                                 <Field label="Qtd. milhas">
                                     <Input
                                         type="text"
-                                        inputMode="numeric"
+                                        inputMode="decimal"
                                         placeholder="Ex: 175.300"
                                         value={form.qtdMilhas}
                                         disabled={!milhasEnabled}
@@ -760,15 +747,10 @@ export function extractedToPecaForm(
             bagagemMao: extracted.bagagemMao as number | null | undefined,
             bagagemDespachada: extracted.bagagemDespachada as number | null | undefined,
         })
-        : {
-            itemPessoal: start.itemPessoal,
-            bagagemMao: start.bagagemMao,
-            bagagemDespachada: start.bagagemDespachada,
-        };
+        : null;
 
     const baseRes = {
         titulo: (extracted.titulo as string) ?? start.titulo,
-        ...bagagemMerged,
         observacoes: (extracted.observacoes as string) ?? start.observacoes,
         qtdMilhas: start.qtdMilhas,
         valorMilheiro: start.valorMilheiro,
@@ -789,6 +771,7 @@ export function extractedToPecaForm(
             (idaSegsRaw.length > 0 ? Math.max(0, idaSegsRaw.length - 1) : 0),
         companhias: (extracted.companhias as string) ?? "",
         classe: (extracted.classe as string) ?? "",
+        ...(target === "ida" && bagagemMerged ? bagagemMerged : {}),
     };
 
     const resumoVolta = {
@@ -804,6 +787,7 @@ export function extractedToPecaForm(
             (voltaSegsRaw.length > 0 ? Math.max(0, voltaSegsRaw.length - 1) : 0),
         companhias: (extracted.companhias as string) ?? "",
         classe: (extracted.classe as string) ?? "",
+        ...(target === "volta" && bagagemMerged ? bagagemMerged : {}),
     };
 
     if (target === "volta") {
@@ -873,9 +857,21 @@ function parseCurrencyInput(value: string): number | null {
 }
 
 function formatMilhasInput(value: string): string {
-    const digits = value.replace(/\D/g, "");
-    if (!digits) return "";
-    return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Number(digits));
+    const raw = value.replace(/[^\d.]/g, "");
+    if (!raw) return "";
+
+    if (!raw.includes(".")) {
+        const digitsOnly = raw.replace(/\D/g, "");
+        if (!digitsOnly) return "";
+        return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Number(digitsOnly));
+    }
+
+    const trailingDot = raw.endsWith(".");
+    const parts = raw.split(".");
+    const head = (parts[0] ?? "").replace(/\D/g, "");
+    const tails = parts.slice(1).map((part) => part.replace(/\D/g, "").slice(0, 3));
+    const joined = [head, ...tails].join(".").replace(/^\./, "");
+    return trailingDot ? `${joined}.` : joined;
 }
 
 function parseMilhasInput(value: string): number | null {
@@ -974,6 +970,49 @@ function ResumoDirecaoFields({
                     </SelectContent>
                 </Select>
             </Field>
+        </div>
+    );
+}
+
+function BagagemDirecaoFields({
+    resumo,
+    onPatch,
+}: {
+    resumo: ResumoDirecaoForm;
+    onPatch: (patch: Partial<ResumoDirecaoForm>) => void;
+}) {
+    return (
+        <div className="mt-3 space-y-1">
+            <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Bagagem da direção</Label>
+            <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Item pessoal</Label>
+                    <Input
+                        type="number"
+                        min={0}
+                        value={resumo.itemPessoal}
+                        onChange={(e) => onPatch({ itemPessoal: Math.max(0, Number(e.target.value) || 0) })}
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Mão</Label>
+                    <Input
+                        type="number"
+                        min={0}
+                        value={resumo.bagagemMao}
+                        onChange={(e) => onPatch({ bagagemMao: Math.max(0, Number(e.target.value) || 0) })}
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Despachada</Label>
+                    <Input
+                        type="number"
+                        min={0}
+                        value={resumo.bagagemDespachada}
+                        onChange={(e) => onPatch({ bagagemDespachada: Math.max(0, Number(e.target.value) || 0) })}
+                    />
+                </div>
+            </div>
         </div>
     );
 }

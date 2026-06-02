@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer, Plane } from "lucide-react";
-import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
+import { fmtBagagemPeca, fmtBagagemSegmento } from "@/lib/cotacoes/bagagem";
 
 function fmtCurrency(v: number | null | undefined): string {
     if (v == null) return "Sob consulta";
@@ -181,7 +181,9 @@ export default function PropostaViewPage() {
                                                             </div>
                                                             <div className="text-muted-foreground">
                                                                 Sai {fmtDateTime(s.saida)} · Chega {fmtDateTime(s.chegada)}
-                                                                {s.bagagem ? ` · Bagagem ${s.bagagem}` : ""}
+                                                                {fmtBagagemSegmento(s.bagagem)
+                                                                    ? ` · Bagagem ${fmtBagagemSegmento(s.bagagem)}`
+                                                                    : ""}
                                                             </div>
                                                             {si < p.segmentos.length - 1 && s.duracaoConexaoMinutos != null && (
                                                                 <div className="text-amber-700 mt-1">↳ Conexão: {fmtDuracao(s.duracaoConexaoMinutos)}</div>

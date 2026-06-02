@@ -401,6 +401,9 @@ export const cwPecas = mysqlTable("cw_pecas", {
   itemPessoal: int("item_pessoal").default(1).notNull(),
   bagagemMao: int("bagagem_mao").default(0).notNull(),
   bagagemDespachada: int("bagagem_despachada").default(0).notNull(),
+  itemPessoalVolta: int("item_pessoal_volta").default(1).notNull(),
+  bagagemMaoVolta: int("bagagem_mao_volta").default(0).notNull(),
+  bagagemDespachadaVolta: int("bagagem_despachada_volta").default(0).notNull(),
   tipoFinanceiro: mysqlEnum("tipo_financeiro", ["milhas", "pagante", "misto"])
     .default("pagante")
     .notNull(),
