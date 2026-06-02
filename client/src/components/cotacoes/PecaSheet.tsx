@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
     Sheet,
     SheetContent,
@@ -1094,7 +1094,22 @@ function IaInlineImporter({
 }) {
     const [modo, setModo] = useState<"print" | "texto">("print");
     const [texto, setTexto] = useState("");
+    const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFile = async (file?: File) => {
+        if (!file) return;
+        await onExtractImage(file);
+    };
+
+    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setDragActive(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            void handleFile(file);
+        }
+    };
 
     const submitText = async () => {
         const value = texto.trim();
@@ -1135,20 +1150,34 @@ function IaInlineImporter({
                         className="hidden"
                         onChange={(e) => {
                             const f = e.target.files?.[0];
-                            if (f) void onExtractImage(f);
+                            if (f) void handleFile(f);
                             e.target.value = "";
                         }}
                     />
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full gap-2"
-                        disabled={isExtractingImage}
-                        onClick={() => fileInputRef.current?.click()}
+                    <div
+                        className={`rounded-lg border-2 border-dashed p-4 text-center space-y-2 transition-colors ${dragActive ? "border-primary bg-primary/10" : "border-muted-foreground/20"}`}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setDragActive(true);
+                        }}
+                        onDragLeave={() => setDragActive(false)}
+                        onDrop={handleDrop}
                     >
-                        {isExtractingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                        {isExtractingImage ? "Extraindo print..." : "Selecionar print para importar"}
-                    </Button>
+                        <div className="text-sm font-medium">
+                            {dragActive ? "Solte a imagem para importar" : "Arraste o print aqui"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">PNG, JPG, WEBP ou GIF</div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full gap-2"
+                            disabled={isExtractingImage}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            {isExtractingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            {isExtractingImage ? "Extraindo print..." : "Selecionar print para importar"}
+                        </Button>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="texto" className="pt-3 space-y-2">

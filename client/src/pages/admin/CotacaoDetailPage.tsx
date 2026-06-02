@@ -234,9 +234,6 @@ export default function CotacaoDetailPage() {
     // -------- Handlers --------
     const openNewPeca = () => setPecaSheet({ open: true, editingId: null, initialForm: emptyPeca() });
 
-    const openNewPecaViaIa = () =>
-        setPecaSheet({ open: true, editingId: null, initialForm: emptyPeca() });
-
     const openEditPeca = (peca: PecaCompleta) =>
         setPecaSheet({ open: true, editingId: peca.id, initialForm: pecaToForm(peca) });
 
@@ -619,7 +616,6 @@ export default function CotacaoDetailPage() {
                         selecionadosCount={cenariosSelecionados.length}
                         onChangeStatus={(status) => updateCotacao.mutate({ id: cotacao.id, patch: { status } })}
                         onNewPeca={openNewPeca}
-                        onImportIa={openNewPecaViaIa}
                         onNewCenario={handleNewCenario}
                         onGenerateProposta={() => setPropostaOpen(true)}
                         onEditCotacao={openEditCotacao}
@@ -673,7 +669,6 @@ export default function CotacaoDetailPage() {
                                 pecas={pecas}
                                 cenarios={cenarios}
                                 onNewPeca={openNewPeca}
-                                onImportIa={openNewPecaViaIa}
                                 onToggleFavorita={handleToggleFavorita}
                                 onEditPeca={openEditPeca}
                                 onDeletePeca={handleDeletePeca}

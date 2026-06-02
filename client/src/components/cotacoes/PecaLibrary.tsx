@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Search, Plane, Sparkles, Plus, Star, Filter, X } from "lucide-react";
+import { Search, Plane, Plus, Star, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,6 @@ interface Props {
     pecas: PecaCompleta[];
     cenarios: CenarioCompleto[];
     onNewPeca: () => void;
-    onImportIa: () => void;
     onToggleFavorita: (peca: PecaCompleta) => void;
     onEditPeca: (peca: PecaCompleta) => void;
     onDeletePeca: (peca: PecaCompleta) => void;
@@ -31,7 +30,6 @@ export function PecaLibrary({
     pecas,
     cenarios,
     onNewPeca,
-    onImportIa,
     onToggleFavorita,
     onEditPeca,
     onDeletePeca,
@@ -120,15 +118,6 @@ export function PecaLibrary({
                         </span>
                     </h2>
                     <div className="flex gap-1">
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={onImportIa}
-                            title="Nova peça via IA"
-                        >
-                            <Sparkles className="h-3.5 w-3.5" />
-                        </Button>
                         <Button
                             size="icon"
                             variant="ghost"
@@ -230,11 +219,7 @@ export function PecaLibrary({
                         <p className="text-xs text-muted-foreground mt-1 mb-4">
                             Cadastre manualmente ou cole um texto/print da pesquisa.
                         </p>
-                        <div className="flex justify-center gap-2">
-                            <Button size="sm" variant="outline" onClick={onImportIa} className="gap-1.5">
-                                <Sparkles className="h-3.5 w-3.5" />
-                                Nova peça via IA
-                            </Button>
+                        <div className="flex justify-center">
                             <Button size="sm" onClick={onNewPeca} className="gap-1.5">
                                 <Plus className="h-3.5 w-3.5" />
                                 Nova peça

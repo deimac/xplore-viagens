@@ -7,7 +7,6 @@ import {
     Plane,
     Layers,
     Plus,
-    Sparkles,
     FileText,
     Sparkle,
 } from "lucide-react";
@@ -30,7 +29,6 @@ interface Props {
     selecionadosCount: number;
     onChangeStatus: (status: CotacaoStatus) => void;
     onNewPeca: () => void;
-    onImportIa: () => void;
     onNewCenario: () => void;
     onGenerateProposta: () => void;
     onEditCotacao: () => void;
@@ -59,7 +57,6 @@ export function WorkspaceHeader({
     selecionadosCount,
     onChangeStatus,
     onNewPeca,
-    onImportIa,
     onNewCenario,
     onGenerateProposta,
     onEditCotacao,
@@ -140,10 +137,6 @@ export function WorkspaceHeader({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={onImportIa} className="gap-1.5">
-                        <Sparkles className="h-4 w-4" />
-                        Nova peça via IA
-                    </Button>
                     <Button size="sm" variant="outline" onClick={onNewPeca} className="gap-1.5">
                         <Plus className="h-4 w-4" />
                         Nova peça
