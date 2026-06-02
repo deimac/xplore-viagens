@@ -494,7 +494,7 @@ export function PecaSheet({
                                             <ResumoDirecaoFields
                                                 resumo={form.resumoIda}
                                                 onPatch={(p) => patchResumo("ida", p)}
-                                                minDate={new Date().toISOString().slice(0, 10)}
+                                                minDate={todayLocalIsoDate()}
                                             />
                                             <BagagemDirecaoFields
                                                 resumo={form.resumoIda}
@@ -881,17 +881,25 @@ function parseMilhasInput(value: string): number | null {
     return Number(digits);
 }
 
-function validateDates(form: PecaForm): string | null {
+function todayLocalIsoDate(): string {
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
+function validateDates(form: PecaForm): string | null {
+    const today = todayLocalIsoDate();
     if (form.resumoIda.dataSaidaDate) {
-        const ida = new Date(form.resumoIda.dataSaidaDate);
-        if (ida < now) return "A data de ida não pode ser anterior a hoje.";
+        if (form.resumoIda.dataSaidaDate < today) {
+            return "A data de ida não pode ser anterior a hoje.";
+        }
     }
     if (form.temVolta && form.resumoVolta.dataSaidaDate && form.resumoIda.dataSaidaDate) {
-        const ida = new Date(form.resumoIda.dataSaidaDate);
-        const volta = new Date(form.resumoVolta.dataSaidaDate);
-        if (volta < ida) return "A data da volta não pode ser anterior à ida.";
+        if (form.resumoVolta.dataSaidaDate < form.resumoIda.dataSaidaDate) {
+            return "A data da volta não pode ser anterior à ida.";
+        }
     }
     return null;
 }
