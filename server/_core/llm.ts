@@ -213,7 +213,35 @@ const normalizeToolChoice = (
 // Docs: https://ai.google.dev/gemini-api/docs/openai
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 
+const DEFAULT_GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+];
+
 const resolveApiUrl = () => `${GEMINI_BASE_URL}/chat/completions`;
+
+const resolveModelCandidates = (): string[] => {
+  const configured = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "")
+    .split(",")
+    .map(m => m.trim())
+    .filter(Boolean);
+  const all = configured.length > 0 ? configured : DEFAULT_GEMINI_MODELS;
+  return [...new Set(all)];
+};
+
+const isModelUnavailableError = (status: number, errorText: string): boolean => {
+  if (status !== 400 && status !== 404) return false;
+  const text = errorText.toLowerCase();
+  return (
+    text.includes("model") &&
+    (text.includes("not found") ||
+      text.includes("not available") ||
+      text.includes("unsupported") ||
+      text.includes("não está disponível") ||
+      text.includes("indispon"))
+  );
+};
 
 const assertApiKey = () => {
   if (!ENV.geminiApiKey) {
@@ -280,13 +308,12 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
   } = params;
 
-  const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+  const payloadBase: Record<string, unknown> = {
     messages: messages.map(normalizeMessage),
   };
 
   if (tools && tools.length > 0) {
-    payload.tools = tools;
+    payloadBase.tools = tools;
   }
 
   const normalizedToolChoice = normalizeToolChoice(
@@ -294,10 +321,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     tools
   );
   if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
+    payloadBase.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 8192;
+  payloadBase.max_tokens = 8192;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -307,24 +334,40 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   });
 
   if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
+    payloadBase.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${ENV.geminiApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const modelCandidates = resolveModelCandidates();
+  const errors: string[] = [];
 
-  if (!response.ok) {
+  for (let i = 0; i < modelCandidates.length; i++) {
+    const model = modelCandidates[i];
+    const payload = { ...payloadBase, model };
+    const response = await fetch(resolveApiUrl(), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${ENV.geminiApiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      return (await response.json()) as InvokeResult;
+    }
+
     const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
+    const errorMsg = `${model}: ${response.status} ${response.statusText} – ${errorText}`;
+    errors.push(errorMsg);
+
+    const shouldTryNext =
+      i < modelCandidates.length - 1 &&
+      isModelUnavailableError(response.status, errorText);
+
+    if (!shouldTryNext) {
+      throw new Error(`LLM invoke failed: ${errorMsg}`);
+    }
   }
 
-  return (await response.json()) as InvokeResult;
+  throw new Error(`LLM invoke failed em todos os modelos: ${errors.join(" | ")}`);
 }
