@@ -25,14 +25,14 @@ export function PremiumFlightsSection({ ofertas, whatsappNumber }: Props) {
     });
     const [selectedFixedIndex, setSelectedFixedIndex] = useState<number | null>(null);
 
-    if (!ofertas || ofertas.length === 0) return null;
-
-    const oferta = ofertas[currentIndex];
-
     const numeroSanitizado = useMemo(
         () => sanitizeWhatsAppNumber(whatsappNumber),
         [whatsappNumber]
     );
+
+    if (!ofertas || ofertas.length === 0) return null;
+
+    const oferta = ofertas[currentIndex];
 
     useEffect(() => {
         setSelectedFlexDates({ ida: null, volta: null });

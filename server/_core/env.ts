@@ -71,6 +71,11 @@ export const ENV = {
   // GEMINI AI (Google AI Studio)
   geminiApiKey: process.env.GEMINI_API_KEY || '',
 
+  // Cotacoes AI extraction policy
+  aiExtractionOrder: process.env.AI_EXTRACTION_ORDER || 'local-ocr-gemini,gemini-vision',
+  aiExtractionAllowGeneralFallback: process.env.AI_EXTRACTION_ALLOW_GENERAL_FALLBACK === 'true',
+  aiExtractionMaxImageMb: parseInt(process.env.AI_EXTRACTION_MAX_IMAGE_MB || '8', 10),
+
   // Additional LLM providers (optional)
   openRouterApiKey: process.env.OPENROUTER_API_KEY || '',
   groqApiKey: process.env.GROQ_API_KEY || '',

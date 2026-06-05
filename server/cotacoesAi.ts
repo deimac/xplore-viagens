@@ -7,13 +7,14 @@
  * O resultado nunca deve ser tratado como verdade incontestável: a UI
  * sempre apresenta os dados para edição/confirmação.
  *
- * Arquitetura: adapter único hoje (Google Gemini via `invokeLLM`, chamada
- * direta à API do Google AI Studio), mas com uma interface `Extractor`
- * pronta para receber outros provedores e cair em fallback automático no
- * futuro.
+ * Arquitetura: cadeia de extractors com política de custo controlada.
+ * Para prints, tentamos OCR local primeiro e usamos Gemini apenas para
+ * estruturar o texto; se falhar, caímos para visão Gemini direta.
  */
 
-import { invokeLLM, type Message } from "./_core/llm";
+import { ENV } from "./_core/env";
+import { invokeLLM, type Message, type ProviderName } from "./_core/llm";
+import { extractTextFromImage } from "./_core/ocr";
 
 export interface ExtractedSegmento {
     direcao?: "ida" | "volta" | null;
@@ -153,6 +154,10 @@ export interface Extractor {
     fromImage: (imageDataUrl: string) => Promise<ExtractedPeca>;
 }
 
+const GEMINI_ONLY_PROVIDER_ORDER: ProviderName[] = ["google-gemini"];
+const DEFAULT_EXTRACTION_ORDER = ["local-ocr-gemini", "gemini-vision"];
+const OCR_MIN_TEXT_LENGTH = 20;
+
 function normalizeExtractedPeca(parsed: ExtractedPeca): ExtractedPeca {
     if (!Array.isArray(parsed.segmentos)) parsed.segmentos = [];
     return {
@@ -181,49 +186,115 @@ function parseStructuredOutput(content: unknown): ExtractedPeca {
     }
 }
 
-const geminiExtractor: Extractor = {
-    name: "google-gemini-2.5-flash",
+function buildOcrObservation(engine: string, confidence: number | null, warnings: string[]): string {
+    const parts = [`OCR local (${engine}${confidence == null ? "" : `, confiança ${(confidence * 100).toFixed(0)}%`})`];
+    if (warnings.length) parts.push(`Avisos: ${warnings.join("; ")}`);
+    return parts.join(". ");
+}
+
+function createLlmExtractor(name: string, providerOrder?: ProviderName[]): Extractor {
+    return {
+        name,
+        async fromText(text: string) {
+            const messages: Message[] = [
+                { role: "system", content: SYSTEM_PROMPT },
+                {
+                    role: "user",
+                    content: `Extraia a peça de voo a partir do texto abaixo:\n\n---\n${text}\n---`,
+                },
+            ];
+            const result = await invokeLLM({
+                providerOrder,
+                messages,
+                responseFormat: {
+                    type: "json_schema",
+                    json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any, strict: true },
+                },
+            });
+            return parseStructuredOutput(result.choices?.[0]?.message?.content);
+        },
+        async fromImage(imageDataUrl: string) {
+            const messages: Message[] = [
+                { role: "system", content: SYSTEM_PROMPT },
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: "Extraia a peça de voo desta imagem (print de cotação):" },
+                        { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
+                    ],
+                },
+            ];
+            const result = await invokeLLM({
+                providerOrder,
+                messages,
+                responseFormat: {
+                    type: "json_schema",
+                    json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any, strict: true },
+                },
+            });
+            return parseStructuredOutput(result.choices?.[0]?.message?.content);
+        },
+    };
+}
+
+const geminiExtractor = createLlmExtractor("gemini-vision", GEMINI_ONLY_PROVIDER_ORDER);
+
+const localOcrGeminiExtractor: Extractor = {
+    name: "local-ocr-gemini",
     async fromText(text: string) {
-        const messages: Message[] = [
-            { role: "system", content: SYSTEM_PROMPT },
-            {
-                role: "user",
-                content: `Extraia a peça de voo a partir do texto abaixo:\n\n---\n${text}\n---`,
-            },
-        ];
-        const result = await invokeLLM({
-            messages,
-            responseFormat: {
-                type: "json_schema",
-                json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any, strict: true },
-            },
-        });
-        return parseStructuredOutput(result.choices?.[0]?.message?.content);
+        return geminiExtractor.fromText(text);
     },
     async fromImage(imageDataUrl: string) {
-        const messages: Message[] = [
-            { role: "system", content: SYSTEM_PROMPT },
-            {
-                role: "user",
-                content: [
-                    { type: "text", text: "Extraia a peça de voo desta imagem (print de cotação):" },
-                    { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
-                ],
-            },
-        ];
-        const result = await invokeLLM({
-            messages,
-            responseFormat: {
-                type: "json_schema",
-                json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any, strict: true },
-            },
-        });
-        return parseStructuredOutput(result.choices?.[0]?.message?.content);
+        const ocr = await extractTextFromImage(imageDataUrl);
+        if (ocr.text.trim().length < OCR_MIN_TEXT_LENGTH) {
+            throw new Error("OCR local não encontrou texto suficiente para estruturar a cotação");
+        }
+
+        const peca = await geminiExtractor.fromText(
+            `Texto extraído por OCR local de um print de cotação de voo. Use somente as informações abaixo e não invente dados ausentes.\n\n---\n${ocr.text}\n---`
+        );
+        const ocrObservation = buildOcrObservation(ocr.engine, ocr.confidence, ocr.warnings);
+        return {
+            ...peca,
+            confianca: peca.confianca == null || ocr.confidence == null
+                ? peca.confianca ?? ocr.confidence
+                : Math.min(peca.confianca, ocr.confidence),
+            observacoes: [peca.observacoes, ocrObservation].filter(Boolean).join("\n"),
+        };
     },
 };
 
-// Cadeia de fallback: hoje apenas Google Gemini direto; ordem importa.
-const extractors: Extractor[] = [geminiExtractor];
+const generalLlmExtractor = createLlmExtractor("configured-llm-vision");
+
+function resolveImageExtractors(): Extractor[] {
+    const registry = new Map<string, Extractor>([
+        [localOcrGeminiExtractor.name, localOcrGeminiExtractor],
+        [geminiExtractor.name, geminiExtractor],
+    ]);
+
+    if (ENV.aiExtractionAllowGeneralFallback) {
+        registry.set(generalLlmExtractor.name, generalLlmExtractor);
+    }
+
+    const configured = ENV.aiExtractionOrder
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    const order = configured.length ? configured : DEFAULT_EXTRACTION_ORDER;
+    const extractors = order
+        .map((name) => registry.get(name))
+        .filter((extractor): extractor is Extractor => Boolean(extractor));
+
+    if (extractors.length) return extractors;
+
+    return DEFAULT_EXTRACTION_ORDER
+        .map((name) => registry.get(name))
+        .filter((extractor): extractor is Extractor => Boolean(extractor));
+}
+
+function resolveTextExtractors(): Extractor[] {
+    return ENV.aiExtractionAllowGeneralFallback ? [geminiExtractor, generalLlmExtractor] : [geminiExtractor];
+}
 
 export interface ExtractionResult {
     peca: ExtractedPeca;
@@ -232,6 +303,7 @@ export interface ExtractionResult {
 }
 
 async function runWithFallback(
+    extractors: Extractor[],
     op: (e: Extractor) => Promise<ExtractedPeca>
 ): Promise<ExtractionResult> {
     const tentativas: { provider: string; erro: string }[] = [];
@@ -252,7 +324,7 @@ export async function extractPecaFromText(text: string): Promise<ExtractionResul
     if (!text || text.trim().length < 5) {
         throw new Error("Texto muito curto para extração");
     }
-    return runWithFallback((e) => e.fromText(text));
+    return runWithFallback(resolveTextExtractors(), (e) => e.fromText(text));
 }
 
 export async function extractPecaFromImage(
@@ -263,5 +335,5 @@ export async function extractPecaFromImage(
     const dataUrl = imageBase64.startsWith("data:")
         ? imageBase64
         : `data:${mimeType};base64,${imageBase64}`;
-    return runWithFallback((e) => e.fromImage(dataUrl));
+    return runWithFallback(resolveImageExtractors(), (e) => e.fromImage(dataUrl));
 }

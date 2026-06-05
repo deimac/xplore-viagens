@@ -2151,6 +2151,15 @@ export const appRouter = router({
         if (!allowed.includes(input.mimeType)) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Formato de imagem não suportado. Use PNG, JPG, WEBP ou GIF." });
         }
+        const base64Data = input.fileData.includes(",") ? input.fileData.split(",").pop() || "" : input.fileData;
+        const estimatedBytes = Math.floor((base64Data.length * 3) / 4);
+        const maxBytes = ENV.aiExtractionMaxImageMb * 1024 * 1024;
+        if (estimatedBytes > maxBytes) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Imagem muito grande para extração. Limite atual: ${ENV.aiExtractionMaxImageMb}MB.`,
+          });
+        }
         return await extractPecaFromImage(input.fileData, input.mimeType);
       }),
 

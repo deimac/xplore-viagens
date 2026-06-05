@@ -32,6 +32,8 @@ export type Message = {
   tool_call_id?: string;
 };
 
+export type ProviderName = "openrouter" | "groq" | "google-gemini" | "xai-grok" | "openai";
+
 export type Tool = {
   type: "function";
   function: {
@@ -57,6 +59,7 @@ export type ToolChoice =
 
 export type InvokeParams = {
   messages: Message[];
+  providerOrder?: ProviderName[];
   tools?: Tool[];
   toolChoice?: ToolChoice;
   tool_choice?: ToolChoice;
@@ -217,8 +220,6 @@ type ProviderCandidate = {
   extraHeaders?: Record<string, string>;
 };
 
-type ProviderName = "openrouter" | "groq" | "google-gemini" | "xai-grok" | "openai";
-
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
@@ -253,7 +254,9 @@ const parseModelList = (raw: string, defaults: string[]): string[] => {
 
 const resolveApiUrl = (provider: ProviderCandidate) => `${provider.baseUrl}/chat/completions`;
 
-const resolveProviderOrder = (): ProviderName[] => {
+const resolveProviderOrder = (forcedOrder?: ProviderName[]): ProviderName[] => {
+  if (forcedOrder?.length) return [...new Set(forcedOrder)];
+
   const configured = (process.env.LLM_PROVIDER_ORDER || "")
     .split(",")
     .map((v) => v.trim().toLowerCase())
@@ -273,7 +276,7 @@ const resolveProviderOrder = (): ProviderName[] => {
   return normalized.length ? [...new Set(normalized)] : DEFAULT_PROVIDER_ORDER;
 };
 
-const resolveProviderCandidates = (): ProviderCandidate[] => {
+const resolveProviderCandidates = (forcedOrder?: ProviderName[]): ProviderCandidate[] => {
   const providerMap = new Map<ProviderName, ProviderCandidate>();
 
   if (ENV.geminiApiKey) {
@@ -325,7 +328,7 @@ const resolveProviderCandidates = (): ProviderCandidate[] => {
     });
   }
 
-  const order = resolveProviderOrder();
+  const order = resolveProviderOrder(forcedOrder);
   return order
     .map((name) => providerMap.get(name))
     .filter((provider): provider is ProviderCandidate => Boolean(provider));
@@ -344,8 +347,8 @@ const isModelUnavailableError = (status: number, errorText: string): boolean => 
   );
 };
 
-const assertApiKey = () => {
-  const providers = resolveProviderCandidates();
+const assertApiKey = (forcedOrder?: ProviderName[]) => {
+  const providers = resolveProviderCandidates(forcedOrder);
   if (!providers.length) {
     throw new Error(
       "Nenhum provedor de IA está configurado. Defina pelo menos uma chave: GEMINI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, XAI_API_KEY ou OPENAI_API_KEY."
@@ -399,10 +402,11 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  assertApiKey(params.providerOrder);
 
   const {
     messages,
+    providerOrder,
     tools,
     toolChoice,
     tool_choice,
@@ -441,7 +445,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payloadBase.response_format = normalizedResponseFormat;
   }
 
-  const providers = resolveProviderCandidates();
+  const providers = resolveProviderCandidates(providerOrder);
   const errors: string[] = [];
 
   for (const provider of providers) {
