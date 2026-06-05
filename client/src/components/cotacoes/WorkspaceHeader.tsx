@@ -9,6 +9,7 @@ import {
     Plus,
     FileText,
     Sparkle,
+    Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ interface Props {
     onNewCenario: () => void;
     onGenerateProposta: () => void;
     onEditCotacao: () => void;
+    onDeleteCotacao: () => void;
 }
 
 const STATUS_TONE: Record<CotacaoStatus, string> = {
@@ -60,6 +62,7 @@ export function WorkspaceHeader({
     onNewCenario,
     onGenerateProposta,
     onEditCotacao,
+    onDeleteCotacao,
 }: Props) {
     const totalPax = cotacao.paxAdultos + cotacao.paxCriancas + cotacao.paxBebes;
     const podeGerar = selecionadosCount > 0;
@@ -154,6 +157,15 @@ export function WorkspaceHeader({
                     >
                         <FileText className="h-4 w-4" />
                         Gerar proposta
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={onDeleteCotacao}
+                        className="gap-1.5"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                        Excluir cotação
                     </Button>
                 </div>
             </div>

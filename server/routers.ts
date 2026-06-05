@@ -1863,6 +1863,7 @@ export const appRouter = router({
         z.object({
           id: z.number(),
           patch: z.object({
+            codigo: z.string().optional().nullable(),
             clienteNome: z.string().min(1).optional(),
             clienteEmail: z.string().email().optional().nullable(),
             clienteTelefone: z.string().optional().nullable(),

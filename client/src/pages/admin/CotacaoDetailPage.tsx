@@ -43,10 +43,12 @@ type DeleteTarget =
     | { type: "peca-library"; peca: PecaCompleta }
     | { type: "peca-cenario"; linkId: number; label: string; cenarioNome: string }
     | { type: "cenario"; cenario: CenarioCompleto }
-    | { type: "proposta"; id: number; titulo: string };
+    | { type: "proposta"; id: number; titulo: string }
+    | { type: "cotacao"; id: number; nome: string };
 
 interface CotacaoEditState {
     open: boolean;
+    codigo: string;
     clienteNome: string;
     clienteEmail: string;
     clienteTelefone: string;
@@ -63,6 +65,7 @@ interface CotacaoEditState {
 function emptyCotacaoEdit(): CotacaoEditState {
     return {
         open: false,
+        codigo: "",
         clienteNome: "",
         clienteEmail: "",
         clienteTelefone: "",
@@ -256,6 +259,13 @@ export default function CotacaoDetailPage() {
         },
         onError: (e) => toast.error(e.message),
     });
+    const deleteCotacao = trpc.cotacoesWorkspace.delete.useMutation({
+        onSuccess: () => {
+            toast.success("Cotação excluída");
+            setLocation("/admin/cotacoes");
+        },
+        onError: (e) => toast.error(e.message),
+    });
 
     // -------- Derivados --------
     const pecasById = useMemo(() => {
@@ -394,6 +404,14 @@ export default function CotacaoDetailPage() {
         setDeleteTarget({ type: "proposta", id, titulo });
     };
 
+    const handleDeleteCotacao = () => {
+        setDeleteTarget({
+            type: "cotacao",
+            id: cotacaoId,
+            nome: data?.cotacao?.clienteNome || `#${cotacaoId}`,
+        });
+    };
+
     const confirmDelete = () => {
         if (!deleteTarget) return;
         switch (deleteTarget.type) {
@@ -408,6 +426,9 @@ export default function CotacaoDetailPage() {
                 break;
             case "proposta":
                 deleteProposta.mutate({ id: deleteTarget.id });
+                break;
+            case "cotacao":
+                deleteCotacao.mutate({ id: deleteTarget.id });
                 break;
         }
     };
@@ -439,6 +460,11 @@ export default function CotacaoDetailPage() {
                     title: "Excluir proposta",
                     description: `Excluir a proposta "${deleteTarget.titulo}"? Esta ação não pode ser desfeita.`,
                 };
+            case "cotacao":
+                return {
+                    title: "Excluir cotação",
+                    description: `Excluir a cotação "${deleteTarget.nome}"? Todas as peças, cenários e propostas vinculadas serão removidas.`,
+                };
         }
     })();
 
@@ -446,7 +472,8 @@ export default function CotacaoDetailPage() {
         deletePeca.isPending ||
         removePecaMut.isPending ||
         deleteCenario.isPending ||
-        deleteProposta.isPending;
+        deleteProposta.isPending ||
+        deleteCotacao.isPending;
 
     const handleAddPecaToCenario = (peca: PecaCompleta, cenarioId: number) => {
         if (!data) return;
@@ -522,6 +549,7 @@ export default function CotacaoDetailPage() {
         const c = data.cotacao;
         setCotacaoEdit({
             open: true,
+            codigo: c.codigo ?? "",
             clienteNome: c.clienteNome,
             clienteEmail: c.clienteEmail ?? "",
             clienteTelefone: c.clienteTelefone ?? "",
@@ -662,6 +690,7 @@ export default function CotacaoDetailPage() {
                         onNewCenario={handleNewCenario}
                         onGenerateProposta={() => setPropostaOpen(true)}
                         onEditCotacao={openEditCotacao}
+                        onDeleteCotacao={handleDeleteCotacao}
                     />
 
                     <div className="border-b bg-card px-4 py-2 flex items-center justify-end">
@@ -815,6 +844,7 @@ export default function CotacaoDetailPage() {
                     updateCotacao.mutate({
                         id: cotacao.id,
                         patch: {
+                            codigo: cotacaoEdit.codigo || null,
                             clienteNome: cotacaoEdit.clienteNome,
                             clienteEmail: cotacaoEdit.clienteEmail || null,
                             clienteTelefone: cotacaoEdit.clienteTelefone || null,
@@ -866,6 +896,14 @@ function CotacaoEditDialog({
                     <DialogTitle>Editar cotação</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
+                    <div className="space-y-1">
+                        <Label className="text-xs">Código / título interno</Label>
+                        <Input
+                            value={state.codigo}
+                            onChange={(e) => patch({ codigo: e.target.value })}
+                            placeholder="Ex: ORC-2026-014"
+                        />
+                    </div>
                     <div className="space-y-1">
                         <Label className="text-xs">Cliente</Label>
                         <Input
