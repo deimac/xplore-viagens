@@ -2,7 +2,7 @@ import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer, Plane } from "lucide-react";
-import { fmtBagagemPeca, fmtBagagemSegmento } from "@/lib/cotacoes/bagagem";
+import { fmtBagagemDirecao, fmtBagagemPeca, fmtBagagemSegmento } from "@/lib/cotacoes/bagagem";
 
 function fmtCurrency(v: number | null | undefined): string {
     if (v == null) return "Sob consulta";
@@ -172,22 +172,34 @@ export default function PropostaViewPage() {
                                                 <div className="ml-3 border-l-2 border-slate-200 pl-3 space-y-2">
                                                     {p.segmentos.map((s, si) => (
                                                         <div key={si} className="text-xs">
-                                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                                                                <span className="font-semibold">
-                                                                    {s.aeroportoOrigem || s.cidadeOrigem || "?"} → {s.aeroportoDestino || s.cidadeDestino || "?"}
-                                                                </span>
-                                                                {s.companhia && <span className="text-muted-foreground">{s.companhia} {s.numeroVoo || ""}</span>}
-                                                                {s.classe && <span className="text-muted-foreground">{s.classe}</span>}
-                                                            </div>
-                                                            <div className="text-muted-foreground">
-                                                                Sai {fmtDateTime(s.saida)} · Chega {fmtDateTime(s.chegada)}
-                                                                {fmtBagagemSegmento(s.bagagem)
-                                                                    ? ` · Bagagem ${fmtBagagemSegmento(s.bagagem)}`
-                                                                    : ""}
-                                                            </div>
-                                                            {si < p.segmentos.length - 1 && s.duracaoConexaoMinutos != null && (
-                                                                <div className="text-amber-700 mt-1">↳ Conexão: {fmtDuracao(s.duracaoConexaoMinutos)}</div>
-                                                            )}
+                                                            {(() => {
+                                                                const bagagemSegmento = fmtBagagemSegmento(s.bagagem);
+                                                                const bagagemFallback = fmtBagagemDirecao(
+                                                                    p,
+                                                                    p.grupo === "volta" ? "volta" : "ida"
+                                                                );
+                                                                const bagagemExibida = bagagemSegmento || bagagemFallback;
+                                                                return (
+                                                                    <>
+                                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                                                            <span className="font-semibold">
+                                                                                {s.aeroportoOrigem || s.cidadeOrigem || "?"} → {s.aeroportoDestino || s.cidadeDestino || "?"}
+                                                                            </span>
+                                                                            {s.companhia && <span className="text-muted-foreground">{s.companhia} {s.numeroVoo || ""}</span>}
+                                                                            {s.classe && <span className="text-muted-foreground">{s.classe}</span>}
+                                                                        </div>
+                                                                        <div className="text-muted-foreground">
+                                                                            Sai {fmtDateTime(s.saida)} · Chega {fmtDateTime(s.chegada)}
+                                                                            {bagagemExibida
+                                                                                ? ` · Bagagem ${bagagemExibida}`
+                                                                                : ""}
+                                                                        </div>
+                                                                        {si < p.segmentos.length - 1 && s.duracaoConexaoMinutos != null && (
+                                                                            <div className="text-amber-700 mt-1">↳ Conexão: {fmtDuracao(s.duracaoConexaoMinutos)}</div>
+                                                                        )}
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     ))}
                                                 </div>

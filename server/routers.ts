@@ -19,6 +19,30 @@ import * as ofertasVooPremium from "./ofertasVooPremium";
 import { clienteAuthRouter, clienteRouter, xpRouter } from "./clienteRouters";
 import { extractPecaFromText, extractPecaFromImage } from "./cotacoesAi";
 
+const LOCAL_SQL_DATETIME_RE = /^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+function normalizeLocalDateTimeInput(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+
+  const raw = value.trim();
+  if (!raw) return null;
+
+  const localMatch = raw.match(LOCAL_SQL_DATETIME_RE);
+  if (localMatch) {
+    const date = localMatch[1];
+    const hh = localMatch[2] ?? "00";
+    const mm = localMatch[3] ?? "00";
+    const ss = localMatch[4] ?? "00";
+    return `${date} ${hh}:${mm}:${ss}`;
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
+}
+
 
 export const appRouter = router({
   system: systemRouter,
@@ -1939,18 +1963,18 @@ export const appRouter = router({
         return await db.createCwPeca(
           {
             ...pecaData,
-            dataSaida: pecaData.dataSaida ? new Date(pecaData.dataSaida) : null,
-            dataChegada: pecaData.dataChegada ? new Date(pecaData.dataChegada) : null,
-            dataSaidaVolta: pecaData.dataSaidaVolta ? new Date(pecaData.dataSaidaVolta) : null,
-            dataChegadaVolta: pecaData.dataChegadaVolta ? new Date(pecaData.dataChegadaVolta) : null,
+            dataSaida: normalizeLocalDateTimeInput(pecaData.dataSaida),
+            dataChegada: normalizeLocalDateTimeInput(pecaData.dataChegada),
+            dataSaidaVolta: normalizeLocalDateTimeInput(pecaData.dataSaidaVolta),
+            dataChegadaVolta: normalizeLocalDateTimeInput(pecaData.dataChegadaVolta),
             valorMilheiro: pecaData.valorMilheiro != null ? String(pecaData.valorMilheiro) : null,
             custo: pecaData.custo != null ? String(pecaData.custo) : null,
             venda: pecaData.venda != null ? String(pecaData.venda) : null,
           } as any,
           segmentos.map((s) => ({
             ...s,
-            saida: s.saida ? new Date(s.saida) : null,
-            chegada: s.chegada ? new Date(s.chegada) : null,
+            saida: normalizeLocalDateTimeInput(s.saida),
+            chegada: normalizeLocalDateTimeInput(s.chegada),
           })) as any
         );
       }),
@@ -2016,17 +2040,17 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const patch: any = { ...input.patch };
-        if ("dataSaida" in patch) patch.dataSaida = patch.dataSaida ? new Date(patch.dataSaida) : null;
-        if ("dataChegada" in patch) patch.dataChegada = patch.dataChegada ? new Date(patch.dataChegada) : null;
-        if ("dataSaidaVolta" in patch) patch.dataSaidaVolta = patch.dataSaidaVolta ? new Date(patch.dataSaidaVolta) : null;
-        if ("dataChegadaVolta" in patch) patch.dataChegadaVolta = patch.dataChegadaVolta ? new Date(patch.dataChegadaVolta) : null;
+        if ("dataSaida" in patch) patch.dataSaida = normalizeLocalDateTimeInput(patch.dataSaida);
+        if ("dataChegada" in patch) patch.dataChegada = normalizeLocalDateTimeInput(patch.dataChegada);
+        if ("dataSaidaVolta" in patch) patch.dataSaidaVolta = normalizeLocalDateTimeInput(patch.dataSaidaVolta);
+        if ("dataChegadaVolta" in patch) patch.dataChegadaVolta = normalizeLocalDateTimeInput(patch.dataChegadaVolta);
         if ("valorMilheiro" in patch) patch.valorMilheiro = patch.valorMilheiro != null ? String(patch.valorMilheiro) : null;
         if ("custo" in patch) patch.custo = patch.custo != null ? String(patch.custo) : null;
         if ("venda" in patch) patch.venda = patch.venda != null ? String(patch.venda) : null;
         const segs = input.segmentos?.map((s) => ({
           ...s,
-          saida: s.saida ? new Date(s.saida) : null,
-          chegada: s.chegada ? new Date(s.chegada) : null,
+          saida: normalizeLocalDateTimeInput(s.saida),
+          chegada: normalizeLocalDateTimeInput(s.chegada),
         })) as any;
         await db.updateCwPeca(input.id, patch, segs);
         return { success: true };

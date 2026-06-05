@@ -715,6 +715,16 @@ export function extractedToPecaForm(
     const segmentos = Array.isArray(extracted.segmentos) ? extracted.segmentos : [];
     const idaSegsRaw = segmentos.filter((raw: any) => (raw?.direcao ?? "ida") === "ida");
     const voltaSegsRaw = segmentos.filter((raw: any) => raw?.direcao === "volta");
+    const hasVoltaFields =
+        extracted.origemVolta != null ||
+        extracted.destinoVolta != null ||
+        extracted.dataSaidaVolta != null ||
+        extracted.dataChegadaVolta != null ||
+        extracted.qtdConexoesVolta != null ||
+        extracted.companhiasVolta != null ||
+        extracted.classeVolta != null;
+    const shouldEnableVolta =
+        start.temVolta || Boolean(extracted.temVolta) || voltaSegsRaw.length > 0 || hasVoltaFields;
 
     const mapSegmento = (raw: Record<string, unknown>, i: number): Segmento => {
         const segSaida = splitIsoDatetime(raw.saida as string | undefined);
@@ -776,17 +786,26 @@ export function extractedToPecaForm(
 
     const resumoVolta = {
         ...start.resumoVolta,
-        origem: (extracted.origem as string) ?? "",
-        destino: (extracted.destino as string) ?? "",
-        dataSaidaDate: saida.date,
-        dataSaidaTime: saida.time,
-        dataChegadaDate: chegada.date,
-        dataChegadaTime: chegada.time,
+        origem: (extracted.origemVolta as string) ?? (extracted.origem as string) ?? "",
+        destino: (extracted.destinoVolta as string) ?? (extracted.destino as string) ?? "",
+        dataSaidaDate:
+            splitIsoDatetime(extracted.dataSaidaVolta as string | undefined).date ||
+            saida.date,
+        dataSaidaTime:
+            splitIsoDatetime(extracted.dataSaidaVolta as string | undefined).time ||
+            saida.time,
+        dataChegadaDate:
+            splitIsoDatetime(extracted.dataChegadaVolta as string | undefined).date ||
+            chegada.date,
+        dataChegadaTime:
+            splitIsoDatetime(extracted.dataChegadaVolta as string | undefined).time ||
+            chegada.time,
         qtdConexoes:
+            (extracted.qtdConexoesVolta as number) ??
             (extracted.qtdConexoes as number) ??
             (voltaSegsRaw.length > 0 ? Math.max(0, voltaSegsRaw.length - 1) : 0),
-        companhias: (extracted.companhias as string) ?? "",
-        classe: (extracted.classe as string) ?? "",
+        companhias: (extracted.companhiasVolta as string) ?? (extracted.companhias as string) ?? "",
+        classe: (extracted.classeVolta as string) ?? (extracted.classe as string) ?? "",
         ...(target === "volta" && bagagemMerged ? bagagemMerged : {}),
     };
 
@@ -803,10 +822,10 @@ export function extractedToPecaForm(
     return {
         ...start,
         ...baseRes,
-        temVolta: start.temVolta || Boolean(extracted.temVolta) || voltaSegsRaw.length > 0,
+        temVolta: shouldEnableVolta,
         resumoIda,
         resumoVolta:
-            start.temVolta || Boolean(extracted.temVolta) || voltaSegsRaw.length > 0
+            shouldEnableVolta
                 ? {
                     ...start.resumoVolta,
                     origem: (extracted.origemVolta as string) ?? start.resumoVolta.origem,

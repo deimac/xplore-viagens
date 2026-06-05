@@ -46,6 +46,40 @@ export function normalizeBagagemCounts(input: {
     };
 }
 
+export function fmtBagagemDirecao(
+    peca: {
+        itemPessoal?: number | null;
+        bagagemMao?: number | null;
+        bagagemDespachada?: number | null;
+        itemPessoalVolta?: number | null;
+        bagagemMaoVolta?: number | null;
+        bagagemDespachadaVolta?: number | null;
+    },
+    direcao: "ida" | "volta"
+): string | null {
+    const source =
+        direcao === "volta"
+            ? {
+                itemPessoal: peca.itemPessoalVolta,
+                bagagemMao: peca.bagagemMaoVolta,
+                bagagemDespachada: peca.bagagemDespachadaVolta,
+            }
+            : {
+                itemPessoal: peca.itemPessoal,
+                bagagemMao: peca.bagagemMao,
+                bagagemDespachada: peca.bagagemDespachada,
+            };
+
+    const itemPessoal = source.itemPessoal ?? 1;
+    const bagagemMao = source.bagagemMao ?? 0;
+    const bagagemDespachada = source.bagagemDespachada ?? 0;
+    const parts: string[] = [];
+    if (itemPessoal > 0) parts.push(`${itemPessoal} pessoal`);
+    if (bagagemMao > 0) parts.push(`${bagagemMao} mão`);
+    if (bagagemDespachada > 0) parts.push(`${bagagemDespachada} desp.`);
+    return parts.length ? parts.join(" · ") : null;
+}
+
 /** Formata texto livre de bagagem de segmento para o mesmo padrão do resumo. */
 export function fmtBagagemSegmento(raw: string | null | undefined): string | null {
     if (!raw) return null;

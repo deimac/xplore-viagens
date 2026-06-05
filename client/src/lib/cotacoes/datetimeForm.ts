@@ -6,6 +6,21 @@ export function isValidTimeString(value?: string | null): boolean {
 
 export function splitStoredDatetime(value: string | Date | null | undefined): { date: string; time: string } {
     if (!value) return { date: "", time: "" };
+
+    if (typeof value === "string") {
+        const raw = value.trim();
+        if (!raw) return { date: "", time: "" };
+
+        // Preserve local datetime strings exactly as entered (no timezone conversion).
+        const localMatch = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,6})?)?)?$/);
+        if (localMatch) {
+            return {
+                date: localMatch[1],
+                time: localMatch[2] && localMatch[3] ? `${localMatch[2]}:${localMatch[3]}` : "",
+            };
+        }
+    }
+
     const d = typeof value === "string" ? new Date(value) : value;
     if (isNaN(d.getTime())) return { date: "", time: "" };
     const pad = (n: number) => String(n).padStart(2, "0");

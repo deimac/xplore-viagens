@@ -2,6 +2,7 @@
 
 import type { PecaCompleta, CenarioCompleto } from "@/components/cotacoes/types";
 import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
+import { splitStoredDatetime } from "@/lib/cotacoes/datetimeForm";
 
 export type DirecaoPeca = "ida" | "volta";
 
@@ -97,9 +98,9 @@ export function fmtDuration(minutes: number | null | undefined): string {
 }
 
 export function diffMinutes(a: Date | string | null | undefined, b: Date | string | null | undefined): number | null {
-    if (!a || !b) return null;
-    const da = typeof a === "string" ? new Date(a) : a;
-    const db = typeof b === "string" ? new Date(b) : b;
+    const da = parseDateForMath(a);
+    const db = parseDateForMath(b);
+    if (!da || !db) return null;
     if (isNaN(da.getTime()) || isNaN(db.getTime())) return null;
     return Math.round((db.getTime() - da.getTime()) / 60000);
 }
@@ -116,23 +117,56 @@ export function pecaDurationMinutes(p: PecaCompleta): number | null {
 
 export function fmtTime(value: Date | string | null | undefined): string {
     if (!value) return "—";
-    const d = typeof value === "string" ? new Date(value) : value;
-    if (isNaN(d.getTime())) return "—";
+
+    const { time } = splitStoredDatetime(value);
+    if (time) return time;
+
+    const d = parseDateForMath(value);
+    if (!d || isNaN(d.getTime())) return "—";
     return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function fmtDateShort(value: Date | string | null | undefined): string {
     if (!value) return "—";
-    const d = typeof value === "string" ? new Date(value) : value;
+
+    const { date } = splitStoredDatetime(value);
+    if (!date) return "—";
+
+    const [yyyy, mm, dd] = date.split("-").map(Number);
+    if (!yyyy || !mm || !dd) return "—";
+
+    const d = new Date(yyyy, mm - 1, dd, 12, 0, 0, 0);
     if (isNaN(d.getTime())) return "—";
     return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
 export function fmtDateTime(value: Date | string | null | undefined): string {
     if (!value) return "—";
-    const d = typeof value === "string" ? new Date(value) : value;
-    if (isNaN(d.getTime())) return "—";
-    return `${fmtDateShort(d)} ${fmtTime(d)}`;
+
+    const date = fmtDateShort(value);
+    const time = fmtTime(value);
+    if (date === "—") return "—";
+    if (time === "—") return date;
+    return `${date} ${time}`;
+}
+
+function parseDateForMath(value: Date | string | null | undefined): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+
+    const { date, time } = splitStoredDatetime(value);
+    if (date) {
+        const [yyyy, mm, dd] = date.split("-").map(Number);
+        if (yyyy && mm && dd) {
+            const [hh, mi] = (time || "00:00").split(":").map(Number);
+            const result = new Date(yyyy, mm - 1, dd, hh || 0, mi || 0, 0, 0);
+            if (!isNaN(result.getTime())) return result;
+        }
+    }
+
+    const fallback = new Date(value);
+    if (isNaN(fallback.getTime())) return null;
+    return fallback;
 }
 
 export interface CenarioTotais {
