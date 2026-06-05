@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, primaryKey, date, decimal, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, primaryKey, date, decimal, boolean, datetime } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -384,16 +384,16 @@ export const cwPecas = mysqlTable("cw_pecas", {
   temVolta: boolean("tem_volta").default(false).notNull(),
   origem: varchar("origem", { length: 120 }),
   destino: varchar("destino", { length: 120 }),
-  dataSaida: timestamp("data_saida"),
-  dataChegada: timestamp("data_chegada"),
+  dataSaida: datetime("data_saida", { mode: "string" }),
+  dataChegada: datetime("data_chegada", { mode: "string" }),
   duracaoMinutos: int("duracao_minutos"),
   qtdConexoes: int("qtd_conexoes").default(0).notNull(),
   companhias: varchar("companhias", { length: 255 }),
   classe: varchar("classe", { length: 40 }),
   origemVolta: varchar("origem_volta", { length: 120 }),
   destinoVolta: varchar("destino_volta", { length: 120 }),
-  dataSaidaVolta: timestamp("data_saida_volta"),
-  dataChegadaVolta: timestamp("data_chegada_volta"),
+  dataSaidaVolta: datetime("data_saida_volta", { mode: "string" }),
+  dataChegadaVolta: datetime("data_chegada_volta", { mode: "string" }),
   duracaoMinutosVolta: int("duracao_minutos_volta"),
   qtdConexoesVolta: int("qtd_conexoes_volta").default(0).notNull(),
   companhiasVolta: varchar("companhias_volta", { length: 255 }),
@@ -437,8 +437,8 @@ export const cwSegmentos = mysqlTable("cw_segmentos", {
   aeroportoDestino: varchar("aeroporto_destino", { length: 10 }),
   cidadeOrigem: varchar("cidade_origem", { length: 120 }),
   cidadeDestino: varchar("cidade_destino", { length: 120 }),
-  saida: timestamp("saida"),
-  chegada: timestamp("chegada"),
+  saida: datetime("saida", { mode: "string" }),
+  chegada: datetime("chegada", { mode: "string" }),
   companhia: varchar("companhia", { length: 120 }),
   numeroVoo: varchar("numero_voo", { length: 20 }),
   classe: varchar("classe", { length: 40 }),

@@ -21,7 +21,7 @@ import { extractPecaFromText, extractPecaFromImage } from "./cotacoesAi";
 
 const LOCAL_SQL_DATETIME_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
 
-function normalizeLocalDateTimeInput(value: string | null | undefined): Date | null {
+function normalizeLocalDateTimeInput(value: string | null | undefined): string | null {
   if (typeof value !== "string") return null;
 
   const raw = value.trim();
@@ -36,12 +36,15 @@ function normalizeLocalDateTimeInput(value: string | null | undefined): Date | n
     const mm = Number(localMatch[5] ?? "00");
     const ss = Number(localMatch[6] ?? "00");
     const parsedLocal = new Date(year, month - 1, day, hh, mm, ss, 0);
-    return Number.isNaN(parsedLocal.getTime()) ? null : parsedLocal;
+    if (Number.isNaN(parsedLocal.getTime())) return null;
+    return `${localMatch[1]}-${localMatch[2]}-${localMatch[3]} ${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
   }
 
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
 }
 
 
