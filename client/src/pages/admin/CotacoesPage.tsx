@@ -29,7 +29,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { FileText, Plus, Search } from "lucide-react";
+import { FileText, Plus, Search, SquarePen, Trash2 } from "lucide-react";
+import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
 import { toast } from "sonner";
 
 const STATUS_LABEL: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -74,6 +75,8 @@ export default function CotacoesPage() {
     const [statusFilter, setStatusFilter] = useState<string>("todos");
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState<NewCotacaoFormState>(emptyForm);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [cotacaoToDelete, setCotacaoToDelete] = useState<{ id: number; clienteNome: string } | null>(null);
 
     const utils = trpc.useUtils();
     const { data: cotacoes = [], isLoading } = trpc.cotacoesWorkspace.list.useQuery();
@@ -86,6 +89,16 @@ export default function CotacoesPage() {
             setForm(emptyForm);
         },
         onError: (err) => toast.error(err.message || "Erro ao criar cotação"),
+    });
+
+    const deleteMut = trpc.cotacoesWorkspace.delete.useMutation({
+        onSuccess: () => {
+            toast.success("Cotação excluída");
+            utils.cotacoesWorkspace.list.invalidate();
+            setDeleteDialogOpen(false);
+            setCotacaoToDelete(null);
+        },
+        onError: (err) => toast.error(err.message || "Erro ao excluir cotação"),
     });
 
     const filtered = useMemo(() => {
@@ -121,6 +134,16 @@ export default function CotacoesPage() {
             paxBebes: Number(form.paxBebes) || 0,
             observacoes: form.observacoes.trim() || undefined,
         });
+    };
+
+    const handleDeleteCotacao = (id: number, clienteNome: string) => {
+        setCotacaoToDelete({ id, clienteNome });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (!cotacaoToDelete) return;
+        deleteMut.mutate({ id: cotacaoToDelete.id });
     };
 
     return (
@@ -179,19 +202,20 @@ export default function CotacoesPage() {
                                 <TableHead>Pax</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Criada</TableHead>
+                                <TableHead className="w-28 text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                                    <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
                                         Carregando...
                                     </TableCell>
                                 </TableRow>
                             )}
                             {!isLoading && filtered.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-12">
+                                    <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-12">
                                         Nenhuma cotação ainda. Clique em "Nova cotação" para começar.
                                     </TableCell>
                                 </TableRow>
@@ -227,6 +251,32 @@ export default function CotacoesPage() {
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">
                                             {c.criadoEm ? new Date(c.criadoEm).toLocaleString("pt-BR") : "-"}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="inline-flex items-center gap-1">
+                                                <Link href={`/admin/cotacoes/${c.id}`}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8"
+                                                        title="Editar cotação"
+                                                        aria-label="Editar cotação"
+                                                    >
+                                                        <SquarePen className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                                    title="Excluir cotação"
+                                                    aria-label="Excluir cotação"
+                                                    onClick={() => handleDeleteCotacao(c.id, c.clienteNome || `#${c.id}`)}
+                                                    disabled={deleteMut.isPending}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -347,6 +397,16 @@ export default function CotacoesPage() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <DeleteConfirmDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Excluir cotação"
+                description={`Excluir a cotação "${cotacaoToDelete?.clienteNome || ""}"? Todas as peças, cenários e propostas vinculadas serão removidas.`}
+                itemName={cotacaoToDelete?.clienteNome}
+                onConfirm={handleConfirmDelete}
+                isLoading={deleteMut.isPending}
+            />
         </AdminLayout>
     );
 }

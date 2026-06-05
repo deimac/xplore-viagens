@@ -63,19 +63,7 @@ export default function PropostaViewPage() {
 
     const { data, isLoading } = trpc.cotacoesWorkspace.getProposta.useQuery({ id: propostaId });
 
-    if (isLoading) {
-        return <div className="p-6 text-sm text-muted-foreground">Carregando proposta...</div>;
-    }
-    if (!data) {
-        return (
-            <div className="p-6 max-w-3xl mx-auto">
-                <p className="text-sm text-muted-foreground">Proposta não encontrada.</p>
-                <Link href={`/admin/cotacoes/${cotacaoId}`} className="text-primary underline text-sm">Voltar</Link>
-            </div>
-        );
-    }
-
-    const snap = data.snapshot as any;
+    const snap = (data?.snapshot as any) ?? {};
     const cotacao = snap?.cotacao ?? {};
     const cenarios = asArray<any>(snap?.cenarios);
     const pecas = asArray<any>(snap?.pecas);
@@ -155,6 +143,18 @@ export default function PropostaViewPage() {
             };
         });
     }, [cenarios, pecasById]);
+
+    if (isLoading) {
+        return <div className="p-6 text-sm text-muted-foreground">Carregando proposta...</div>;
+    }
+    if (!data) {
+        return (
+            <div className="p-6 max-w-3xl mx-auto">
+                <p className="text-sm text-muted-foreground">Proposta não encontrada.</p>
+                <Link href={`/admin/cotacoes/${cotacaoId}`} className="text-primary underline text-sm">Voltar</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 print:bg-white">
