@@ -19,9 +19,9 @@ import * as ofertasVooPremium from "./ofertasVooPremium";
 import { clienteAuthRouter, clienteRouter, xpRouter } from "./clienteRouters";
 import { extractPecaFromText, extractPecaFromImage } from "./cotacoesAi";
 
-const LOCAL_SQL_DATETIME_RE = /^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+const LOCAL_SQL_DATETIME_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
 
-function normalizeLocalDateTimeInput(value: string | null | undefined): string | null {
+function normalizeLocalDateTimeInput(value: string | null | undefined): Date | null {
   if (typeof value !== "string") return null;
 
   const raw = value.trim();
@@ -29,18 +29,19 @@ function normalizeLocalDateTimeInput(value: string | null | undefined): string |
 
   const localMatch = raw.match(LOCAL_SQL_DATETIME_RE);
   if (localMatch) {
-    const date = localMatch[1];
-    const hh = localMatch[2] ?? "00";
-    const mm = localMatch[3] ?? "00";
-    const ss = localMatch[4] ?? "00";
-    return `${date} ${hh}:${mm}:${ss}`;
+    const year = Number(localMatch[1]);
+    const month = Number(localMatch[2]);
+    const day = Number(localMatch[3]);
+    const hh = Number(localMatch[4] ?? "00");
+    const mm = Number(localMatch[5] ?? "00");
+    const ss = Number(localMatch[6] ?? "00");
+    const parsedLocal = new Date(year, month - 1, day, hh, mm, ss, 0);
+    return Number.isNaN(parsedLocal.getTime()) ? null : parsedLocal;
   }
 
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return null;
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
+  return parsed;
 }
 
 
