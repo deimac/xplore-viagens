@@ -209,25 +209,126 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-// Endpoint OpenAI-compatível oficial do Google Gemini
-// Docs: https://ai.google.dev/gemini-api/docs/openai
-const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+type ProviderCandidate = {
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  models: string[];
+  extraHeaders?: Record<string, string>;
+};
 
-const DEFAULT_GEMINI_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
+type ProviderName = "openrouter" | "groq" | "google-gemini" | "xai-grok" | "openai";
+
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const XAI_BASE_URL = "https://api.x.ai/v1";
+const OPENAI_BASE_URL = "https://api.openai.com/v1";
+
+const DEFAULT_GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+const DEFAULT_OPENROUTER_MODELS = [
+  "google/gemini-2.0-flash-exp:free",
+  "deepseek/deepseek-r1-0528:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+];
+const DEFAULT_GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"];
+const DEFAULT_XAI_MODELS = ["grok-3-mini-fast", "grok-3-mini"];
+const DEFAULT_OPENAI_MODELS = ["gpt-4o-mini"];
+const DEFAULT_PROVIDER_ORDER: ProviderName[] = [
+  "openrouter",
+  "groq",
+  "google-gemini",
+  "xai-grok",
+  "openai",
 ];
 
-const resolveApiUrl = () => `${GEMINI_BASE_URL}/chat/completions`;
-
-const resolveModelCandidates = (): string[] => {
-  const configured = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "")
+const parseModelList = (raw: string, defaults: string[]): string[] => {
+  const configured = raw
     .split(",")
-    .map(m => m.trim())
+    .map((m) => m.trim())
     .filter(Boolean);
-  const all = configured.length > 0 ? configured : DEFAULT_GEMINI_MODELS;
-  return [...new Set(all)];
+  const source = configured.length ? configured : defaults;
+  return [...new Set(source)];
+};
+
+const resolveApiUrl = (provider: ProviderCandidate) => `${provider.baseUrl}/chat/completions`;
+
+const resolveProviderOrder = (): ProviderName[] => {
+  const configured = (process.env.LLM_PROVIDER_ORDER || "")
+    .split(",")
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!configured.length) return DEFAULT_PROVIDER_ORDER;
+
+  const normalized: ProviderName[] = [];
+  for (const item of configured) {
+    if (item === "openrouter") normalized.push("openrouter");
+    else if (item === "groq") normalized.push("groq");
+    else if (item === "google-gemini" || item === "gemini") normalized.push("google-gemini");
+    else if (item === "xai-grok" || item === "xai" || item === "grok") normalized.push("xai-grok");
+    else if (item === "openai") normalized.push("openai");
+  }
+
+  return normalized.length ? [...new Set(normalized)] : DEFAULT_PROVIDER_ORDER;
+};
+
+const resolveProviderCandidates = (): ProviderCandidate[] => {
+  const providerMap = new Map<ProviderName, ProviderCandidate>();
+
+  if (ENV.geminiApiKey) {
+    providerMap.set("google-gemini", {
+      name: "google-gemini",
+      baseUrl: GEMINI_BASE_URL,
+      apiKey: ENV.geminiApiKey,
+      models: parseModelList(process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "", DEFAULT_GEMINI_MODELS),
+    });
+  }
+
+  if (ENV.openRouterApiKey) {
+    providerMap.set("openrouter", {
+      name: "openrouter",
+      baseUrl: OPENROUTER_BASE_URL,
+      apiKey: ENV.openRouterApiKey,
+      models: parseModelList(process.env.OPENROUTER_MODELS || process.env.OPENROUTER_MODEL || "", DEFAULT_OPENROUTER_MODELS),
+      extraHeaders: {
+        "HTTP-Referer": ENV.publicUrl || ENV.frontendUrl || "https://xplore-viagens.local",
+        "X-Title": ENV.appName || "Xplore Viagens",
+      },
+    });
+  }
+
+  if (ENV.groqApiKey) {
+    providerMap.set("groq", {
+      name: "groq",
+      baseUrl: GROQ_BASE_URL,
+      apiKey: ENV.groqApiKey,
+      models: parseModelList(process.env.GROQ_MODELS || process.env.GROQ_MODEL || "", DEFAULT_GROQ_MODELS),
+    });
+  }
+
+  if (ENV.xaiApiKey) {
+    providerMap.set("xai-grok", {
+      name: "xai-grok",
+      baseUrl: XAI_BASE_URL,
+      apiKey: ENV.xaiApiKey,
+      models: parseModelList(process.env.XAI_MODELS || process.env.XAI_MODEL || "", DEFAULT_XAI_MODELS),
+    });
+  }
+
+  if (ENV.openAiApiKey) {
+    providerMap.set("openai", {
+      name: "openai",
+      baseUrl: OPENAI_BASE_URL,
+      apiKey: ENV.openAiApiKey,
+      models: parseModelList(process.env.OPENAI_MODELS || process.env.OPENAI_MODEL || "", DEFAULT_OPENAI_MODELS),
+    });
+  }
+
+  const order = resolveProviderOrder();
+  return order
+    .map((name) => providerMap.get(name))
+    .filter((provider): provider is ProviderCandidate => Boolean(provider));
 };
 
 const isModelUnavailableError = (status: number, errorText: string): boolean => {
@@ -244,8 +345,11 @@ const isModelUnavailableError = (status: number, errorText: string): boolean => 
 };
 
 const assertApiKey = () => {
-  if (!ENV.geminiApiKey) {
-    throw new Error("GEMINI_API_KEY não está configurado");
+  const providers = resolveProviderCandidates();
+  if (!providers.length) {
+    throw new Error(
+      "Nenhum provedor de IA está configurado. Defina pelo menos uma chave: GEMINI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, XAI_API_KEY ou OPENAI_API_KEY."
+    );
   }
 };
 
@@ -337,37 +441,50 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payloadBase.response_format = normalizedResponseFormat;
   }
 
-  const modelCandidates = resolveModelCandidates();
+  const providers = resolveProviderCandidates();
   const errors: string[] = [];
 
-  for (let i = 0; i < modelCandidates.length; i++) {
-    const model = modelCandidates[i];
-    const payload = { ...payloadBase, model };
-    const response = await fetch(resolveApiUrl(), {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${ENV.geminiApiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
+  for (const provider of providers) {
+    for (let i = 0; i < provider.models.length; i++) {
+      const model = provider.models[i];
+      const payload = { ...payloadBase, model };
 
-    if (response.ok) {
-      return (await response.json()) as InvokeResult;
-    }
+      try {
+        const response = await fetch(resolveApiUrl(provider), {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${provider.apiKey}`,
+            ...(provider.extraHeaders || {}),
+          },
+          body: JSON.stringify(payload),
+        });
 
-    const errorText = await response.text();
-    const errorMsg = `${model}: ${response.status} ${response.statusText} – ${errorText}`;
-    errors.push(errorMsg);
+        if (response.ok) {
+          return (await response.json()) as InvokeResult;
+        }
 
-    const shouldTryNext =
-      i < modelCandidates.length - 1 &&
-      isModelUnavailableError(response.status, errorText);
+        const errorText = await response.text();
+        const errorMsg = `${provider.name}/${model}: ${response.status} ${response.statusText} – ${errorText}`;
+        errors.push(errorMsg);
 
-    if (!shouldTryNext) {
-      throw new Error(`LLM invoke failed: ${errorMsg}`);
+        const shouldTryNextModel =
+          i < provider.models.length - 1 &&
+          isModelUnavailableError(response.status, errorText);
+
+        if (shouldTryNextModel) {
+          continue;
+        }
+
+        // Sai do provedor atual e tenta o próximo provedor configurado.
+        break;
+      } catch (err) {
+        const errorMsg = `${provider.name}/${model}: network error – ${(err as Error).message}`;
+        errors.push(errorMsg);
+        break;
+      }
     }
   }
 
-  throw new Error(`LLM invoke failed em todos os modelos: ${errors.join(" | ")}`);
+  throw new Error(`LLM invoke failed em todos os provedores/modelos: ${errors.join(" | ")}`);
 }

@@ -70,6 +70,12 @@ export const ENV = {
 
   // GEMINI AI (Google AI Studio)
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+
+  // Additional LLM providers (optional)
+  openRouterApiKey: process.env.OPENROUTER_API_KEY || '',
+  groqApiKey: process.env.GROQ_API_KEY || '',
+  xaiApiKey: process.env.XAI_API_KEY || '',
+  openAiApiKey: process.env.OPENAI_API_KEY || '',
 };
 
 export function validateEnv(): void {

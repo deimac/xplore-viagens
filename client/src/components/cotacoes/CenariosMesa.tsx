@@ -6,6 +6,7 @@ import type { CenarioCompleto, PecaCompleta } from "./types";
 interface Props {
     cenarios: CenarioCompleto[];
     pecasById: Map<number, PecaCompleta>;
+    hideProfit?: boolean;
     onNewCenario: () => void;
     onEditCenario: (c: CenarioCompleto) => void;
     onDeleteCenario: (c: CenarioCompleto) => void;
@@ -17,6 +18,7 @@ interface Props {
 export function CenariosMesa({
     cenarios,
     pecasById,
+    hideProfit = false,
     onNewCenario,
     onEditCenario,
     onDeleteCenario,
@@ -50,6 +52,7 @@ export function CenariosMesa({
                         key={c.id}
                         cenario={c}
                         pecasById={pecasById}
+                        hideProfit={hideProfit}
                         onEdit={() => onEditCenario(c)}
                         onDelete={() => onDeleteCenario(c)}
                         onToggleSelecionado={() => onToggleSelecionado(c)}

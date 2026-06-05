@@ -23,6 +23,7 @@ import { calcCenarioTotais, fmtCurrencyCompact, fmtDuration, getResumoDirecao } 
 interface Props {
     cenario: CenarioCompleto;
     pecasById: Map<number, PecaCompleta>;
+    hideProfit?: boolean;
     onEdit: () => void;
     onDelete: () => void;
     onToggleSelecionado: () => void;
@@ -33,6 +34,7 @@ interface Props {
 export function CenarioPanel({
     cenario,
     pecasById,
+    hideProfit = false,
     onEdit,
     onDelete,
     onToggleSelecionado,
@@ -110,12 +112,14 @@ export function CenarioPanel({
                         label="Venda"
                         value={fmtCurrencyCompact(totais.venda)}
                     />
-                    <Resumo
-                        icon={<TrendingUp className="h-3 w-3" />}
-                        label="Lucro"
-                        value={fmtCurrencyCompact(totais.lucro)}
-                        tone={totais.lucro >= 0 ? "good" : "bad"}
-                    />
+                    {!hideProfit && (
+                        <Resumo
+                            icon={<TrendingUp className="h-3 w-3" />}
+                            label="Lucro"
+                            value={fmtCurrencyCompact(totais.lucro)}
+                            tone={totais.lucro >= 0 ? "good" : "bad"}
+                        />
+                    )}
                     <Resumo
                         icon={<Clock className="h-3 w-3" />}
                         label="Tempo"

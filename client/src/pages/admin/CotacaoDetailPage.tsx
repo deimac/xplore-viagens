@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, ExternalLink, Trash2 } from "lucide-react";
+import { FileText, ExternalLink, Trash2, Eye, EyeOff } from "lucide-react";
 
 import { WorkspaceHeader } from "@/components/cotacoes/WorkspaceHeader";
 import { PecaLibrary } from "@/components/cotacoes/PecaLibrary";
@@ -84,6 +84,45 @@ function dateOnly(value: Date | string | null | undefined): string {
     return d.toISOString().slice(0, 10);
 }
 
+function friendlyIaExtractionError(raw: string): string {
+    const msg = (raw || "").toLowerCase();
+
+    if (
+        msg.includes("todos os provedores de ia falharam") ||
+        msg.includes("all providers") ||
+        msg.includes("todos os provedores/modelos")
+    ) {
+        return "Não foi possível extrair com IA agora. Pode ser limite de uso, chave inválida ou indisponibilidade temporária. Tente novamente em instantes ou use importação manual.";
+    }
+
+    if (
+        msg.includes("429") ||
+        msg.includes("rate limit") ||
+        msg.includes("quota") ||
+        msg.includes("insufficient_quota") ||
+        msg.includes("billing")
+    ) {
+        return "A IA atingiu limite de uso/cota no momento. Aguarde alguns minutos ou altere para outro provedor configurado.";
+    }
+
+    if (
+        msg.includes("401") ||
+        msg.includes("403") ||
+        msg.includes("api key") ||
+        msg.includes("unauthorized") ||
+        msg.includes("forbidden") ||
+        msg.includes("não está configurado")
+    ) {
+        return "A integração de IA está sem credencial válida. Verifique as chaves dos provedores no servidor.";
+    }
+
+    if (msg.includes("network error") || msg.includes("enotfound") || msg.includes("econn")) {
+        return "Falha de conexão com o provedor de IA. Verifique a rede e tente novamente.";
+    }
+
+    return `Falha na extração por IA: ${raw}`;
+}
+
 export default function CotacaoDetailPage() {
     const params = useParams<{ id: string }>();
     const cotacaoId = Number(params.id);
@@ -108,6 +147,7 @@ export default function CotacaoDetailPage() {
     }>({ open: false, editingId: null, nome: "", descricao: "" });
 
     const [propostaOpen, setPropostaOpen] = useState(false);
+    const [hideProfit, setHideProfit] = useState(false);
     const [cotacaoEdit, setCotacaoEdit] = useState<CotacaoEditState>(emptyCotacaoEdit);
     const [activeDragPecaId, setActiveDragPecaId] = useState<number | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -193,10 +233,10 @@ export default function CotacaoDetailPage() {
     });
 
     const extractText = trpc.cotacoesWorkspace.extractFromText.useMutation({
-        onError: (e) => toast.error(`Falha na extração: ${e.message}`),
+        onError: (e) => toast.error(friendlyIaExtractionError(e.message)),
     });
     const extractImage = trpc.cotacoesWorkspace.extractFromImage.useMutation({
-        onError: (e) => toast.error(`Falha na extração: ${e.message}`),
+        onError: (e) => toast.error(friendlyIaExtractionError(e.message)),
     });
 
     const generateProposta = trpc.cotacoesWorkspace.generateProposta.useMutation({
@@ -624,6 +664,20 @@ export default function CotacaoDetailPage() {
                         onEditCotacao={openEditCotacao}
                     />
 
+                    <div className="border-b bg-card px-4 py-2 flex items-center justify-end">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => setHideProfit((v) => !v)}
+                            title={hideProfit ? "Exibir campos de lucro" : "Ocultar campos de lucro"}
+                        >
+                            {hideProfit ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                            {hideProfit ? "Mostrar lucro" : "Ocultar lucro"}
+                        </Button>
+                    </div>
+
                     {propostas.length > 0 && (
                         <div className="border-b bg-violet-50/40 px-4 py-2 flex items-center gap-2 flex-wrap text-xs">
                             <span className="font-medium text-violet-900 uppercase tracking-wide">
@@ -671,6 +725,7 @@ export default function CotacaoDetailPage() {
                             <PecaLibrary
                                 pecas={pecas}
                                 cenarios={cenarios}
+                                hideProfit={hideProfit}
                                 onNewPeca={openNewPeca}
                                 onToggleFavorita={handleToggleFavorita}
                                 onEditPeca={openEditPeca}
@@ -684,6 +739,7 @@ export default function CotacaoDetailPage() {
                             <CenariosMesa
                                 cenarios={cenarios}
                                 pecasById={pecasById}
+                                hideProfit={hideProfit}
                                 onNewCenario={handleNewCenario}
                                 onEditCenario={handleEditCenario}
                                 onDeleteCenario={handleDeleteCenario}
@@ -691,7 +747,7 @@ export default function CotacaoDetailPage() {
                                 onRemoveLink={handleRemovePecaFromCenario}
                                 onClickPeca={openEditPeca}
                             />
-                            <ComparadorBar cenarios={cenarios} pecasById={pecasById} />
+                            <ComparadorBar cenarios={cenarios} pecasById={pecasById} hideProfit={hideProfit} />
                         </div>
                     </div>
                 </div>
@@ -702,6 +758,7 @@ export default function CotacaoDetailPage() {
                             <PecaCard
                                 peca={activeDragPeca}
                                 usadaEmCenarios={0}
+                                hideProfit={hideProfit}
                                 onToggleFavorita={() => { }}
                                 onEdit={() => { }}
                                 onDelete={() => { }}

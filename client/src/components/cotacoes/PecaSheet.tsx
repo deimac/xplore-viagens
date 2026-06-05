@@ -908,15 +908,40 @@ function todayLocalIsoDate(): string {
     return `${y}-${m}-${d}`;
 }
 
+function parseDateOnly(value: string | null | undefined): Date | null {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const m = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (!m) return null;
+
+    const year = Number(m[1]);
+    const month = Number(m[2]);
+    const day = Number(m[3]);
+    if (!year || !month || !day) return null;
+
+    const date = new Date(year, month - 1, day, 0, 0, 0, 0);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+}
+
+function isBeforeDateOnly(a: string | null | undefined, b: string | null | undefined): boolean {
+    const da = parseDateOnly(a);
+    const db = parseDateOnly(b);
+    if (!da || !db) return false;
+    return da.getTime() < db.getTime();
+}
+
 function validateDates(form: PecaForm): string | null {
     const today = todayLocalIsoDate();
     if (form.resumoIda.dataSaidaDate) {
-        if (form.resumoIda.dataSaidaDate < today) {
+        if (isBeforeDateOnly(form.resumoIda.dataSaidaDate, today)) {
             return "A data de ida não pode ser anterior a hoje.";
         }
     }
     if (form.temVolta && form.resumoVolta.dataSaidaDate && form.resumoIda.dataSaidaDate) {
-        if (form.resumoVolta.dataSaidaDate < form.resumoIda.dataSaidaDate) {
+        if (isBeforeDateOnly(form.resumoVolta.dataSaidaDate, form.resumoIda.dataSaidaDate)) {
             return "A data da volta não pode ser anterior à ida.";
         }
     }

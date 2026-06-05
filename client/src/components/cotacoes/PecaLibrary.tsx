@@ -18,6 +18,7 @@ import { matchesText } from "@/lib/cotacoes/calc";
 interface Props {
     pecas: PecaCompleta[];
     cenarios: CenarioCompleto[];
+    hideProfit?: boolean;
     onNewPeca: () => void;
     onToggleFavorita: (peca: PecaCompleta) => void;
     onEditPeca: (peca: PecaCompleta) => void;
@@ -29,6 +30,7 @@ interface Props {
 export function PecaLibrary({
     pecas,
     cenarios,
+    hideProfit = false,
     onNewPeca,
     onToggleFavorita,
     onEditPeca,
@@ -246,6 +248,7 @@ export function PecaLibrary({
                                     key={p.id}
                                     peca={p}
                                     usadaEmCenarios={usoMap.get(p.id) ?? 0}
+                                    hideProfit={hideProfit}
                                     cenariosOptions={cenariosOptions}
                                     onToggleFavorita={() => onToggleFavorita(p)}
                                     onEdit={() => onEditPeca(p)}

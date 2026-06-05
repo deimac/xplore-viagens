@@ -43,6 +43,7 @@ export interface CenarioOption {
 interface Props {
     peca: PecaCompleta;
     usadaEmCenarios: number;
+    hideProfit?: boolean;
     cenariosOptions?: CenarioOption[];
     onToggleFavorita: () => void;
     onEdit: () => void;
@@ -60,6 +61,7 @@ const TIPO_ICON = {
 export function PecaCard({
     peca,
     usadaEmCenarios,
+    hideProfit = false,
     cenariosOptions,
     onToggleFavorita,
     onEdit,
@@ -260,7 +262,7 @@ export function PecaCard({
                             <span className="text-muted-foreground">
                                 V: <span className="text-foreground font-medium">{fmtCurrencyCompact(peca.venda)}</span>
                             </span>
-                            {lucro != null && (
+                            {!hideProfit && lucro != null && (
                                 <span
                                     className={`font-semibold ${lucro >= 0 ? "text-emerald-600" : "text-rose-600"
                                         }`}

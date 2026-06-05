@@ -17,9 +17,10 @@ import { calcCenarioTotais, fmtCurrencyCompact, fmtDuration } from "@/lib/cotaco
 interface Props {
     cenarios: CenarioCompleto[];
     pecasById: Map<number, PecaCompleta>;
+    hideProfit?: boolean;
 }
 
-export function ComparadorBar({ cenarios, pecasById }: Props) {
+export function ComparadorBar({ cenarios, pecasById, hideProfit = false }: Props) {
     const [open, setOpen] = useState(false);
 
     const linhas = useMemo(
@@ -83,12 +84,14 @@ export function ComparadorBar({ cenarios, pecasById }: Props) {
                                         Venda
                                     </span>
                                 </th>
-                                <th className="px-3 py-2 font-medium">
-                                    <span className="inline-flex items-center gap-1">
-                                        <TrendingUp className="h-3 w-3" />
-                                        Lucro
-                                    </span>
-                                </th>
+                                {!hideProfit && (
+                                    <th className="px-3 py-2 font-medium">
+                                        <span className="inline-flex items-center gap-1">
+                                            <TrendingUp className="h-3 w-3" />
+                                            Lucro
+                                        </span>
+                                    </th>
+                                )}
                                 <th className="px-3 py-2 font-medium">
                                     <span className="inline-flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
@@ -123,13 +126,15 @@ export function ComparadorBar({ cenarios, pecasById }: Props) {
                                     <Cell highlight={melhores.vendaId === cenario.id} label="Mais barato">
                                         {fmtCurrencyCompact(totais.venda)}
                                     </Cell>
-                                    <Cell highlight={melhores.lucroId === cenario.id} label="Mais lucro">
-                                        <span
-                                            className={totais.lucro >= 0 ? "text-emerald-700" : "text-rose-700"}
-                                        >
-                                            {fmtCurrencyCompact(totais.lucro)}
-                                        </span>
-                                    </Cell>
+                                    {!hideProfit && (
+                                        <Cell highlight={melhores.lucroId === cenario.id} label="Mais lucro">
+                                            <span
+                                                className={totais.lucro >= 0 ? "text-emerald-700" : "text-rose-700"}
+                                            >
+                                                {fmtCurrencyCompact(totais.lucro)}
+                                            </span>
+                                        </Cell>
+                                    )}
                                     <Cell highlight={melhores.tempoId === cenario.id} label="Mais rápido">
                                         {totais.tempoMinutos != null ? fmtDuration(totais.tempoMinutos) : "—"}
                                     </Cell>
