@@ -3839,6 +3839,14 @@ export async function listCwCotacoes() {
   return result;
 }
 
+export async function getCwCotacaoById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { cwCotacoes } = await cwSchemas();
+  const rows = await db.select().from(cwCotacoes).where(eq(cwCotacoes.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
 // Retorna cotação completa: cotacao, pecas (com segmentos), cenarios (com links de peças) do workspace.
 export async function getCwCotacaoFull(id: number) {
   const db = await getDb();
