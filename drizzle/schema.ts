@@ -354,6 +354,7 @@ export const cwCotacoes = mysqlTable("cw_cotacoes", {
   paxAdultos: int("pax_adultos").default(1).notNull(),
   paxCriancas: int("pax_criancas").default(0).notNull(),
   paxBebes: int("pax_bebes").default(0).notNull(),
+  bagagemDespachada: int("bagagem_despachada").default(0).notNull(),
   observacoes: text("observacoes"),
   status: mysqlEnum("status", [
     "rascunho",
@@ -409,6 +410,7 @@ export const cwPecas = mysqlTable("cw_pecas", {
     .notNull(),
   qtdMilhas: int("qtd_milhas"),
   valorMilheiro: decimal("valor_milheiro", { precision: 10, scale: 2 }),
+  taxaEmbarque: decimal("taxa_embarque", { precision: 10, scale: 2 }),
   custo: decimal("custo", { precision: 10, scale: 2 }),
   venda: decimal("venda", { precision: 10, scale: 2 }),
   fonte: varchar("fonte", { length: 80 }),

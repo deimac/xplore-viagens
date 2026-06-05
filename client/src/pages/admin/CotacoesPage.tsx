@@ -53,6 +53,7 @@ interface NewCotacaoFormState {
     paxAdultos: number;
     paxCriancas: number;
     paxBebes: number;
+    bagagemDespachada: number;
     observacoes: string;
 }
 
@@ -67,6 +68,7 @@ const emptyForm: NewCotacaoFormState = {
     paxAdultos: 1,
     paxCriancas: 0,
     paxBebes: 0,
+    bagagemDespachada: 0,
     observacoes: "",
 };
 
@@ -77,6 +79,9 @@ export default function CotacoesPage() {
     const [form, setForm] = useState<NewCotacaoFormState>(emptyForm);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [cotacaoToDelete, setCotacaoToDelete] = useState<{ id: number; clienteNome: string } | null>(null);
+    const [editOpen, setEditOpen] = useState(false);
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editForm, setEditForm] = useState<NewCotacaoFormState>(emptyForm);
 
     const utils = trpc.useUtils();
     const { data: cotacoes = [], isLoading } = trpc.cotacoesWorkspace.list.useQuery();
@@ -89,6 +94,17 @@ export default function CotacoesPage() {
             setForm(emptyForm);
         },
         onError: (err) => toast.error(err.message || "Erro ao criar cotação"),
+    });
+
+    const updateMut = trpc.cotacoesWorkspace.update.useMutation({
+        onSuccess: () => {
+            toast.success("Cotação atualizada");
+            utils.cotacoesWorkspace.list.invalidate();
+            setEditOpen(false);
+            setEditingId(null);
+            setEditForm(emptyForm);
+        },
+        onError: (err) => toast.error(err.message || "Erro ao atualizar cotação"),
     });
 
     const deleteMut = trpc.cotacoesWorkspace.delete.useMutation({
@@ -132,7 +148,53 @@ export default function CotacoesPage() {
             paxAdultos: Number(form.paxAdultos) || 1,
             paxCriancas: Number(form.paxCriancas) || 0,
             paxBebes: Number(form.paxBebes) || 0,
+            bagagemDespachada: Number(form.bagagemDespachada) || 0,
             observacoes: form.observacoes.trim() || undefined,
+        });
+    };
+
+    const handleOpenEdit = (c: typeof cotacoes[number]) => {
+        setEditingId(c.id);
+        setEditForm({
+            clienteNome: c.clienteNome || "",
+            clienteEmail: c.clienteEmail || "",
+            clienteTelefone: c.clienteTelefone || "",
+            origem: c.origem || "",
+            destino: c.destino || "",
+            dataIda: c.dataIda ? String(c.dataIda).slice(0, 10) : "",
+            dataVolta: c.dataVolta ? String(c.dataVolta).slice(0, 10) : "",
+            paxAdultos: c.paxAdultos ?? 1,
+            paxCriancas: c.paxCriancas ?? 0,
+            paxBebes: c.paxBebes ?? 0,
+            bagagemDespachada: (c as any).bagagemDespachada ?? 0,
+            observacoes: c.observacoes || "",
+        });
+        setEditOpen(true);
+    };
+
+    const handleEditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingId) return;
+        if (!editForm.clienteNome.trim()) {
+            toast.error("Informe o nome do cliente");
+            return;
+        }
+        updateMut.mutate({
+            id: editingId,
+            patch: {
+                clienteNome: editForm.clienteNome.trim(),
+                clienteEmail: editForm.clienteEmail.trim() || null,
+                clienteTelefone: editForm.clienteTelefone.trim() || null,
+                origem: editForm.origem.trim() || null,
+                destino: editForm.destino.trim() || null,
+                dataIda: editForm.dataIda || null,
+                dataVolta: editForm.dataVolta || null,
+                paxAdultos: Number(editForm.paxAdultos) || 1,
+                paxCriancas: Number(editForm.paxCriancas) || 0,
+                paxBebes: Number(editForm.paxBebes) || 0,
+                bagagemDespachada: Number(editForm.bagagemDespachada) || 0,
+                observacoes: editForm.observacoes.trim() || null,
+            },
         });
     };
 
@@ -254,17 +316,16 @@ export default function CotacoesPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="inline-flex items-center gap-1">
-                                                <Link href={`/admin/cotacoes/${c.id}`}>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        title="Editar cotação"
-                                                        aria-label="Editar cotação"
-                                                    >
-                                                        <SquarePen className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    title="Editar dados da cotação"
+                                                    aria-label="Editar cotação"
+                                                    onClick={() => handleOpenEdit(c)}
+                                                >
+                                                    <SquarePen className="h-4 w-4" />
+                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -376,6 +437,15 @@ export default function CotacoesPage() {
                                     onChange={(e) => setForm({ ...form, paxBebes: Number(e.target.value) })}
                                 />
                             </div>
+                            <div>
+                                <Label>Bagagem despachada (un. por pax)</Label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={form.bagagemDespachada}
+                                    onChange={(e) => setForm({ ...form, bagagemDespachada: Number(e.target.value) })}
+                                />
+                            </div>
                             <div className="sm:col-span-2">
                                 <Label>Observações</Label>
                                 <Textarea
@@ -407,6 +477,127 @@ export default function CotacoesPage() {
                 onConfirm={handleConfirmDelete}
                 isLoading={deleteMut.isPending}
             />
+
+            <Dialog open={editOpen} onOpenChange={(o) => { if (!o) { setEditOpen(false); setEditingId(null); setEditForm(emptyForm); } }}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Editar cotação</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="sm:col-span-2">
+                                <Label>Cliente *</Label>
+                                <Input
+                                    value={editForm.clienteNome}
+                                    onChange={(e) => setEditForm({ ...editForm, clienteNome: e.target.value })}
+                                    placeholder="Nome do cliente"
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <Label>E-mail</Label>
+                                <Input
+                                    type="email"
+                                    value={editForm.clienteEmail}
+                                    onChange={(e) => setEditForm({ ...editForm, clienteEmail: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Telefone</Label>
+                                <Input
+                                    value={editForm.clienteTelefone}
+                                    onChange={(e) => setEditForm({ ...editForm, clienteTelefone: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Origem</Label>
+                                <Input
+                                    value={editForm.origem}
+                                    onChange={(e) => setEditForm({ ...editForm, origem: e.target.value })}
+                                    placeholder="Ex: GRU"
+                                />
+                            </div>
+                            <div>
+                                <Label>Destino</Label>
+                                <Input
+                                    value={editForm.destino}
+                                    onChange={(e) => setEditForm({ ...editForm, destino: e.target.value })}
+                                    placeholder="Ex: MIA"
+                                />
+                            </div>
+                            <div>
+                                <Label>Data de ida</Label>
+                                <Input
+                                    type="date"
+                                    value={editForm.dataIda}
+                                    onChange={(e) => setEditForm({ ...editForm, dataIda: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Data de volta</Label>
+                                <Input
+                                    type="date"
+                                    value={editForm.dataVolta}
+                                    onChange={(e) => setEditForm({ ...editForm, dataVolta: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Adultos</Label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    value={editForm.paxAdultos}
+                                    onChange={(e) => setEditForm({ ...editForm, paxAdultos: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Crianças</Label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={editForm.paxCriancas}
+                                    onChange={(e) => setEditForm({ ...editForm, paxCriancas: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Bebês</Label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={editForm.paxBebes}
+                                    onChange={(e) => setEditForm({ ...editForm, paxBebes: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <Label>Bagagem despachada (un. por pax)</Label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={editForm.bagagemDespachada}
+                                    onChange={(e) => setEditForm({ ...editForm, bagagemDespachada: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <Label>Observações</Label>
+                                <Textarea
+                                    rows={3}
+                                    value={editForm.observacoes}
+                                    onChange={(e) => setEditForm({ ...editForm, observacoes: e.target.value })}
+                                    placeholder="Restrições, preferências, prazos..."
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={updateMut.isPending}>
+                                {updateMut.isPending ? "Salvando..." : "Salvar alterações"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

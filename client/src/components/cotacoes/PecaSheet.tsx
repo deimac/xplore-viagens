@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, X, Plane, Banknote, ListChecks, Info, Sparkles, Upload, Loader2, FileText, Image as ImageIcon } from "lucide-react";
 import type { PecaCompleta } from "./types";
-import { calcLucro, fmtCurrencyCompact } from "@/lib/cotacoes/calc";
+import { fmtCurrencyCompact } from "@/lib/cotacoes/calc";
 import {
     combineDateTimeForSubmit,
     splitIsoDatetime,
@@ -72,8 +72,9 @@ export type PecaForm = {
     tipoFinanceiro: "milhas" | "pagante" | "misto";
     qtdMilhas: string;
     valorMilheiro: string;
+    taxaEmbarque: string;
     custo: string;
-    venda: string;
+    lucro: string;
     fonte: string;
     estrategia: string;
     status: "pesquisa" | "favorita";
@@ -133,8 +134,9 @@ export const emptyPeca = (): PecaForm => ({
     tipoFinanceiro: "pagante",
     qtdMilhas: "",
     valorMilheiro: "",
+    taxaEmbarque: "",
     custo: "",
-    venda: "",
+    lucro: "",
     fonte: "",
     estrategia: "",
     status: "pesquisa",
@@ -218,8 +220,9 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
         tipoFinanceiro: p.tipoFinanceiro,
         qtdMilhas: formatMilhasInput((p as any).qtdMilhas != null ? String((p as any).qtdMilhas) : ""),
         valorMilheiro: formatCurrencyInput((p as any).valorMilheiro != null ? String((p as any).valorMilheiro) : ""),
+        taxaEmbarque: formatCurrencyInput((p as any).taxaEmbarque != null ? String((p as any).taxaEmbarque) : ""),
         custo: formatCurrencyInput(p.custo != null ? String(p.custo) : ""),
-        venda: formatCurrencyInput(p.venda != null ? String(p.venda) : ""),
+        lucro: formatCurrencyInput(p.venda != null ? String(p.venda) : ""),
         fonte: p.fonte ?? "",
         estrategia: p.estrategia ?? "",
         status: p.status,
@@ -231,6 +234,14 @@ export function pecaToForm(p: PecaCompleta): PecaForm {
 
 /** Converte o formulário (campos separados) para payload com datetime ISO. */
 export function pecaFormToPayload(form: PecaForm) {
+    const qtdMilhas = parseMilhasInput(form.qtdMilhas);
+    const valorMilheiro = parseCurrencyInput(form.valorMilheiro);
+    const taxaEmbarque = parseCurrencyInput(form.taxaEmbarque);
+    const custoMilhas =
+        form.tipoFinanceiro === "milhas"
+            ? ((qtdMilhas ?? 0) / 1000) * (valorMilheiro ?? 0) + (taxaEmbarque ?? 0)
+            : null;
+
     const mapSegs = (segmentos: Segmento[], direcao: Direcao) =>
         segmentos.map((s, idx) => ({
             ...s,
@@ -268,10 +279,11 @@ export function pecaFormToPayload(form: PecaForm) {
         bagagemMaoVolta: form.temVolta ? form.resumoVolta.bagagemMao : 0,
         bagagemDespachadaVolta: form.temVolta ? form.resumoVolta.bagagemDespachada : 0,
         tipoFinanceiro: form.tipoFinanceiro,
-        qtdMilhas: parseMilhasInput(form.qtdMilhas),
-        valorMilheiro: parseCurrencyInput(form.valorMilheiro),
-        custo: parseCurrencyInput(form.custo),
-        venda: parseCurrencyInput(form.venda),
+        qtdMilhas,
+        valorMilheiro,
+        taxaEmbarque,
+        custo: form.tipoFinanceiro === "milhas" ? custoMilhas : parseCurrencyInput(form.custo),
+        venda: parseCurrencyInput(form.lucro),
         fonte: form.fonte,
         estrategia: form.estrategia,
         status: form.status,
@@ -396,8 +408,14 @@ export function PecaSheet({
         setResumoTab("ida");
     };
 
-    const lucro = calcLucro(parseCurrencyInput(form.custo), parseCurrencyInput(form.venda));
     const milhasEnabled = form.tipoFinanceiro === "milhas";
+    const qtdMilhasNum = parseMilhasInput(form.qtdMilhas) ?? 0;
+    const valorMilheiroNum = parseCurrencyInput(form.valorMilheiro) ?? 0;
+    const taxaEmbarqueNum = parseCurrencyInput(form.taxaEmbarque) ?? 0;
+    const custoCalculadoMilhas = (qtdMilhasNum / 1000) * valorMilheiroNum + taxaEmbarqueNum;
+    const custoBase = milhasEnabled ? custoCalculadoMilhas : parseCurrencyInput(form.custo) ?? 0;
+    const lucroValor = parseCurrencyInput(form.lucro) ?? 0;
+    const vendaPrevista = custoBase + lucroValor;
 
     const handleExtractText = async (texto: string) => {
         const extracted = await onExtractText(texto, resumoTab);
@@ -563,6 +581,7 @@ export function PecaSheet({
                                                 tipoFinanceiro: nextType,
                                                 qtdMilhas: nextType === "milhas" ? form.qtdMilhas : "",
                                                 valorMilheiro: nextType === "milhas" ? form.valorMilheiro : "",
+                                                taxaEmbarque: nextType === "milhas" ? form.taxaEmbarque : "",
                                             });
                                         }}
                                     >
@@ -576,57 +595,77 @@ export function PecaSheet({
                                         </SelectContent>
                                     </Select>
                                 </Field>
-                                <Field label="Qtd. milhas">
-                                    <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        placeholder="Ex: 175.300"
-                                        value={form.qtdMilhas}
-                                        disabled={!milhasEnabled}
-                                        onChange={(e) => patch({ qtdMilhas: formatMilhasInput(e.target.value) })}
-                                    />
-                                </Field>
-                                <Field label="Valor milheiro">
+                                {milhasEnabled ? (
+                                    <div className="col-span-3 rounded-md border bg-muted/30 p-3 space-y-3">
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                            Cálculo por milhas
+                                        </p>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <Field label="Qtd. milhas">
+                                                <Input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    placeholder="Ex: 300.000"
+                                                    value={form.qtdMilhas}
+                                                    onChange={(e) => patch({ qtdMilhas: formatMilhasInput(e.target.value) })}
+                                                />
+                                            </Field>
+                                            <Field label="Valor milheiro">
+                                                <Input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    placeholder="R$ 0,00"
+                                                    value={form.valorMilheiro}
+                                                    onChange={(e) => patch({ valorMilheiro: formatCurrencyInput(e.target.value) })}
+                                                />
+                                            </Field>
+                                            <Field label="Taxa embarque">
+                                                <Input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    placeholder="R$ 0,00"
+                                                    value={form.taxaEmbarque}
+                                                    onChange={(e) => patch({ taxaEmbarque: formatCurrencyInput(e.target.value) })}
+                                                />
+                                            </Field>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Field label="Custo (R$)">
+                                        <Input
+                                            type="text"
+                                            inputMode="decimal"
+                                            placeholder="R$ 0,00"
+                                            value={form.custo}
+                                            onChange={(e) => patch({ custo: formatCurrencyInput(e.target.value) })}
+                                        />
+                                    </Field>
+                                )}
+                                <Field label="Lucro (R$)">
                                     <Input
                                         type="text"
                                         inputMode="decimal"
                                         placeholder="R$ 0,00"
-                                        value={form.valorMilheiro}
-                                        disabled={!milhasEnabled}
-                                        onChange={(e) => patch({ valorMilheiro: formatCurrencyInput(e.target.value) })}
-                                    />
-                                </Field>
-                                <Field label="Custo (R$)">
-                                    <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        placeholder="R$ 0,00"
-                                        value={form.custo}
-                                        onChange={(e) => patch({ custo: formatCurrencyInput(e.target.value) })}
-                                    />
-                                </Field>
-                                <Field label="Venda (R$)">
-                                    <Input
-                                        type="text"
-                                        inputMode="decimal"
-                                        placeholder="R$ 0,00"
-                                        value={form.venda}
-                                        onChange={(e) => patch({ venda: formatCurrencyInput(e.target.value) })}
+                                        value={form.lucro}
+                                        onChange={(e) => patch({ lucro: formatCurrencyInput(e.target.value) })}
                                     />
                                 </Field>
                             </div>
 
-                            {lucro != null && (
-                                <div
-                                    className={`rounded-md border p-3 text-sm ${lucro >= 0
-                                        ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                                        : "bg-rose-50 border-rose-200 text-rose-800"
-                                        }`}
-                                >
-                                    <span className="font-medium">Lucro previsto:</span>{" "}
-                                    <span className="font-bold tabular-nums">{fmtCurrencyCompact(lucro)}</span>
+                            <div className="rounded-md border bg-muted/20 p-3 text-sm space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground">Custo base</span>
+                                    <span className="font-semibold tabular-nums">{fmtCurrencyCompact(custoBase)}</span>
                                 </div>
-                            )}
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground">Lucro</span>
+                                    <span className="font-semibold tabular-nums">{fmtCurrencyCompact(lucroValor)}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+                                    <span className="font-medium">Venda estimada da peça</span>
+                                    <span className="font-bold tabular-nums text-primary">{fmtCurrencyCompact(vendaPrevista)}</span>
+                                </div>
+                            </div>
 
                             <Field label="Fonte">
                                 <Input
@@ -764,8 +803,9 @@ export function extractedToPecaForm(
         observacoes: (extracted.observacoes as string) ?? start.observacoes,
         qtdMilhas: start.qtdMilhas,
         valorMilheiro: start.valorMilheiro,
+        taxaEmbarque: start.taxaEmbarque,
         custo: start.custo,
-        venda: start.venda,
+        lucro: start.lucro,
     };
 
     const resumoIda = {
@@ -876,21 +916,9 @@ function parseCurrencyInput(value: string): number | null {
 }
 
 function formatMilhasInput(value: string): string {
-    const raw = value.replace(/[^\d.]/g, "");
-    if (!raw) return "";
-
-    if (!raw.includes(".")) {
-        const digitsOnly = raw.replace(/\D/g, "");
-        if (!digitsOnly) return "";
-        return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Number(digitsOnly));
-    }
-
-    const trailingDot = raw.endsWith(".");
-    const parts = raw.split(".");
-    const head = (parts[0] ?? "").replace(/\D/g, "");
-    const tails = parts.slice(1).map((part) => part.replace(/\D/g, "").slice(0, 3));
-    const joined = [head, ...tails].join(".").replace(/^\./, "");
-    return trailingDot ? `${joined}.` : joined;
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return "";
+    return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Number(digits));
 }
 
 function parseMilhasInput(value: string): number | null {

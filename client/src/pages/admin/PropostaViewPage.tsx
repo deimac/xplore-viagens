@@ -131,10 +131,15 @@ export default function PropostaViewPage() {
                 .filter(Boolean) as Array<any>;
 
             const totalVenda = itens.reduce((acc, item) => {
-                const n = toNumber(item?.peca?.venda);
-                return n == null ? acc : acc + n;
+                const custo = toNumber(item?.peca?.custo) ?? 0;
+                const lucro = toNumber(item?.peca?.venda) ?? 0;
+                return acc + custo + lucro;
             }, 0);
-            const temVenda = itens.some((item) => toNumber(item?.peca?.venda) != null);
+            const temVenda = itens.some((item) => {
+                const custo = toNumber(item?.peca?.custo);
+                const lucro = toNumber(item?.peca?.venda);
+                return custo != null || lucro != null;
+            });
 
             return {
                 cenario,

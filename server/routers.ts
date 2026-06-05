@@ -1846,6 +1846,7 @@ export const appRouter = router({
           paxAdultos: z.number().int().min(1).default(1),
           paxCriancas: z.number().int().min(0).default(0),
           paxBebes: z.number().int().min(0).default(0),
+          bagagemDespachada: z.number().int().min(0).default(0),
           observacoes: z.string().optional().nullable(),
         })
       )
@@ -1874,6 +1875,7 @@ export const appRouter = router({
             paxAdultos: z.number().int().min(1).optional(),
             paxCriancas: z.number().int().min(0).optional(),
             paxBebes: z.number().int().min(0).optional(),
+            bagagemDespachada: z.number().int().min(0).optional(),
             observacoes: z.string().optional().nullable(),
             status: z
               .enum([
@@ -1936,6 +1938,7 @@ export const appRouter = router({
           tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).default("pagante"),
           qtdMilhas: z.number().int().optional().nullable(),
           valorMilheiro: z.number().optional().nullable(),
+          taxaEmbarque: z.number().optional().nullable(),
           custo: z.number().optional().nullable(),
           venda: z.number().optional().nullable(),
           fonte: z.string().optional().nullable(),
@@ -1973,6 +1976,7 @@ export const appRouter = router({
             dataSaidaVolta: normalizeLocalDateTimeInput(pecaData.dataSaidaVolta),
             dataChegadaVolta: normalizeLocalDateTimeInput(pecaData.dataChegadaVolta),
             valorMilheiro: pecaData.valorMilheiro != null ? String(pecaData.valorMilheiro) : null,
+            taxaEmbarque: pecaData.taxaEmbarque != null ? String(pecaData.taxaEmbarque) : null,
             custo: pecaData.custo != null ? String(pecaData.custo) : null,
             venda: pecaData.venda != null ? String(pecaData.venda) : null,
           } as any,
@@ -2015,6 +2019,7 @@ export const appRouter = router({
             tipoFinanceiro: z.enum(["milhas", "pagante", "misto"]).optional(),
             qtdMilhas: z.number().int().optional().nullable(),
             valorMilheiro: z.number().optional().nullable(),
+            taxaEmbarque: z.number().optional().nullable(),
             custo: z.number().optional().nullable(),
             venda: z.number().optional().nullable(),
             fonte: z.string().optional().nullable(),
@@ -2050,6 +2055,7 @@ export const appRouter = router({
         if ("dataSaidaVolta" in patch) patch.dataSaidaVolta = normalizeLocalDateTimeInput(patch.dataSaidaVolta);
         if ("dataChegadaVolta" in patch) patch.dataChegadaVolta = normalizeLocalDateTimeInput(patch.dataChegadaVolta);
         if ("valorMilheiro" in patch) patch.valorMilheiro = patch.valorMilheiro != null ? String(patch.valorMilheiro) : null;
+        if ("taxaEmbarque" in patch) patch.taxaEmbarque = patch.taxaEmbarque != null ? String(patch.taxaEmbarque) : null;
         if ("custo" in patch) patch.custo = patch.custo != null ? String(patch.custo) : null;
         if ("venda" in patch) patch.venda = patch.venda != null ? String(patch.venda) : null;
         const segs = input.segmentos?.map((s) => ({

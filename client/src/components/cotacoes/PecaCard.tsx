@@ -25,13 +25,13 @@ import type { PecaCompleta } from "./types";
 import { TIPO_FINANCEIRO_LABEL } from "./types";
 import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
 import {
-    calcLucro,
     fmtCurrencyCompact,
     fmtDuration,
     fmtTime,
     getResumoDirecao,
     hasVolta,
     pecaDurationMinutes,
+    toNumber,
 } from "@/lib/cotacoes/calc";
 
 export interface CenarioOption {
@@ -81,7 +81,7 @@ export function PecaCard({
         opacity: isDragging ? 0.4 : 1,
     };
 
-    const lucro = calcLucro(peca.custo, peca.venda);
+    const lucro = toNumber(peca.venda);
     const duracao = pecaDurationMinutes(peca);
     const TipoIcon = TIPO_ICON[peca.tipoFinanceiro];
     const isFavorita = peca.status === "favorita";
@@ -260,7 +260,7 @@ export function PecaCard({
                                 C: <span className="text-foreground">{fmtCurrencyCompact(peca.custo)}</span>
                             </span>
                             <span className="text-muted-foreground">
-                                V: <span className="text-foreground font-medium">{fmtCurrencyCompact(peca.venda)}</span>
+                                L: <span className="text-foreground font-medium">{fmtCurrencyCompact(peca.venda)}</span>
                             </span>
                             {!hideProfit && lucro != null && (
                                 <span

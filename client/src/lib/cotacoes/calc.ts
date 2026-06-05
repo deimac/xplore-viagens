@@ -199,10 +199,10 @@ export function calcCenarioTotais(cenario: CenarioCompleto, pecasById: Map<numbe
 
     for (let i = 0; i < ordenadas.length; i++) {
         const p = ordenadas[i];
-        const c = toNumber(p.custo);
-        const v = toNumber(p.venda);
-        if (c != null) custo += c;
-        if (v != null) venda += v;
+        const custoPeca = toNumber(p.custo) ?? 0;
+        const lucroPeca = toNumber(p.venda) ?? 0;
+        custo += custoPeca;
+        venda += custoPeca + lucroPeca;
         conexoes += p.qtdConexoes ?? 0;
         const dur = pecaDurationMinutes(p);
         if (dur != null) {

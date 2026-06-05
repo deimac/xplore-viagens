@@ -326,6 +326,7 @@ export default function CotacaoDetailPage() {
             tipoFinanceiro: form.tipoFinanceiro,
             qtdMilhas: dt.qtdMilhas ?? undefined,
             valorMilheiro: dt.valorMilheiro ?? undefined,
+            taxaEmbarque: dt.taxaEmbarque ?? undefined,
             custo: dt.custo ?? undefined,
             venda: dt.venda ?? undefined,
             fonte: form.fonte || undefined,
