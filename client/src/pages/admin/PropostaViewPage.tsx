@@ -191,7 +191,7 @@ export default function PropostaViewPage() {
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-6 py-8">
+            <div className="max-w-5xl mx-auto px-6 py-8 proposal-print-root">
                 <div className="bg-white shadow-sm rounded-lg p-10 space-y-8">
                     <header className="border-b pb-5 flex items-start justify-between gap-4">
                         <div>
@@ -240,7 +240,7 @@ export default function PropostaViewPage() {
                         <h2 className="text-lg font-semibold border-b pb-2">Opções disponíveis</h2>
 
                         {cenariosComPecas.map(({ cenario, itens, totalVenda }, idx) => (
-                            <article key={idx} className="rounded-lg border p-5 break-inside-avoid">
+                            <article key={idx} className="rounded-lg border p-5 proposal-print-card">
                                 <div className="flex items-start justify-between gap-4 mb-4">
                                     <div>
                                         <h3 className="text-lg font-semibold">{cenario?.nome || `Opção ${idx + 1}`}</h3>
@@ -415,6 +415,25 @@ export default function PropostaViewPage() {
                     </footer>
                 </div>
             </div>
+            <style>{`
+                @media print {
+                    .proposal-print-root {
+                        max-width: none !important;
+                    }
+
+                    .proposal-print-card {
+                        break-inside: auto !important;
+                        page-break-inside: auto !important;
+                        overflow: visible !important;
+                    }
+
+                    .proposal-print-root * {
+                        overflow: visible !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
