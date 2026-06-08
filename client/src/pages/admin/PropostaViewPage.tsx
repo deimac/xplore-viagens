@@ -16,9 +16,19 @@ function fmtCurrency(v: number | null | undefined): string {
 
 function fmtDate(value: Date | string | null | undefined): string {
     if (!value) return "-";
-    const d = typeof value === "string" ? new Date(value) : value;
-    if (isNaN(d.getTime())) return "-";
-    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    if (typeof value === "string") {
+        const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) {
+            const y = Number(m[1]);
+            const mo = Number(m[2]);
+            const d = Number(m[3]);
+            const localDate = new Date(y, mo - 1, d, 12, 0, 0, 0);
+            return localDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+        }
+    }
+    const parsed = typeof value === "string" ? new Date(value) : value;
+    if (isNaN(parsed.getTime())) return "-";
+    return parsed.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function getDirecaoSegmento(s: any): "ida" | "volta" {

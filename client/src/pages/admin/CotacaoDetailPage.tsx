@@ -81,9 +81,32 @@ function emptyCotacaoEdit(): CotacaoEditState {
 
 function dateOnly(value: Date | string | null | undefined): string {
     if (!value) return "";
+    if (typeof value === "string") {
+        const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    }
     const d = typeof value === "string" ? new Date(value) : value;
     if (isNaN(d.getTime())) return "";
-    return d.toISOString().slice(0, 10);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${day}`;
+}
+
+function formatDatePtBrSafe(value: Date | string | null | undefined): string {
+    if (!value) return "";
+    if (typeof value === "string") {
+        const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) {
+            const y = Number(m[1]);
+            const mo = Number(m[2]);
+            const d = Number(m[3]);
+            return new Date(y, mo - 1, d, 12, 0, 0, 0).toLocaleDateString("pt-BR");
+        }
+    }
+    const parsed = typeof value === "string" ? new Date(value) : value;
+    if (isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleDateString("pt-BR");
 }
 
 function friendlyIaExtractionError(raw: string): string {
@@ -700,7 +723,7 @@ export default function CotacaoDetailPage() {
                                         #{p.id} {p.titulo || "(sem título)"}
                                     </Link>
                                     <span className="text-muted-foreground">
-                                        {p.geradaEm ? new Date(p.geradaEm).toLocaleDateString("pt-BR") : ""}
+                                        {formatDatePtBrSafe(p.geradaEm as any)}
                                     </span>
                                     <Link
                                         href={`/admin/cotacoes/${cotacaoId}/proposta/${p.id}`}
