@@ -2142,7 +2142,7 @@ export const appRouter = router({
     extractFromText: adminProcedure
       .input(z.object({ texto: z.string().min(5), target: z.enum(["ida", "volta"]).optional() }))
       .mutation(async ({ input }) => {
-        return await extractPecaFromText(input.texto);
+        return await extractPecaFromText(input.texto, input.target);
       }),
     extractFromImage: adminProcedure
       .input(
@@ -2166,7 +2166,7 @@ export const appRouter = router({
             message: `Imagem muito grande para extração. Limite atual: ${ENV.aiExtractionMaxImageMb}MB.`,
           });
         }
-        return await extractPecaFromImage(input.fileData, input.mimeType);
+        return await extractPecaFromImage(input.fileData, input.mimeType, input.target);
       }),
 
     // Propostas (snapshots cliente-safe)

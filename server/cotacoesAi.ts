@@ -150,8 +150,8 @@ Responda SEMPRE seguindo estritamente o JSON Schema fornecido.`;
 
 export interface Extractor {
     name: string;
-    fromText: (text: string) => Promise<ExtractedPeca>;
-    fromImage: (imageDataUrl: string) => Promise<ExtractedPeca>;
+    fromText: (text: string, target?: "ida" | "volta") => Promise<ExtractedPeca>;
+    fromImage: (imageDataUrl: string, target?: "ida" | "volta") => Promise<ExtractedPeca>;
 }
 
 const GEMINI_ONLY_PROVIDER_ORDER: ProviderName[] = ["google-gemini"];
@@ -192,15 +192,26 @@ function buildOcrObservation(engine: string, confidence: number | null, warnings
     return parts.join(". ");
 }
 
+function buildTargetInstruction(target?: "ida" | "volta"): string {
+    if (target === "volta") {
+        return "Extraia prioritariamente os dados da VOLTA. Se houver ida e volta no mesmo conteúdo, foque somente na volta e classifique segmentos como direcao='volta'.";
+    }
+    if (target === "ida") {
+        return "Extraia prioritariamente os dados da IDA. Se houver ida e volta no mesmo conteúdo, foque somente na ida e classifique segmentos como direcao='ida'.";
+    }
+    return "";
+}
+
 function createLlmExtractor(name: string, providerOrder?: ProviderName[]): Extractor {
     return {
         name,
-        async fromText(text: string) {
+        async fromText(text: string, target?: "ida" | "volta") {
+            const targetInstruction = buildTargetInstruction(target);
             const messages: Message[] = [
                 { role: "system", content: SYSTEM_PROMPT },
                 {
                     role: "user",
-                    content: `Extraia a peça de voo a partir do texto abaixo:\n\n---\n${text}\n---`,
+                    content: `Extraia a peça de voo a partir do texto abaixo. ${targetInstruction}\n\n---\n${text}\n---`,
                 },
             ];
             const result = await invokeLLM({
@@ -213,13 +224,14 @@ function createLlmExtractor(name: string, providerOrder?: ProviderName[]): Extra
             });
             return parseStructuredOutput(result.choices?.[0]?.message?.content);
         },
-        async fromImage(imageDataUrl: string) {
+        async fromImage(imageDataUrl: string, target?: "ida" | "volta") {
+            const targetInstruction = buildTargetInstruction(target);
             const messages: Message[] = [
                 { role: "system", content: SYSTEM_PROMPT },
                 {
                     role: "user",
                     content: [
-                        { type: "text", text: "Extraia a peça de voo desta imagem (print de cotação):" },
+                        { type: "text", text: `Extraia a peça de voo desta imagem (print de cotação). ${targetInstruction}` },
                         { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
                     ],
                 },
@@ -241,10 +253,10 @@ const geminiExtractor = createLlmExtractor("gemini-vision", GEMINI_ONLY_PROVIDER
 
 const localOcrGeminiExtractor: Extractor = {
     name: "local-ocr-gemini",
-    async fromText(text: string) {
-        return geminiExtractor.fromText(text);
+    async fromText(text: string, target?: "ida" | "volta") {
+        return geminiExtractor.fromText(text, target);
     },
-    async fromImage(imageDataUrl: string) {
+    async fromImage(imageDataUrl: string, target?: "ida" | "volta") {
         const ocr = await extractTextFromImage(imageDataUrl);
         if (ocr.text.trim().length < OCR_MIN_TEXT_LENGTH) {
             throw new Error("OCR local não encontrou texto suficiente para estruturar a cotação");
@@ -252,6 +264,8 @@ const localOcrGeminiExtractor: Extractor = {
 
         const peca = await geminiExtractor.fromText(
             `Texto extraído por OCR local de um print de cotação de voo. Use somente as informações abaixo e não invente dados ausentes.\n\n---\n${ocr.text}\n---`
+            ,
+            target
         );
         const ocrObservation = buildOcrObservation(ocr.engine, ocr.confidence, ocr.warnings);
         return {
@@ -320,20 +334,21 @@ async function runWithFallback(
     );
 }
 
-export async function extractPecaFromText(text: string): Promise<ExtractionResult> {
+export async function extractPecaFromText(text: string, target?: "ida" | "volta"): Promise<ExtractionResult> {
     if (!text || text.trim().length < 5) {
         throw new Error("Texto muito curto para extração");
     }
-    return runWithFallback(resolveTextExtractors(), (e) => e.fromText(text));
+    return runWithFallback(resolveTextExtractors(), (e) => e.fromText(text, target));
 }
 
 export async function extractPecaFromImage(
     imageBase64: string,
-    mimeType: string
+    mimeType: string,
+    target?: "ida" | "volta"
 ): Promise<ExtractionResult> {
     if (!imageBase64) throw new Error("Imagem vazia");
     const dataUrl = imageBase64.startsWith("data:")
         ? imageBase64
         : `data:${mimeType};base64,${imageBase64}`;
-    return runWithFallback(resolveImageExtractors(), (e) => e.fromImage(dataUrl));
+    return runWithFallback(resolveImageExtractors(), (e) => e.fromImage(dataUrl, target));
 }

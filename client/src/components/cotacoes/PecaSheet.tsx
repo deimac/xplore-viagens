@@ -962,12 +962,6 @@ function isBeforeDateOnly(a: string | null | undefined, b: string | null | undef
 }
 
 function validateDates(form: PecaForm): string | null {
-    const today = todayLocalIsoDate();
-    if (form.resumoIda.dataSaidaDate) {
-        if (isBeforeDateOnly(form.resumoIda.dataSaidaDate, today)) {
-            return "A data de ida não pode ser anterior a hoje.";
-        }
-    }
     if (form.temVolta && form.resumoVolta.dataSaidaDate && form.resumoIda.dataSaidaDate) {
         if (isBeforeDateOnly(form.resumoVolta.dataSaidaDate, form.resumoIda.dataSaidaDate)) {
             return "A data da volta não pode ser anterior à ida.";
