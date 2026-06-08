@@ -179,7 +179,7 @@ export default function PropostaViewPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 print:bg-white">
+        <div className="min-h-screen bg-slate-50">
             <div className="bg-white border-b sticky top-0 z-10 print:hidden">
                 <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
                     <Link href={`/admin/cotacoes/${cotacaoId}`} className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1">
@@ -191,8 +191,8 @@ export default function PropostaViewPage() {
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-6 py-8 print:p-0 print:max-w-none">
-                <div className="bg-white shadow-sm print:shadow-none rounded-lg print:rounded-none p-10 print:p-8 space-y-8">
+            <div className="max-w-5xl mx-auto px-6 py-8">
+                <div className="bg-white shadow-sm rounded-lg p-10 space-y-8">
                     <header className="border-b pb-5 flex items-start justify-between gap-4">
                         <div>
                             <div className="text-2xl font-bold tracking-tight text-primary">Xplore Viagens</div>
@@ -240,7 +240,7 @@ export default function PropostaViewPage() {
                         <h2 className="text-lg font-semibold border-b pb-2">Opções disponíveis</h2>
 
                         {cenariosComPecas.map(({ cenario, itens, totalVenda }, idx) => (
-                            <article key={idx} className="rounded-lg border p-5 break-inside-avoid print:border-slate-300">
+                            <article key={idx} className="rounded-lg border p-5 break-inside-avoid">
                                 <div className="flex items-start justify-between gap-4 mb-4">
                                     <div>
                                         <h3 className="text-lg font-semibold">{cenario?.nome || `Opção ${idx + 1}`}</h3>
@@ -306,7 +306,7 @@ export default function PropostaViewPage() {
                                                         )}
                                                     </div>
 
-                                                    <div className="rounded border bg-slate-50 print:bg-white p-3 text-sm space-y-2">
+                                                    <div className="rounded border bg-slate-50 p-3 text-sm space-y-2">
                                                         {mostrarIda && (
                                                             <>
                                                                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Ida</div>
@@ -415,13 +415,6 @@ export default function PropostaViewPage() {
                     </footer>
                 </div>
             </div>
-
-            <style>{`
-        @media print {
-          @page { margin: 12mm; }
-          body { background: white !important; }
-        }
-      `}</style>
         </div>
     );
 }
