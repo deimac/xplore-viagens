@@ -349,8 +349,8 @@ export const cwCotacoes = mysqlTable("cw_cotacoes", {
   clienteTelefone: varchar("cliente_telefone", { length: 50 }),
   origem: varchar("origem", { length: 120 }),
   destino: varchar("destino", { length: 120 }),
-  dataIda: date("data_ida"),
-  dataVolta: date("data_volta"),
+  dataIda: date("data_ida", { mode: "string" }),
+  dataVolta: date("data_volta", { mode: "string" }),
   paxAdultos: int("pax_adultos").default(1).notNull(),
   paxCriancas: int("pax_criancas").default(0).notNull(),
   paxBebes: int("pax_bebes").default(0).notNull(),
@@ -490,7 +490,7 @@ export const cwPropostas = mysqlTable("cw_propostas", {
     .notNull()
     .references(() => cwCotacoes.id, { onDelete: "cascade" }),
   titulo: varchar("titulo", { length: 255 }),
-  validadeData: date("validade_data"),
+  validadeData: date("validade_data", { mode: "string" }),
   snapshotJson: text("snapshot_json").notNull(),
   geradaEm: timestamp("gerada_em").defaultNow(),
   idUsersGerador: int("id_users_gerador")

@@ -33,6 +33,14 @@ import { FileText, Plus, Search, SquarePen, Trash2 } from "lucide-react";
 import DeleteConfirmDialog from "@/components/admin/common/DeleteConfirmDialog";
 import { toast } from "sonner";
 
+/** Parse YYYY-MM-DD string (never Date object) without timezone conversion */
+function fmtDateLocal(v: string | null | undefined): string {
+    if (!v) return "-";
+    const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString("pt-BR");
+    return "-";
+}
+
 const STATUS_LABEL: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     rascunho: { label: "Rascunho", variant: "outline" },
     em_pesquisa: { label: "Em pesquisa", variant: "secondary" },
@@ -304,8 +312,8 @@ export default function CotacoesPage() {
                                             {c.origem || "-"} → {c.destino || "-"}
                                         </TableCell>
                                         <TableCell className="text-sm">
-                                            {c.dataIda ? new Date(c.dataIda).toLocaleDateString("pt-BR") : "-"}
-                                            {c.dataVolta ? ` / ${new Date(c.dataVolta).toLocaleDateString("pt-BR")}` : ""}
+                                            {fmtDateLocal(c.dataIda)}
+                                            {c.dataVolta ? ` / ${fmtDateLocal(c.dataVolta)}` : ""}
                                         </TableCell>
                                         <TableCell className="text-sm">{pax}</TableCell>
                                         <TableCell>
