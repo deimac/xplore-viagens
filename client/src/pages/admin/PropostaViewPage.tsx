@@ -4,7 +4,6 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer, Plane, Backpack, BriefcaseBusiness, Luggage, Clock3 } from "lucide-react";
 import { fmtDateTime, fmtDuration, toNumber } from "@/lib/cotacoes/calc";
-import { fmtBagagemSegmento } from "@/lib/cotacoes/bagagem";
 
 function asArray<T = any>(value: unknown): T[] {
     return Array.isArray(value) ? (value as T[]) : [];
@@ -20,6 +19,24 @@ function fmtDate(value: Date | string | null | undefined): string {
     const d = typeof value === "string" ? new Date(value) : value;
     if (isNaN(d.getTime())) return "-";
     return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function getDirecaoSegmento(s: any): "ida" | "volta" {
+    return s?.direcao === "volta" ? "volta" : "ida";
+}
+
+function getTrechoDuracaoTotal(resumo: any, segmentos: any[]): number | null {
+    const explicit = toNumber(resumo?.duracaoMinutos);
+    if (explicit != null && explicit > 0) return explicit;
+    if (!segmentos.length) return null;
+    const inicio = segmentos[0]?.saida;
+    const fim = segmentos[segmentos.length - 1]?.chegada;
+    if (!inicio || !fim) return null;
+    const dInicio = new Date(inicio);
+    const dFim = new Date(fim);
+    if (isNaN(dInicio.getTime()) || isNaN(dFim.getTime())) return null;
+    const minutos = Math.round((dFim.getTime() - dInicio.getTime()) / 60000);
+    return minutos > 0 ? minutos : null;
 }
 
 function bagCountsForDirection(peca: any, direcao: "ida" | "volta") {
@@ -243,93 +260,145 @@ export default function PropostaViewPage() {
                                     <div className="space-y-4">
                                         {itens.map((item, pi) => {
                                             const { peca, grupo, resumo, segmentos } = item;
-                                            const bag = bagCountsForDirection(peca, grupo === "volta" ? "volta" : "ida");
-                                            const conexoes = Number(resumo?.qtdConexoes ?? Math.max(0, segmentos.length - 1));
+                                            const segmentosIda = segmentos.filter((s: any) => getDirecaoSegmento(s) === "ida");
+                                            const segmentosVolta = segmentos.filter((s: any) => getDirecaoSegmento(s) === "volta");
+
+                                            const bagIda = bagCountsForDirection(peca, "ida");
+                                            const bagVolta = bagCountsForDirection(peca, "volta");
+
+                                            const resumoIda = {
+                                                origem: peca?.origem,
+                                                destino: peca?.destino,
+                                                dataSaida: peca?.dataSaida,
+                                                dataChegada: peca?.dataChegada,
+                                                qtdConexoes: peca?.qtdConexoes,
+                                                companhia: peca?.companhias,
+                                                classe: peca?.classe,
+                                                duracaoMinutos: peca?.duracaoMinutos,
+                                            };
+                                            const resumoVolta = {
+                                                origem: peca?.origemVolta || peca?.origem,
+                                                destino: peca?.destinoVolta || peca?.destino,
+                                                dataSaida: peca?.dataSaidaVolta || peca?.dataSaida,
+                                                dataChegada: peca?.dataChegadaVolta || peca?.dataChegada,
+                                                qtdConexoes: peca?.qtdConexoesVolta ?? peca?.qtdConexoes,
+                                                companhia: peca?.companhiasVolta || peca?.companhias,
+                                                classe: peca?.classeVolta || peca?.classe,
+                                                duracaoMinutos: peca?.duracaoMinutosVolta ?? peca?.duracaoMinutos,
+                                            };
+
+                                            const mostrarIda = grupo !== "volta";
+                                            const mostrarVolta = grupo === "volta" || (grupo === "outro" && peca?.temVolta);
+
+                                            const resumoTrechoBase = grupo === "volta" ? resumoVolta : resumo;
+                                            const tituloTrecho = grupo === "volta" ? "Volta" : grupo === "outro" ? "Ida + volta" : "Ida";
                                             return (
                                                 <div key={pi} className="space-y-2">
                                                     <div className="flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
                                                         <Plane className="h-4 w-4" />
-                                                        {grupo === "volta" ? "Volta" : grupo === "outro" ? "Ida + volta" : "Ida"}
-                                                        {(peca?.titulo || resumo?.companhia || resumo?.classe) && (
+                                                        {tituloTrecho}
+                                                        {(peca?.titulo || resumoTrechoBase?.companhia || resumoTrechoBase?.classe) && (
                                                             <span className="text-foreground font-normal normal-case tracking-normal">
                                                                 · {peca?.titulo || "Trecho"}
-                                                                {resumo?.companhia ? ` · ${resumo.companhia}` : ""}
-                                                                {resumo?.classe ? ` · ${resumo.classe}` : ""}
+                                                                {resumoTrechoBase?.companhia ? ` · ${resumoTrechoBase.companhia}` : ""}
+                                                                {resumoTrechoBase?.classe ? ` · ${resumoTrechoBase.classe}` : ""}
                                                             </span>
                                                         )}
                                                     </div>
 
                                                     <div className="rounded border bg-slate-50 print:bg-white p-3 text-sm space-y-2">
-                                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] items-center gap-3">
-                                                            <div>
-                                                                <div className="font-semibold">{fmtDateTime(resumo?.dataSaida)}</div>
-                                                                <div className="text-xs text-muted-foreground">{resumo?.origem || segmentos[0]?.aeroportoOrigem || "-"}</div>
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
-                                                                <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{fmtDuration(resumo?.duracaoMinutos)}</span>
-                                                                <span>{conexoes > 0 ? `${conexoes} conexão${conexoes > 1 ? "ões" : ""}` : "Direto"}</span>
-                                                            </div>
-                                                            <div>
-                                                                <div className="font-semibold">{fmtDateTime(resumo?.dataChegada)}</div>
-                                                                <div className="text-xs text-muted-foreground">{resumo?.destino || segmentos[segmentos.length - 1]?.aeroportoDestino || "-"}</div>
-                                                            </div>
-                                                            <div className="md:text-right text-xs">
-                                                                <div className="text-muted-foreground mb-1">Bagagens</div>
-                                                                <BaggageIcons pessoal={bag.pessoal} mao={bag.mao} despachada={bag.despachada} />
-                                                            </div>
-                                                        </div>
-
-                                                        {grupo === "outro" && peca?.temVolta && (
-                                                            <div className="border-t pt-2 mt-2 space-y-1">
-                                                                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Volta</div>
+                                                        {mostrarIda && (
+                                                            <>
+                                                                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Ida</div>
                                                                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] items-center gap-3">
                                                                     <div>
-                                                                        <div className="font-semibold">{fmtDateTime(peca?.dataSaidaVolta)}</div>
-                                                                        <div className="text-xs text-muted-foreground">{peca?.origemVolta || "-"}</div>
+                                                                        <div className="font-semibold">{fmtDateTime(resumoIda?.dataSaida)}</div>
+                                                                        <div className="text-xs text-muted-foreground">{resumoIda?.origem || segmentosIda[0]?.aeroportoOrigem || "-"}</div>
                                                                     </div>
                                                                     <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
-                                                                        <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{fmtDuration(peca?.duracaoMinutosVolta)}</span>
-                                                                        <span>{(peca?.qtdConexoesVolta ?? 0) > 0 ? `${peca?.qtdConexoesVolta} conexão${peca?.qtdConexoesVolta > 1 ? "ões" : ""}` : "Direto"}</span>
+                                                                        <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />Tempo total: {fmtDuration(getTrechoDuracaoTotal(resumoIda, segmentosIda))}</span>
+                                                                        <span>{Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1)) > 0 ? `${Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1))} conexão${Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1)) > 1 ? "ões" : ""}` : "Direto"}</span>
                                                                     </div>
                                                                     <div>
-                                                                        <div className="font-semibold">{fmtDateTime(peca?.dataChegadaVolta)}</div>
-                                                                        <div className="text-xs text-muted-foreground">{peca?.destinoVolta || "-"}</div>
+                                                                        <div className="font-semibold">{fmtDateTime(resumoIda?.dataChegada)}</div>
+                                                                        <div className="text-xs text-muted-foreground">{resumoIda?.destino || segmentosIda[segmentosIda.length - 1]?.aeroportoDestino || "-"}</div>
                                                                     </div>
                                                                     <div className="md:text-right text-xs">
                                                                         <div className="text-muted-foreground mb-1">Bagagens</div>
-                                                                        <BaggageIcons
-                                                                            pessoal={bagCountsForDirection(peca, "volta").pessoal}
-                                                                            mao={bagCountsForDirection(peca, "volta").mao}
-                                                                            despachada={bagCountsForDirection(peca, "volta").despachada}
-                                                                        />
+                                                                        <BaggageIcons pessoal={bagIda.pessoal} mao={bagIda.mao} despachada={bagIda.despachada} />
                                                                     </div>
                                                                 </div>
+
+                                                                {segmentosIda.length > 0 && (
+                                                                    <div className="ml-3 border-l-2 border-slate-200 pl-3 space-y-2">
+                                                                        {segmentosIda.map((s: any, si: number) => (
+                                                                            <div key={si} className="text-xs space-y-0.5">
+                                                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                                                                    <span className="font-semibold">
+                                                                                        {s?.aeroportoOrigem || s?.cidadeOrigem || "?"} → {s?.aeroportoDestino || s?.cidadeDestino || "?"}
+                                                                                    </span>
+                                                                                    {s?.companhia && <span className="text-muted-foreground">{s.companhia} {s?.numeroVoo || ""}</span>}
+                                                                                    {s?.classe && <span className="text-muted-foreground">{s.classe}</span>}
+                                                                                </div>
+                                                                                <div className="text-muted-foreground">
+                                                                                    Sai {fmtDateTime(s?.saida)} · Chega {fmtDateTime(s?.chegada)}
+                                                                                </div>
+                                                                                {si < segmentosIda.length - 1 && s?.duracaoConexaoMinutos != null && (
+                                                                                    <div className="text-amber-700 mt-1">↳ Conexão: {fmtDuration(Number(s.duracaoConexaoMinutos))}</div>
+                                                                                )}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+
+                                                        {mostrarVolta && (
+                                                            <div className="border-t pt-2 mt-2 space-y-2">
+                                                                <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Volta</div>
+                                                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] items-center gap-3">
+                                                                    <div>
+                                                                        <div className="font-semibold">{fmtDateTime(resumoVolta?.dataSaida)}</div>
+                                                                        <div className="text-xs text-muted-foreground">{resumoVolta?.origem || segmentosVolta[0]?.aeroportoOrigem || "-"}</div>
+                                                                    </div>
+                                                                    <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
+                                                                        <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />Tempo total: {fmtDuration(getTrechoDuracaoTotal(resumoVolta, segmentosVolta))}</span>
+                                                                        <span>{Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1)) > 0 ? `${Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1))} conexão${Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1)) > 1 ? "ões" : ""}` : "Direto"}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-semibold">{fmtDateTime(resumoVolta?.dataChegada)}</div>
+                                                                        <div className="text-xs text-muted-foreground">{resumoVolta?.destino || segmentosVolta[segmentosVolta.length - 1]?.aeroportoDestino || "-"}</div>
+                                                                    </div>
+                                                                    <div className="md:text-right text-xs">
+                                                                        <div className="text-muted-foreground mb-1">Bagagens</div>
+                                                                        <BaggageIcons pessoal={bagVolta.pessoal} mao={bagVolta.mao} despachada={bagVolta.despachada} />
+                                                                    </div>
+                                                                </div>
+
+                                                                {segmentosVolta.length > 0 && (
+                                                                    <div className="ml-3 border-l-2 border-slate-200 pl-3 space-y-2">
+                                                                        {segmentosVolta.map((s: any, si: number) => (
+                                                                            <div key={si} className="text-xs space-y-0.5">
+                                                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                                                                                    <span className="font-semibold">
+                                                                                        {s?.aeroportoOrigem || s?.cidadeOrigem || "?"} → {s?.aeroportoDestino || s?.cidadeDestino || "?"}
+                                                                                    </span>
+                                                                                    {s?.companhia && <span className="text-muted-foreground">{s.companhia} {s?.numeroVoo || ""}</span>}
+                                                                                    {s?.classe && <span className="text-muted-foreground">{s.classe}</span>}
+                                                                                </div>
+                                                                                <div className="text-muted-foreground">
+                                                                                    Sai {fmtDateTime(s?.saida)} · Chega {fmtDateTime(s?.chegada)}
+                                                                                </div>
+                                                                                {si < segmentosVolta.length - 1 && s?.duracaoConexaoMinutos != null && (
+                                                                                    <div className="text-amber-700 mt-1">↳ Conexão: {fmtDuration(Number(s.duracaoConexaoMinutos))}</div>
+                                                                                )}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
-
-                                                    {segmentos.length > 0 && (
-                                                        <div className="ml-3 border-l-2 border-slate-200 pl-3 space-y-2">
-                                                            {segmentos.map((s: any, si: number) => (
-                                                                <div key={si} className="text-xs space-y-0.5">
-                                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                                                                        <span className="font-semibold">
-                                                                            {s?.aeroportoOrigem || s?.cidadeOrigem || "?"} → {s?.aeroportoDestino || s?.cidadeDestino || "?"}
-                                                                        </span>
-                                                                        {s?.companhia && <span className="text-muted-foreground">{s.companhia} {s?.numeroVoo || ""}</span>}
-                                                                        {s?.classe && <span className="text-muted-foreground">{s.classe}</span>}
-                                                                    </div>
-                                                                    <div className="text-muted-foreground">
-                                                                        Sai {fmtDateTime(s?.saida)} · Chega {fmtDateTime(s?.chegada)}
-                                                                        {fmtBagagemSegmento(s?.bagagem) ? ` · Bagagem ${fmtBagagemSegmento(s?.bagagem)}` : ""}
-                                                                    </div>
-                                                                    {si < segmentos.length - 1 && s?.duracaoConexaoMinutos != null && (
-                                                                        <div className="text-amber-700 mt-1">↳ Conexão: {fmtDuration(Number(s.duracaoConexaoMinutos))}</div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             );
                                         })}
