@@ -19,6 +19,18 @@ export function splitStoredDatetime(value: string | Date | null | undefined): { 
                 time: localMatch[2] && localMatch[3] ? `${localMatch[2]}:${localMatch[3]}` : "",
             };
         }
+
+        // Also preserve ISO strings that include timezone suffix (Z or +/-HH:MM)
+        // as literal local date/time to avoid day shifts in UI rendering.
+        const isoWithTzMatch = raw.match(
+            /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})$/
+        );
+        if (isoWithTzMatch) {
+            return {
+                date: isoWithTzMatch[1],
+                time: `${isoWithTzMatch[2]}:${isoWithTzMatch[3]}`,
+            };
+        }
     }
 
     const d = typeof value === "string" ? new Date(value) : value;

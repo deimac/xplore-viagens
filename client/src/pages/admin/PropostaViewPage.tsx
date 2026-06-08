@@ -66,16 +66,16 @@ function bagCountsForDirection(peca: any, direcao: "ida" | "volta") {
 
 function BaggageIcons({ pessoal, mao, despachada }: { pessoal: number; mao: number; despachada: number }) {
     return (
-        <div className="flex items-center gap-3 text-xs">
-            <span className="inline-flex items-center gap-1" title="Item pessoal">
+        <div className="inline-flex items-center flex-nowrap gap-2 text-xs whitespace-nowrap print:text-[11px]">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap" title="Item pessoal">
                 <Backpack className="h-3.5 w-3.5" />
                 {pessoal}
             </span>
-            <span className="inline-flex items-center gap-1" title="Bagagem de mão">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap" title="Bagagem de mão">
                 <BriefcaseBusiness className="h-3.5 w-3.5" />
                 {mao}
             </span>
-            <span className="inline-flex items-center gap-1" title="Bagagem despachada">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap" title="Bagagem despachada">
                 <Luggage className="h-3.5 w-3.5" />
                 {despachada}
             </span>
@@ -320,21 +320,21 @@ export default function PropostaViewPage() {
                                                         {mostrarIda && (
                                                             <>
                                                                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Ida</div>
-                                                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] items-center gap-3">
+                                                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] print:grid-cols-[1fr_auto_1fr_auto] items-center gap-3 print:gap-2">
                                                                     <div>
                                                                         <div className="font-semibold">{fmtDateTime(resumoIda?.dataSaida)}</div>
                                                                         <div className="text-xs text-muted-foreground">{resumoIda?.origem || segmentosIda[0]?.aeroportoOrigem || "-"}</div>
                                                                     </div>
-                                                                    <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
-                                                                        <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />Tempo total: {fmtDuration(getTrechoDuracaoTotal(resumoIda, segmentosIda))}</span>
-                                                                        <span>{Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1)) > 0 ? `${Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1))} conexão${Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1)) > 1 ? "ões" : ""}` : "Direto"}</span>
+                                                                    <div className="text-xs text-muted-foreground flex flex-col items-center gap-1 print:text-[11px]">
+                                                                        <span className="inline-flex items-center gap-1 whitespace-nowrap"><Clock3 className="h-3 w-3" />Tempo total: {fmtDuration(getTrechoDuracaoTotal(resumoIda, segmentosIda))}</span>
+                                                                        <span className="whitespace-nowrap">{Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1)) > 0 ? `${Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1))} conexão${Number(resumoIda?.qtdConexoes ?? Math.max(0, segmentosIda.length - 1)) > 1 ? "ões" : ""}` : "Direto"}</span>
                                                                     </div>
                                                                     <div>
                                                                         <div className="font-semibold">{fmtDateTime(resumoIda?.dataChegada)}</div>
                                                                         <div className="text-xs text-muted-foreground">{resumoIda?.destino || segmentosIda[segmentosIda.length - 1]?.aeroportoDestino || "-"}</div>
                                                                     </div>
-                                                                    <div className="md:text-right text-xs">
-                                                                        <div className="text-muted-foreground mb-1">Bagagens</div>
+                                                                    <div className="md:text-right text-xs print:text-[11px] whitespace-nowrap">
+                                                                        <div className="text-muted-foreground mb-1 whitespace-nowrap">Bagagens</div>
                                                                         <BaggageIcons pessoal={bagIda.pessoal} mao={bagIda.mao} despachada={bagIda.despachada} />
                                                                     </div>
                                                                 </div>
@@ -366,21 +366,21 @@ export default function PropostaViewPage() {
                                                         {mostrarVolta && (
                                                             <div className="border-t pt-2 mt-2 space-y-2">
                                                                 <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Volta</div>
-                                                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] items-center gap-3">
+                                                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] print:grid-cols-[1fr_auto_1fr_auto] items-center gap-3 print:gap-2">
                                                                     <div>
                                                                         <div className="font-semibold">{fmtDateTime(resumoVolta?.dataSaida)}</div>
                                                                         <div className="text-xs text-muted-foreground">{resumoVolta?.origem || segmentosVolta[0]?.aeroportoOrigem || "-"}</div>
                                                                     </div>
-                                                                    <div className="text-xs text-muted-foreground flex flex-col items-center gap-1">
-                                                                        <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />Tempo total: {fmtDuration(getTrechoDuracaoTotal(resumoVolta, segmentosVolta))}</span>
-                                                                        <span>{Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1)) > 0 ? `${Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1))} conexão${Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1)) > 1 ? "ões" : ""}` : "Direto"}</span>
+                                                                    <div className="text-xs text-muted-foreground flex flex-col items-center gap-1 print:text-[11px]">
+                                                                        <span className="inline-flex items-center gap-1 whitespace-nowrap"><Clock3 className="h-3 w-3" />Tempo total: {fmtDuration(getTrechoDuracaoTotal(resumoVolta, segmentosVolta))}</span>
+                                                                        <span className="whitespace-nowrap">{Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1)) > 0 ? `${Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1))} conexão${Number(resumoVolta?.qtdConexoes ?? Math.max(0, segmentosVolta.length - 1)) > 1 ? "ões" : ""}` : "Direto"}</span>
                                                                     </div>
                                                                     <div>
                                                                         <div className="font-semibold">{fmtDateTime(resumoVolta?.dataChegada)}</div>
                                                                         <div className="text-xs text-muted-foreground">{resumoVolta?.destino || segmentosVolta[segmentosVolta.length - 1]?.aeroportoDestino || "-"}</div>
                                                                     </div>
-                                                                    <div className="md:text-right text-xs">
-                                                                        <div className="text-muted-foreground mb-1">Bagagens</div>
+                                                                    <div className="md:text-right text-xs print:text-[11px] whitespace-nowrap">
+                                                                        <div className="text-muted-foreground mb-1 whitespace-nowrap">Bagagens</div>
                                                                         <BaggageIcons pessoal={bagVolta.pessoal} mao={bagVolta.mao} despachada={bagVolta.despachada} />
                                                                     </div>
                                                                 </div>
