@@ -785,11 +785,12 @@ export default function CotacaoDetailPage() {
                 onOpenChange={setPropostaOpen}
                 defaultTitulo={`Proposta — ${cotacao.clienteNome}`}
                 cenariosSelecionados={cenariosSelecionados}
-                onSubmit={(titulo, validadeData) =>
+                onSubmit={(titulo, validadeData, orderedCenarioIds) =>
                     generateProposta.mutate({
                         cotacaoId,
                         titulo: titulo || undefined,
                         validadeData: validadeData || undefined,
+                        orderedCenarioIds,
                     })
                 }
                 isSubmitting={generateProposta.isPending}

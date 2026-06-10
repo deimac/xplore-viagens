@@ -2188,6 +2188,7 @@ export const appRouter = router({
           cotacaoId: z.number(),
           titulo: z.string().optional().nullable(),
           validadeData: z.string().optional().nullable(),
+          orderedCenarioIds: z.array(z.number()).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -2196,7 +2197,8 @@ export const appRouter = router({
           input.cotacaoId,
           ctx.user.id,
           input.titulo ?? null,
-          input.validadeData ?? null
+          input.validadeData ?? null,
+          input.orderedCenarioIds
         );
       }),
     deleteProposta: adminProcedure

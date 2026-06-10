@@ -31,7 +31,7 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
     total_beds: totalBeds,
   };
 }
-import { eq, and, desc, inArray, or, isNull, gte } from "drizzle-orm";
+import { eq, and, desc, inArray, or, isNull, gte, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
 import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos, adminLembretes } from "../drizzle/schema";
@@ -3885,7 +3885,11 @@ export async function getCwCotacaoFull(id: number) {
   const pecasComSegmentos = pecas.map(p => ({ ...p, segmentos: segmentosByPeca[p.id] || [] }));
 
   // Busca cenários da cotação
-  const cenarios = await db.select().from(cwCenarios).where(eq(cwCenarios.cotacaoId, id));
+  const cenarios = await db
+    .select()
+    .from(cwCenarios)
+    .where(eq(cwCenarios.cotacaoId, id))
+    .orderBy(asc(cwCenarios.sortOrder), asc(cwCenarios.id));
   const cenarioIds = cenarios.map(c => c.id);
   let cenarioPecas: any[] = [];
   if (cenarioIds.length) {
@@ -4070,13 +4074,33 @@ export async function generateCwProposta(
   cotacaoId: number,
   userId: number,
   titulo: string | null,
-  validadeData: string | null
+  validadeData: string | null,
+  orderedCenarioIds?: number[]
 ) {
   const full = await getCwCotacaoFull(cotacaoId);
   if (!full) throw new Error("Cotação não encontrada");
+
+  const selectedCenarios = full.cenarios.filter((c) => c.status === "selecionado_proposta");
+  const selectedById = new Map(selectedCenarios.map((c) => [c.id, c]));
+
+  const pickedIds = new Set<number>();
+  const orderedSelectedCenarios =
+    (orderedCenarioIds ?? [])
+      .map((id) => {
+        if (pickedIds.has(id)) return null;
+        const cenario = selectedById.get(id);
+        if (!cenario) return null;
+        pickedIds.add(id);
+        return cenario;
+      })
+      .filter((c): c is (typeof selectedCenarios)[number] => Boolean(c));
+
+  const fallbackSelectedCenarios = selectedCenarios.filter((c) => !pickedIds.has(c.id));
+  const finalSelectedCenarios = [...orderedSelectedCenarios, ...fallbackSelectedCenarios];
+
   const snapshot: PropostaSnapshot = {
     cotacao: full.cotacao,
-    cenarios: full.cenarios.filter((c) => c.status === "selecionado_proposta"),
+    cenarios: finalSelectedCenarios,
     pecas: full.pecas,
   };
   const db = await getDb();
