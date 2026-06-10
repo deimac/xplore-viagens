@@ -462,7 +462,7 @@ export function PecaSheet({
                             </TabsTrigger>
                             <TabsTrigger value="segmentos" className="gap-1.5">
                                 <ListChecks className="h-3.5 w-3.5" />
-                                Segmentos
+                                Trechos
                                 {totalSegmentos > 0 && (
                                     <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
                                         {totalSegmentos}
@@ -689,11 +689,11 @@ export function PecaSheet({
 
                         <TabsContent value="segmentos" className="space-y-3 pt-4">
                             <p className="text-xs text-muted-foreground">
-                                Segmentos detalhados separados por direção.
+                                Trechos detalhados separados por direção.
                             </p>
 
                             <SegmentosDirecaoSection
-                                titulo="Segmentos da ida"
+                                titulo="Trechos da ida"
                                 segmentos={form.segmentosIda}
                                 onAdd={() => addSeg("ida")}
                                 onRemove={(idx) => removeSeg("ida", idx)}
@@ -702,7 +702,7 @@ export function PecaSheet({
 
                             {form.temVolta && (
                                 <SegmentosDirecaoSection
-                                    titulo="Segmentos da volta"
+                                    titulo="Trechos da volta"
                                     segmentos={form.segmentosVolta}
                                     onAdd={() => addSeg("volta")}
                                     onRemove={(idx) => removeSeg("volta", idx)}
@@ -1116,7 +1116,7 @@ function SegmentosDirecaoSection({
 
             {segmentos.length === 0 ? (
                 <div className="rounded-md border-2 border-dashed p-5 text-center text-xs text-muted-foreground">
-                    Sem segmentos detalhados.
+                    Sem trechos detalhados.
                 </div>
             ) : (
                 segmentos.map((s, idx) => (

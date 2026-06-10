@@ -225,29 +225,35 @@ function TrechoPanel({
     const conexoes = resumo.qtdConexoes ?? Math.max(0, segmentos.length - 1);
     const bagagem = fmtBagagemDirecao(peca, direcao);
     const duracao = resumo.duracaoMinutos ?? diffMinutes(resumo.dataSaida, resumo.dataChegada);
+    const rotaCompacta = `${resumo.origem || "?"} - ${resumo.destino || "?"}`;
 
     return (
         <Collapsible open={isOpen} onOpenChange={onOpenChange}>
             <div className="rounded-md border bg-muted/20 p-2 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{titulo}</div>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold truncate">
+                        {titulo}
+                        {!isOpen ? <span className="normal-case tracking-normal ml-1.5">{rotaCompacta}</span> : null}
+                    </div>
                     <CollapsibleTrigger asChild>
                         <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             className="h-5 px-1.5 text-[10px] gap-1"
-                            title={isOpen ? "Ocultar segmentos" : "Ver segmentos"}
+                            title={isOpen ? "Ocultar trechos" : "Ver trechos"}
                         >
                             {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                            Segmentos
+                            Trechos
                         </Button>
                     </CollapsibleTrigger>
                 </div>
 
-                <div className="text-xs font-medium truncate">
-                    {resumo.origem || "?"} <ArrowRight className="inline h-3 w-3 align-[-1px]" /> {resumo.destino || "?"}
-                </div>
+                {isOpen && (
+                    <div className="text-xs font-medium truncate">
+                        {resumo.origem || "?"} <ArrowRight className="inline h-3 w-3 align-[-1px]" /> {resumo.destino || "?"}
+                    </div>
+                )}
                 <div className="text-[11px] text-muted-foreground truncate">
                     {resumo.dataSaida ? fmtTime(resumo.dataSaida) : "—"}
                     {resumo.dataChegada ? ` → ${fmtTime(resumo.dataChegada)}` : ""}
@@ -277,7 +283,7 @@ function TrechoPanel({
                 <CollapsibleContent className="pt-1 space-y-1.5">
                     {segmentos.length === 0 ? (
                         <div className="rounded border border-dashed bg-background px-2 py-1.5 text-[11px] text-muted-foreground">
-                            Sem segmentos detalhados.
+                            Sem trechos detalhados.
                         </div>
                     ) : (
                         segmentos.map((seg, idx) => {
@@ -290,8 +296,7 @@ function TrechoPanel({
                             return (
                                 <div key={`${direcao}-${seg.id ?? idx}-${seg.ordem}`} className="space-y-1.5">
                                     <div className="rounded border bg-background px-2 py-1.5 space-y-1">
-                                        <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-                                            <span className="font-medium uppercase tracking-wide">Segmento {idx + 1}</span>
+                                        <div className="flex items-center justify-end gap-2 text-[10px] text-muted-foreground">
                                             <span className="truncate">
                                                 {seg.companhia || "Companhia"}
                                                 {seg.numeroVoo ? ` • ${seg.numeroVoo}` : ""}
