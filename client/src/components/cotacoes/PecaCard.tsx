@@ -71,7 +71,9 @@ export function PecaCard({
         opacity: isDragging ? 0.4 : 1,
     };
 
+    const custo = toNumber(peca.custo);
     const lucro = toNumber(peca.venda);
+    const vendaTotal = custo != null && lucro != null ? custo + lucro : null;
     const TipoIcon = TIPO_ICON[peca.tipoFinanceiro];
     const isFavorita = peca.status === "favorita";
     const ida = getResumoDirecao(peca, "ida");
@@ -151,7 +153,7 @@ export function PecaCard({
                                 C: <span className="text-foreground">{fmtCurrencyCompact(peca.custo)}</span>
                             </span>
                             <span className="text-muted-foreground">
-                                L: <span className="text-foreground font-medium">{fmtCurrencyCompact(peca.venda)}</span>
+                                V: <span className="text-foreground font-medium">{fmtCurrencyCompact(vendaTotal)}</span>
                             </span>
                             {!hideProfit && lucro != null && (
                                 <span
@@ -278,39 +280,55 @@ function TrechoPanel({
                             Sem segmentos detalhados.
                         </div>
                     ) : (
-                        segmentos.map((seg, idx) => (
-                            <div key={`${direcao}-${seg.id ?? idx}-${seg.ordem}`} className="rounded border bg-background px-2 py-1.5 space-y-1">
-                                <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-                                    <span className="font-medium uppercase tracking-wide">Segmento {idx + 1}</span>
-                                    <span className="truncate">
-                                        {seg.companhia || "Companhia"}
-                                        {seg.numeroVoo ? ` • ${seg.numeroVoo}` : ""}
-                                    </span>
-                                </div>
-                                <div className="text-[11px] font-medium truncate">
-                                    {seg.aeroportoOrigem || "?"}
-                                    {seg.cidadeOrigem ? ` (${seg.cidadeOrigem})` : ""}
-                                    {" "}
-                                    <ArrowRight className="inline h-3 w-3 align-[-1px]" />
-                                    {" "}
-                                    {seg.aeroportoDestino || "?"}
-                                    {seg.cidadeDestino ? ` (${seg.cidadeDestino})` : ""}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">
-                                    {seg.saida ? `${fmtDateShort(seg.saida)} ${fmtTime(seg.saida)}` : "—"}
-                                    {seg.chegada ? ` → ${fmtDateShort(seg.chegada)} ${fmtTime(seg.chegada)}` : ""}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
-                                    {seg.classe && <span className="px-1.5 py-0.5 rounded bg-muted">{seg.classe}</span>}
-                                    {seg.bagagem && <span className="px-1.5 py-0.5 rounded bg-muted truncate max-w-[150px]">{seg.bagagem}</span>}
-                                    {seg.duracaoConexaoMinutos != null && (
-                                        <span className="px-1.5 py-0.5 rounded bg-muted">
-                                            Conexão {fmtDuration(seg.duracaoConexaoMinutos)}
-                                        </span>
+                        segmentos.map((seg, idx) => {
+                            const next = segmentos[idx + 1];
+                            const duracaoVoo = diffMinutes(seg.saida, seg.chegada);
+                            const duracaoConexao =
+                                seg.duracaoConexaoMinutos ??
+                                (next ? diffMinutes(seg.chegada, next.saida) : null);
+
+                            return (
+                                <div key={`${direcao}-${seg.id ?? idx}-${seg.ordem}`} className="space-y-1.5">
+                                    <div className="rounded border bg-background px-2 py-1.5 space-y-1">
+                                        <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                            <span className="font-medium uppercase tracking-wide">Segmento {idx + 1}</span>
+                                            <span className="truncate">
+                                                {seg.companhia || "Companhia"}
+                                                {seg.numeroVoo ? ` • ${seg.numeroVoo}` : ""}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] font-medium truncate">
+                                            {seg.aeroportoOrigem || "?"}
+                                            {seg.cidadeOrigem ? ` (${seg.cidadeOrigem})` : ""}
+                                            {" "}
+                                            <ArrowRight className="inline h-3 w-3 align-[-1px]" />
+                                            {" "}
+                                            {seg.aeroportoDestino || "?"}
+                                            {seg.cidadeDestino ? ` (${seg.cidadeDestino})` : ""}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground">
+                                            {duracaoVoo != null ? `${fmtDuration(duracaoVoo)} • ` : ""}
+                                            {seg.saida ? `${fmtDateShort(seg.saida)} ${fmtTime(seg.saida)}` : "—"}
+                                            {seg.chegada ? ` → ${fmtDateShort(seg.chegada)} ${fmtTime(seg.chegada)}` : ""}
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+                                            {seg.classe && <span className="px-1.5 py-0.5 rounded bg-muted">{seg.classe}</span>}
+                                            {seg.bagagem && <span className="px-1.5 py-0.5 rounded bg-muted truncate max-w-[150px]">{seg.bagagem}</span>}
+                                        </div>
+                                    </div>
+
+                                    {next && duracaoConexao != null && duracaoConexao > 0 && (
+                                        <div className="flex items-center gap-2 px-2">
+                                            <div className="flex-1 border-t border-dashed" />
+                                            <span className="text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                                                Conexão {fmtDuration(duracaoConexao)}
+                                            </span>
+                                            <div className="flex-1 border-t border-dashed" />
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </CollapsibleContent>
             </div>
