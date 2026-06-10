@@ -11,7 +11,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
-import { PecaCard, type CenarioOption } from "./PecaCard";
+import { PecaCard } from "./PecaCard";
 import type { PecaCompleta, CenarioCompleto } from "./types";
 import { matchesText } from "@/lib/cotacoes/calc";
 
@@ -23,8 +23,6 @@ interface Props {
     onToggleFavorita: (peca: PecaCompleta) => void;
     onEditPeca: (peca: PecaCompleta) => void;
     onDeletePeca: (peca: PecaCompleta) => void;
-    onAddPecaToCenario: (peca: PecaCompleta, cenarioId: number) => void;
-    onCreateCenarioWithPeca: (peca: PecaCompleta) => void;
 }
 
 export function PecaLibrary({
@@ -35,8 +33,6 @@ export function PecaLibrary({
     onToggleFavorita,
     onEditPeca,
     onDeletePeca,
-    onAddPecaToCenario,
-    onCreateCenarioWithPeca,
 }: Props) {
     const [search, setSearch] = useState("");
     const [filtroTipo, setFiltroTipo] = useState<string>("todos");
@@ -238,23 +234,15 @@ export function PecaLibrary({
                         strategy={verticalListSortingStrategy}
                     >
                         {filtradas.map((p) => {
-                            const cenariosOptions: CenarioOption[] = cenarios.map((c) => ({
-                                id: c.id,
-                                nome: c.nome,
-                                jaTem: c.pecas.some((l) => l.pecaId === p.id),
-                            }));
                             return (
                                 <PecaCard
                                     key={p.id}
                                     peca={p}
                                     usadaEmCenarios={usoMap.get(p.id) ?? 0}
                                     hideProfit={hideProfit}
-                                    cenariosOptions={cenariosOptions}
                                     onToggleFavorita={() => onToggleFavorita(p)}
                                     onEdit={() => onEditPeca(p)}
                                     onDelete={() => onDeletePeca(p)}
-                                    onAddToCenario={(cenarioId) => onAddPecaToCenario(p, cenarioId)}
-                                    onCreateCenarioAndAdd={() => onCreateCenarioWithPeca(p)}
                                 />
                             );
                         })}

@@ -474,44 +474,6 @@ export default function CotacaoDetailPage() {
         deleteCenario.isPending ||
         deleteProposta.isPending;
 
-    const handleAddPecaToCenario = (peca: PecaCompleta, cenarioId: number) => {
-        if (!data) return;
-        const cenario = data.cenarios.find((c) => c.id === cenarioId);
-        if (!cenario) return;
-        if (cenario.pecas.some((l) => l.pecaId === peca.id)) {
-            toast.info("Esta peça já está no cenário");
-            return;
-        }
-        addPecaMut.mutate({
-            cenarioId,
-            pecaId: peca.id,
-            grupo: "outro",
-            ordem: cenario.pecas.length,
-        });
-        toast.success(`Adicionada em "${cenario.nome}"`);
-    };
-
-    const handleCreateCenarioWithPeca = async (peca: PecaCompleta) => {
-        if (!data) return;
-        const proxLetra = String.fromCharCode(65 + data.cenarios.length);
-        try {
-            const novo = await createCenarioAsync.mutateAsync({
-                cotacaoId,
-                nome: `Opção ${proxLetra}`,
-            });
-            await addPecaMut.mutateAsync({
-                cenarioId: novo.id,
-                pecaId: peca.id,
-                grupo: "outro",
-                ordem: 0,
-            });
-            toast.success(`Cenário "Opção ${proxLetra}" criado com a peça`);
-            invalidate();
-        } catch (e: any) {
-            toast.error(e?.message ?? "Falha ao criar cenário");
-        }
-    };
-
     const handleNewCenario = () => {
         const proxLetra = String.fromCharCode(65 + (data?.cenarios.length ?? 0));
         setCenarioDialog({ open: true, editingId: null, nome: `Opção ${proxLetra}`, descricao: "" });
@@ -757,8 +719,6 @@ export default function CotacaoDetailPage() {
                                 onToggleFavorita={handleToggleFavorita}
                                 onEditPeca={openEditPeca}
                                 onDeletePeca={handleDeletePeca}
-                                onAddPecaToCenario={handleAddPecaToCenario}
-                                onCreateCenarioWithPeca={handleCreateCenarioWithPeca}
                             />
                         </div>
 

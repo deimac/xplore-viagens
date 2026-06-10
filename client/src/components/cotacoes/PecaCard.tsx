@@ -14,42 +14,35 @@ import {
     Coins,
     Shuffle,
     CheckCircle2,
-    Layers,
-    Plus,
-    Check,
+    ChevronDown,
+    ChevronRight,
+    ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { PecaCompleta } from "./types";
 import { TIPO_FINANCEIRO_LABEL } from "./types";
-import { fmtBagagemPeca } from "@/lib/cotacoes/bagagem";
+import { fmtBagagemDirecao } from "@/lib/cotacoes/bagagem";
 import {
+    diffMinutes,
     fmtCurrencyCompact,
+    fmtDateShort,
     fmtDuration,
     fmtTime,
     getResumoDirecao,
+    getSegmentosDirecao,
     hasVolta,
-    pecaDurationMinutes,
     toNumber,
 } from "@/lib/cotacoes/calc";
-
-export interface CenarioOption {
-    id: number;
-    nome: string;
-    jaTem: boolean;
-}
 
 interface Props {
     peca: PecaCompleta;
     usadaEmCenarios: number;
     hideProfit?: boolean;
-    cenariosOptions?: CenarioOption[];
     onToggleFavorita: () => void;
     onEdit: () => void;
     onDelete: () => void;
-    onAddToCenario?: (cenarioId: number) => void;
-    onCreateCenarioAndAdd?: () => void;
 }
 
 const TIPO_ICON = {
@@ -62,14 +55,11 @@ export function PecaCard({
     peca,
     usadaEmCenarios,
     hideProfit = false,
-    cenariosOptions,
     onToggleFavorita,
     onEdit,
     onDelete,
-    onAddToCenario,
-    onCreateCenarioAndAdd,
 }: Props) {
-    const [popoverOpen, setPopoverOpen] = useState(false);
+    const [expanded, setExpanded] = useState<{ ida: boolean; volta: boolean }>({ ida: false, volta: false });
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: `peca-${peca.id}`,
         data: { kind: "peca-library", pecaId: peca.id },
@@ -82,7 +72,6 @@ export function PecaCard({
     };
 
     const lucro = toNumber(peca.venda);
-    const duracao = pecaDurationMinutes(peca);
     const TipoIcon = TIPO_ICON[peca.tipoFinanceiro];
     const isFavorita = peca.status === "favorita";
     const ida = getResumoDirecao(peca, "ida");
@@ -123,60 +112,27 @@ export function PecaCard({
                             <Plane className="h-3.5 w-3.5 text-primary shrink-0" />
                             <span className="truncate">{peca.titulo || "Peça"}</span>
                         </div>
-                        {ida.dataSaida && (
-                            <span className="text-xs font-medium tabular-nums text-muted-foreground shrink-0">
-                                {fmtTime(ida.dataSaida)}
-                                {ida.dataChegada ? ` → ${fmtTime(ida.dataChegada)}` : ""}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-1 flex-wrap text-[11px]">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px] text-foreground/80 shrink-0">
                             {temVolta ? "Ida + volta" : "Somente ida"}
                         </span>
-                        {duracao != null && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80">
-                                <Clock className="h-3 w-3" />
-                                {fmtDuration(duracao)}
-                            </span>
-                        )}
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80">
-                            <Shuffle className="h-3 w-3" />
-                            {(ida.qtdConexoes ?? 0) + (temVolta ? volta.qtdConexoes ?? 0 : 0)} con
-                        </span>
-                        {fmtBagagemPeca(peca) && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-foreground/80 truncate max-w-[140px]">
-                                <Luggage className="h-3 w-3" />
-                                <span className="truncate">{fmtBagagemPeca(peca)}</span>
-                            </span>
-                        )}
                     </div>
 
-                    <div className="rounded-md border bg-muted/20 p-2 space-y-1">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Ida</div>
-                        <div className="text-xs font-medium truncate">
-                            {ida.origem || "?"} → {ida.destino || "?"}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground truncate">
-                            {ida.dataSaida ? fmtTime(ida.dataSaida) : "—"}
-                            {ida.dataChegada ? ` → ${fmtTime(ida.dataChegada)}` : ""}
-                            {ida.companhias ? ` • ${ida.companhias}` : ""}
-                        </div>
-                    </div>
+                    <TrechoPanel
+                        peca={peca}
+                        direcao="ida"
+                        titulo="Ida"
+                        isOpen={expanded.ida}
+                        onOpenChange={(isOpen) => setExpanded((prev) => ({ ...prev, ida: isOpen }))}
+                    />
 
                     {temVolta && (
-                        <div className="rounded-md border bg-muted/20 p-2 space-y-1">
-                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Volta</div>
-                            <div className="text-xs font-medium truncate">
-                                {volta.origem || "?"} → {volta.destino || "?"}
-                            </div>
-                            <div className="text-[11px] text-muted-foreground truncate">
-                                {volta.dataSaida ? fmtTime(volta.dataSaida) : "—"}
-                                {volta.dataChegada ? ` → ${fmtTime(volta.dataChegada)}` : ""}
-                                {volta.companhias ? ` • ${volta.companhias}` : ""}
-                            </div>
-                        </div>
+                        <TrechoPanel
+                            peca={peca}
+                            direcao="volta"
+                            titulo="Volta"
+                            isOpen={expanded.volta}
+                            onOpenChange={(isOpen) => setExpanded((prev) => ({ ...prev, volta: isOpen }))}
+                        />
                     )}
 
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-dashed">
@@ -189,71 +145,6 @@ export function PecaCard({
                                 <TipoIcon className="h-3 w-3" />
                                 {TIPO_FINANCEIRO_LABEL[peca.tipoFinanceiro]}
                             </Badge>
-                            {(onAddToCenario || onCreateCenarioAndAdd) && (
-                                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-5 px-1.5 text-[10px] gap-1 border-primary/40 text-primary hover:bg-primary/10"
-                                            title="Adicionar a um cenário"
-                                        >
-                                            <Plus className="h-3 w-3" />
-                                            Cenário
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="start" className="w-64 p-1">
-                                        <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold flex items-center gap-1">
-                                            <Layers className="h-3 w-3" />
-                                            Adicionar a cenário
-                                        </div>
-                                        {cenariosOptions && cenariosOptions.length > 0 ? (
-                                            <div className="max-h-56 overflow-y-auto">
-                                                {cenariosOptions.map((c) => (
-                                                    <button
-                                                        key={c.id}
-                                                        type="button"
-                                                        disabled={c.jaTem}
-                                                        onClick={() => {
-                                                            onAddToCenario?.(c.id);
-                                                            setPopoverOpen(false);
-                                                        }}
-                                                        className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between gap-2"
-                                                    >
-                                                        <span className="truncate">{c.nome}</span>
-                                                        {c.jaTem && (
-                                                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
-                                                                <Check className="h-3 w-3" />
-                                                                já incluída
-                                                            </span>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                                Nenhum cenário criado ainda.
-                                            </div>
-                                        )}
-                                        {onCreateCenarioAndAdd && (
-                                            <>
-                                                <div className="my-1 border-t" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        onCreateCenarioAndAdd();
-                                                        setPopoverOpen(false);
-                                                    }}
-                                                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accent flex items-center gap-1.5 text-primary font-medium"
-                                                >
-                                                    <Plus className="h-3.5 w-3.5" />
-                                                    Criar novo cenário com esta peça
-                                                </button>
-                                            </>
-                                        )}
-                                    </PopoverContent>
-                                </Popover>
-                            )}
                         </div>
                         <div className="flex items-center gap-2 text-[11px] tabular-nums">
                             <span className="text-muted-foreground">
@@ -311,5 +202,118 @@ export function PecaCard({
                 </Button>
             </div>
         </div>
+    );
+}
+
+function TrechoPanel({
+    peca,
+    direcao,
+    titulo,
+    isOpen,
+    onOpenChange,
+}: {
+    peca: PecaCompleta;
+    direcao: "ida" | "volta";
+    titulo: string;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const resumo = getResumoDirecao(peca, direcao);
+    const segmentos = [...getSegmentosDirecao(peca, direcao)].sort((a, b) => a.ordem - b.ordem);
+    const conexoes = resumo.qtdConexoes ?? Math.max(0, segmentos.length - 1);
+    const bagagem = fmtBagagemDirecao(peca, direcao);
+    const duracao = resumo.duracaoMinutos ?? diffMinutes(resumo.dataSaida, resumo.dataChegada);
+
+    return (
+        <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+            <div className="rounded-md border bg-muted/20 p-2 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{titulo}</div>
+                    <CollapsibleTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 px-1.5 text-[10px] gap-1"
+                            title={isOpen ? "Ocultar segmentos" : "Ver segmentos"}
+                        >
+                            {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                            Segmentos
+                        </Button>
+                    </CollapsibleTrigger>
+                </div>
+
+                <div className="text-xs font-medium truncate">
+                    {resumo.origem || "?"} <ArrowRight className="inline h-3 w-3 align-[-1px]" /> {resumo.destino || "?"}
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                    {resumo.dataSaida ? fmtTime(resumo.dataSaida) : "—"}
+                    {resumo.dataChegada ? ` → ${fmtTime(resumo.dataChegada)}` : ""}
+                    {resumo.companhias ? ` • ${resumo.companhias}` : ""}
+                    {resumo.classe ? ` • ${resumo.classe}` : ""}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                    {duracao != null && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-background border text-foreground/80">
+                            <Clock className="h-3 w-3" />
+                            {fmtDuration(duracao)}
+                        </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-background border text-foreground/80">
+                        <Shuffle className="h-3 w-3" />
+                        {conexoes} con
+                    </span>
+                    {bagagem && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-background border text-foreground/80 truncate max-w-[180px]">
+                            <Luggage className="h-3 w-3" />
+                            <span className="truncate">{bagagem}</span>
+                        </span>
+                    )}
+                </div>
+
+                <CollapsibleContent className="pt-1 space-y-1.5">
+                    {segmentos.length === 0 ? (
+                        <div className="rounded border border-dashed bg-background px-2 py-1.5 text-[11px] text-muted-foreground">
+                            Sem segmentos detalhados.
+                        </div>
+                    ) : (
+                        segmentos.map((seg, idx) => (
+                            <div key={`${direcao}-${seg.id ?? idx}-${seg.ordem}`} className="rounded border bg-background px-2 py-1.5 space-y-1">
+                                <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                    <span className="font-medium uppercase tracking-wide">Segmento {idx + 1}</span>
+                                    <span className="truncate">
+                                        {seg.companhia || "Companhia"}
+                                        {seg.numeroVoo ? ` • ${seg.numeroVoo}` : ""}
+                                    </span>
+                                </div>
+                                <div className="text-[11px] font-medium truncate">
+                                    {seg.aeroportoOrigem || "?"}
+                                    {seg.cidadeOrigem ? ` (${seg.cidadeOrigem})` : ""}
+                                    {" "}
+                                    <ArrowRight className="inline h-3 w-3 align-[-1px]" />
+                                    {" "}
+                                    {seg.aeroportoDestino || "?"}
+                                    {seg.cidadeDestino ? ` (${seg.cidadeDestino})` : ""}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                    {seg.saida ? `${fmtDateShort(seg.saida)} ${fmtTime(seg.saida)}` : "—"}
+                                    {seg.chegada ? ` → ${fmtDateShort(seg.chegada)} ${fmtTime(seg.chegada)}` : ""}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+                                    {seg.classe && <span className="px-1.5 py-0.5 rounded bg-muted">{seg.classe}</span>}
+                                    {seg.bagagem && <span className="px-1.5 py-0.5 rounded bg-muted truncate max-w-[150px]">{seg.bagagem}</span>}
+                                    {seg.duracaoConexaoMinutos != null && (
+                                        <span className="px-1.5 py-0.5 rounded bg-muted">
+                                            Conexão {fmtDuration(seg.duracaoConexaoMinutos)}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </CollapsibleContent>
+            </div>
+        </Collapsible>
     );
 }
