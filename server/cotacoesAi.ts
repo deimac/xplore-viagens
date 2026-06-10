@@ -61,66 +61,67 @@ export interface ExtractedPeca {
 
 const PECA_SCHEMA = {
     type: "object",
-    additionalProperties: false,
     properties: {
-        titulo: { type: ["string", "null"] },
-        temVolta: { type: ["boolean", "null"] },
-        origem: { type: ["string", "null"], description: "Cidade ou aeroporto de origem da peça inteira" },
-        destino: { type: ["string", "null"], description: "Cidade ou aeroporto de destino final da peça" },
-        dataSaida: { type: ["string", "null"], description: "ISO 8601 sem timezone, ex 2026-06-15T22:35" },
-        dataChegada: { type: ["string", "null"] },
-        origemVolta: { type: ["string", "null"] },
-        destinoVolta: { type: ["string", "null"] },
-        dataSaidaVolta: { type: ["string", "null"] },
-        dataChegadaVolta: { type: ["string", "null"] },
-        duracaoMinutos: { type: ["integer", "null"] },
-        duracaoMinutosVolta: { type: ["integer", "null"] },
+        titulo: { type: "string", nullable: true },
+        temVolta: { type: "boolean", nullable: true },
+        origem: { type: "string", nullable: true, description: "Cidade ou aeroporto de origem da peça inteira" },
+        destino: { type: "string", nullable: true, description: "Cidade ou aeroporto de destino final da peça" },
+        dataSaida: { type: "string", nullable: true, description: "ISO 8601 sem timezone, ex 2026-06-15T22:35" },
+        dataChegada: { type: "string", nullable: true },
+        origemVolta: { type: "string", nullable: true },
+        destinoVolta: { type: "string", nullable: true },
+        dataSaidaVolta: { type: "string", nullable: true },
+        dataChegadaVolta: { type: "string", nullable: true },
+        duracaoMinutos: { type: "integer", nullable: true },
+        duracaoMinutosVolta: { type: "integer", nullable: true },
         qtdConexoes: { type: "integer", minimum: 0 },
-        qtdConexoesVolta: { type: ["integer", "null"], minimum: 0 },
-        companhias: { type: ["string", "null"], description: "Lista resumida de cias, ex 'Gol, TAP'" },
-        companhiasVolta: { type: ["string", "null"] },
+        qtdConexoesVolta: { type: "integer", nullable: true, minimum: 0 },
+        companhias: { type: "string", nullable: true, description: "Lista resumida de cias, ex 'Gol, TAP'" },
+        companhiasVolta: { type: "string", nullable: true },
         itemPessoal: {
-            type: ["integer", "null"],
+            type: "integer",
+            nullable: true,
             minimum: 0,
             description: "Quantidade de item pessoal (mochila/bolsa pequena). Use 1 se incluso e não especificado.",
         },
         bagagemMao: {
-            type: ["integer", "null"],
+            type: "integer",
+            nullable: true,
             minimum: 0,
             description: "Quantidade de bagagens de mão (carry-on)",
         },
         bagagemDespachada: {
-            type: ["integer", "null"],
+            type: "integer",
+            nullable: true,
             minimum: 0,
             description: "Quantidade de bagagens despachadas (porão)",
         },
-        classe: { type: ["string", "null"] },
-        classeVolta: { type: ["string", "null"] },
-        observacoes: { type: ["string", "null"] },
+        classe: { type: "string", nullable: true },
+        classeVolta: { type: "string", nullable: true },
+        observacoes: { type: "string", nullable: true },
         segmentos: {
             type: "array",
             items: {
                 type: "object",
-                additionalProperties: false,
                 properties: {
-                    direcao: { type: ["string", "null"], enum: ["ida", "volta", null] },
+                    direcao: { type: "string", nullable: true, enum: ["ida", "volta"] },
                     ordem: { type: "integer" },
-                    aeroportoOrigem: { type: ["string", "null"], description: "Código IATA 3 letras" },
-                    aeroportoDestino: { type: ["string", "null"] },
-                    cidadeOrigem: { type: ["string", "null"] },
-                    cidadeDestino: { type: ["string", "null"] },
-                    saida: { type: ["string", "null"] },
-                    chegada: { type: ["string", "null"] },
-                    companhia: { type: ["string", "null"] },
-                    numeroVoo: { type: ["string", "null"] },
-                    classe: { type: ["string", "null"] },
-                    bagagem: { type: ["string", "null"] },
-                    duracaoConexaoMinutos: { type: ["integer", "null"] },
+                    aeroportoOrigem: { type: "string", nullable: true, description: "Código IATA 3 letras" },
+                    aeroportoDestino: { type: "string", nullable: true },
+                    cidadeOrigem: { type: "string", nullable: true },
+                    cidadeDestino: { type: "string", nullable: true },
+                    saida: { type: "string", nullable: true },
+                    chegada: { type: "string", nullable: true },
+                    companhia: { type: "string", nullable: true },
+                    numeroVoo: { type: "string", nullable: true },
+                    classe: { type: "string", nullable: true },
+                    bagagem: { type: "string", nullable: true },
+                    duracaoConexaoMinutos: { type: "integer", nullable: true },
                 },
                 required: ["ordem"],
             },
         },
-        confianca: { type: ["number", "null"], description: "0 a 1, autoavaliação da extração" },
+        confianca: { type: "number", nullable: true, description: "0 a 1, autoavaliação da extração" },
     },
     required: ["segmentos"],
 } as const;
@@ -132,9 +133,13 @@ Sua tarefa é converter uma cotação de voo (em texto ou imagem) em JSON estrut
 Regras:
 - Datas/horas devem ser ISO 8601 local (sem timezone), ex: "2026-06-15T22:35".
 - Códigos de aeroporto devem ser IATA de 3 letras maiúsculas quando identificáveis.
-- "ordem" dos segmentos começa em 0 e é sequencial.
-- "qtdConexoes" = quantidade de segmentos - 1.
+- "ordem" dos segmentos começa em 0 e é sequencial por trecho.
+- "qtdConexoes" = quantidade de segmentos de ida - 1; "qtdConexoesVolta" = segmentos de volta - 1.
 - Campos não identificáveis devem ser null (não invente).
+- Preencha "origem" e "destino" com o início e fim do trecho de ida.
+- Preencha "dataSaida" e "dataChegada" com horários do trecho de ida.
+- Se houver trecho de volta, preencha "origemVolta", "destinoVolta", "dataSaidaVolta", "dataChegadaVolta", "companhiasVolta", "classeVolta" e "qtdConexoesVolta". Marque "temVolta: true".
+- Cada segmento deve ter "direcao": "ida" ou "volta" quando identificável.
 - Bagagem: informe QUANTIDADES inteiras em itemPessoal, bagagemMao e bagagemDespachada.
   - itemPessoal: mochila/item pessoal (padrão 1 se incluso e não especificado).
   - bagagemMao: malas de mão / carry-on.
@@ -142,11 +147,9 @@ Regras:
   - Ex.: "1 mala 23kg + 1 mão" → itemPessoal=1, bagagemMao=1, bagagemDespachada=1.
   - Se não houver bagagem inclusa, use 0 nos campos correspondentes.
 - Companhia: nome completo se possível (ex: "Gol", "TAP Air Portugal", "Latam").
-- Se a imagem/texto tiver múltiplos itinerários distintos (ex: ida e volta separadas), extraia apenas o PRIMEIRO/PRINCIPAL como uma peça única; a peça deve ser unidade indivisível.
-- Se houver ida e volta explícitas, você pode preencher campos de volta (origemVolta, destinoVolta, datas/cias/conexoes/classe da volta) e marcar segmentos com direcao.
 - "confianca" 0-1: avalie sua certeza da extração.
 
-Responda SEMPRE seguindo estritamente o JSON Schema fornecido.`;
+Responda SOMENTE com JSON válido, sem texto adicional, sem markdown, sem explicações.`;
 
 export interface Extractor {
     name: string;
@@ -169,7 +172,7 @@ function normalizeExtractedPeca(parsed: ExtractedPeca): ExtractedPeca {
 }
 
 function parseStructuredOutput(content: unknown): ExtractedPeca {
-    const text =
+    let text =
         typeof content === "string"
             ? content
             : Array.isArray(content)
@@ -178,6 +181,13 @@ function parseStructuredOutput(content: unknown): ExtractedPeca {
                     .join("")
                 : "";
     if (!text) throw new Error("LLM retornou conteúdo vazio");
+    // Strip markdown code fences that some models add around JSON
+    const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch) text = fenceMatch[1].trim();
+    // Find the outermost JSON object if there is surrounding text
+    const objStart = text.indexOf("{");
+    const objEnd = text.lastIndexOf("}");
+    if (objStart !== -1 && objEnd > objStart) text = text.slice(objStart, objEnd + 1);
     try {
         const parsed = JSON.parse(text) as ExtractedPeca;
         return normalizeExtractedPeca(parsed);
@@ -211,7 +221,9 @@ function createLlmExtractor(name: string, providerOrder?: ProviderName[]): Extra
                 { role: "system", content: SYSTEM_PROMPT },
                 {
                     role: "user",
-                    content: `Extraia a peça de voo a partir do texto abaixo. ${targetInstruction}\n\n---\n${text}\n---`,
+                    content: targetInstruction
+                        ? `${targetInstruction}\n\n${text}`
+                        : text,
                 },
             ];
             const result = await invokeLLM({
@@ -219,19 +231,22 @@ function createLlmExtractor(name: string, providerOrder?: ProviderName[]): Extra
                 messages,
                 responseFormat: {
                     type: "json_schema",
-                    json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any, strict: true },
+                    json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any },
                 },
             });
             return parseStructuredOutput(result.choices?.[0]?.message?.content);
         },
         async fromImage(imageDataUrl: string, target?: "ida" | "volta") {
             const targetInstruction = buildTargetInstruction(target);
+            const userText = targetInstruction
+                ? `Extraia a peça de voo desta imagem (print de cotação). ${targetInstruction}`
+                : "Extraia a peça de voo desta imagem (print de cotação).";
             const messages: Message[] = [
                 { role: "system", content: SYSTEM_PROMPT },
                 {
                     role: "user",
                     content: [
-                        { type: "text", text: `Extraia a peça de voo desta imagem (print de cotação). ${targetInstruction}` },
+                        { type: "text", text: userText },
                         { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
                     ],
                 },
@@ -241,7 +256,7 @@ function createLlmExtractor(name: string, providerOrder?: ProviderName[]): Extra
                 messages,
                 responseFormat: {
                     type: "json_schema",
-                    json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any, strict: true },
+                    json_schema: { name: "ExtractedPeca", schema: PECA_SCHEMA as any },
                 },
             });
             return parseStructuredOutput(result.choices?.[0]?.message?.content);
@@ -263,10 +278,24 @@ const localOcrGeminiExtractor: Extractor = {
         }
 
         const peca = await geminiExtractor.fromText(
-            `Texto extraído por OCR local de um print de cotação de voo. Use somente as informações abaixo e não invente dados ausentes.\n\n---\n${ocr.text}\n---`
+            `Texto extraído por OCR local de um print de cotação de voo. Extraia TODOS os dados de voo visíveis: origem, destino, datas, horários, companhias, número de voo, bagagem e segmentos. Não invente dados ausentes, mas preencha tudo que for identificável no texto.\n\n${ocr.text}`
             ,
             target
         );
+
+        // Quality gate: if extraction returned no meaningful flight data, fall through
+        // to next extractor (gemini-vision) which analyzes the image directly.
+        const hasUsefulData =
+            peca.origem != null ||
+            peca.destino != null ||
+            peca.dataSaida != null ||
+            (Array.isArray(peca.segmentos) && peca.segmentos.length > 0 &&
+                peca.segmentos.some((s: any) => s?.aeroportoOrigem || s?.aeroportoDestino || s?.saida));
+
+        if (!hasUsefulData) {
+            throw new Error("OCR extraiu texto mas Gemini não encontrou dados de voo estruturados — tentando visão direta");
+        }
+
         const ocrObservation = buildOcrObservation(ocr.engine, ocr.confidence, ocr.warnings);
         return {
             ...peca,
