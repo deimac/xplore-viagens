@@ -126,7 +126,9 @@ export function toLegacyViagem(item: PublicShowcaseItem, channel: ShowcaseChanne
 }
 
 const TTL_MS = 60_000;
-type Entry = { at: number; data: any };
+const ERROR_TTL_MS = 15_000;
+const FETCH_TIMEOUT_MS = 5_000;
+type Entry = { at: number; data: any; failed?: boolean };
 const cache = new Map<string, Entry>();
 const logged = new Set<string>();
 
@@ -137,7 +139,7 @@ export function resetShowcaseCache() {
 
 async function cached<T>(key: string, load: () => Promise<T>): Promise<T | null> {
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.data as T;
+  if (hit && Date.now() - hit.at < (hit.failed ? ERROR_TTL_MS : TTL_MS)) return hit.data as T | null;
   try {
     const data = await load();
     cache.set(key, { at: Date.now(), data });
@@ -148,7 +150,10 @@ async function cached<T>(key: string, load: () => Promise<T>): Promise<T | null>
       logged.add(key);
       console.error(`[xplore360Showcase] ${key}:`, (error as Error).message);
     }
-    return hit ? (hit.data as T) : null;
+    // cache negativo: guarda o último valor (ou nada) por pouco tempo, sem bater no endpoint a cada página
+    const stale = hit && hit.data != null ? (hit.data as T) : null;
+    cache.set(key, { at: Date.now(), data: stale, failed: true });
+    return stale;
   }
 }
 
@@ -156,7 +161,10 @@ async function request(path: string): Promise<any> {
   const base = (process.env.XPLORE360_SHOWCASE_URL || "").replace(/\/+$/, "");
   const key = process.env.XPLORE360_SHOWCASE_KEY || "";
   if (!base || !key) throw new Error("XPLORE360_SHOWCASE_URL/KEY não configurados");
-  const res = await fetch(`${base}${path}`, { headers: { "x-showcase-key": key } });
+  const res = await fetch(`${base}${path}`, {
+    headers: { "x-showcase-key": key },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

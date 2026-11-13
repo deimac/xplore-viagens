@@ -185,6 +185,41 @@ describe("fetchShowcase", () => {
     expect(await fetchShowcase("site")).toEqual([]);
   });
 
+  it("fetch usa timeout de 5 s (signal)", async () => {
+    const f = vi.fn().mockResolvedValue(ok({ items: [] }));
+    vi.stubGlobal("fetch", f);
+    await fetchShowcase("site");
+    expect(f.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("erro/timeout entra no cache negativo por 15 s, com o valor antigo", async () => {
+    vi.useFakeTimers();
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ items: [item()] }))
+      .mockRejectedValue(new Error("timeout"));
+    vi.stubGlobal("fetch", f);
+    await fetchShowcase("site");
+    vi.advanceTimersByTime(61_000);
+    expect((await fetchShowcase("site")).map((v) => v.id)).toEqual([101]);
+    expect(f).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(10_000);
+    expect((await fetchShowcase("site")).map((v) => v.id)).toEqual([101]);
+    expect(f).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(6_000);
+    await fetchShowcase("site");
+    expect(f).toHaveBeenCalledTimes(3);
+  });
+
+  it("sem valor anterior, erro devolve [] e não repete o fetch em 15 s", async () => {
+    vi.useFakeTimers();
+    const f = vi.fn().mockRejectedValue(new Error("fora"));
+    vi.stubGlobal("fetch", f);
+    expect(await fetchShowcase("site")).toEqual([]);
+    expect(await fetchShowcase("site")).toEqual([]);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
   it("taxonomia vira { id, nome }", async () => {
     vi.stubGlobal(
       "fetch",
