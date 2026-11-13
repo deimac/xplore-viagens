@@ -106,3 +106,6 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Exportação para o xplore360 (dados reais)
+viagens-export.json

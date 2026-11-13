@@ -3,7 +3,8 @@
     "client/src/**/*",
     "shared/**/*",
     "server/**/*",
-    "server/types/**/*.d.ts"
+    "server/types/**/*.d.ts",
+    "scripts/export-viagens.ts"
   ],
   "exclude": [
     "node_modules",
