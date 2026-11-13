@@ -71,12 +71,12 @@ function buildViagemWhatsAppLink(viagem: any, rawNumber: string): string {
 
 export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouselTailProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<number | string | null>(null);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
-  const handleCategoryChange = (categoryId: number | null) => {
+  const handleCategoryChange = (categoryId: number | string | null) => {
     setSelectedCategory(categoryId);
     setCurrentIndex(0);
   };

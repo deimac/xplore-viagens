@@ -1,13 +1,13 @@
 import { Briefcase, Plane, Hotel } from "lucide-react";
 
 interface Categoria {
-  id: number;
+  id: number | string;
   nome: string;
 }
 
 interface CategoryFilterProps {
-  selectedCategory: number | null;
-  onCategoryChange: (categoryId: number | null) => void;
+  selectedCategory: number | string | null;
+  onCategoryChange: (categoryId: number | string | null) => void;
   categories: Categoria[];
 }
 

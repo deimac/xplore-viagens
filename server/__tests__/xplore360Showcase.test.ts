@@ -21,7 +21,7 @@ const hotel = (over: any = {}) => ({
 });
 
 const item = (over: any = {}): any => ({
-  code: "PK-001",
+  code: 101,
   slug: "praia",
   kind: "package",
   title: "Praia",
@@ -86,7 +86,7 @@ describe("toLegacyViagem", () => {
   it("mapeia os campos que o front usa", () => {
     const v = toLegacyViagem(item(), "site");
     expect(v).toMatchObject({
-      id: "PK-001",
+      id: 101,
       titulo: "Praia",
       slug: "praia",
       descricao: "Desc",
@@ -148,7 +148,7 @@ describe("fetchShowcase", () => {
     const f = vi.fn().mockResolvedValue(ok({ agency: {}, items: [item()] }));
     vi.stubGlobal("fetch", f);
     const out = await fetchShowcase("site");
-    expect(out[0].id).toBe("PK-001");
+    expect(out[0].id).toBe(101);
     const [url, init] = f.mock.calls[0];
     expect(url).toBe("https://sb.example/functions/v1/showcase-public/list?channel=site&kind=package");
     expect(init.headers["x-showcase-key"]).toBe("k");
@@ -176,7 +176,7 @@ describe("fetchShowcase", () => {
     await fetchShowcase("site");
     vi.advanceTimersByTime(61_000);
     const out = await fetchShowcase("site");
-    expect(out.map((v) => v.id)).toEqual(["PK-001"]);
+    expect(out.map((v) => v.id)).toEqual([101]);
     expect(await fetchShowcase("tv")).toEqual([]);
   });
 

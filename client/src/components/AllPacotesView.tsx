@@ -13,7 +13,7 @@ interface Props {
 
 export function AllPacotesView({ onClose }: Props) {
     // Utilitários
-    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<number | string | null>(null);
     const travelsQuery = trpc.viagens.list.useQuery();
     const categoriesQuery = trpc.categorias.list.useQuery();
     const isAllowedByDepartureDate = (travel: any) => {

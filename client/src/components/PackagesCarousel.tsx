@@ -18,7 +18,7 @@ interface Travel {
 
 export default function PackagesCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<number | string | null>(null);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -44,7 +44,7 @@ export default function PackagesCarousel() {
   };
 
   // Reset index when category changes
-  const handleCategoryChange = (categoryId: number | null) => {
+  const handleCategoryChange = (categoryId: number | string | null) => {
     setSelectedCategory(categoryId);
     setCurrentIndex(0);
   };

@@ -31,12 +31,12 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
     total_beds: totalBeds,
   };
 }
-import { fetchShowcase, fetchTaxonomy, isXplore360Source } from './xplore360Showcase';
 import { eq, and, desc, inArray, or, isNull, gte, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
 import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos, adminLembretes } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { fetchShowcase, fetchTaxonomy, isXplore360Source } from './xplore360Showcase';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
 let _db: ReturnType<typeof drizzle> | null = null;

@@ -12,7 +12,7 @@ export const SHOWCASE_MOVED_MESSAGE = "Cadastro movido para o xplore360";
 type Ref = { id: string; name: string };
 
 export interface PublicShowcaseItem {
-  code: string;
+  code: number; // int no xplore360
   slug: string;
   kind: string;
   title: string;
@@ -41,7 +41,7 @@ export interface PublicShowcaseItem {
 }
 
 export interface LegacyViagemOut {
-  id: string;
+  id: number; // = code (int no xplore360)
   titulo: string;
   slug: string;
   descricao: string;
