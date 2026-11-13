@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 interface AdminSidebarProps {
     isOpen: boolean;
@@ -122,6 +123,12 @@ const menuItems: MenuItem[] = [
 
 export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     const [location] = useLocation();
+    // Com a vitrine no xplore360, o cadastro de viagens, categorias e destaques sai do admin.
+    const { data: viagensSource } = trpc.viagens.source.useQuery();
+    const visibleMenuItems =
+        viagensSource?.source === "xplore360"
+            ? menuItems.filter((item) => item.label !== "Viagens")
+            : menuItems;
     const [expandedItems, setExpandedItems] = useState<string[]>(["Hospedagens", "Viagens"]);
 
     const toggleExpanded = (label: string) => {
@@ -229,7 +236,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                 </div>
 
                 <nav className="p-4 space-y-2">
-                    {menuItems.map((item) => renderMenuItem(item))}
+                    {visibleMenuItems.map((item) => renderMenuItem(item))}
                 </nav>
             </aside>
         </>

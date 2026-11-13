@@ -1,4 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
+import { isXplore360Source, SHOWCASE_MOVED_MESSAGE } from "./xplore360Showcase";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
@@ -47,6 +48,12 @@ function normalizeLocalDateTimeInput(value: string | null | undefined): string |
   return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}:${pad(parsed.getSeconds())}`;
 }
 
+
+function assertShowcaseEditable() {
+  if (isXplore360Source()) {
+    throw new TRPCError({ code: "FORBIDDEN", message: SHOWCASE_MOVED_MESSAGE });
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -103,6 +110,7 @@ export const appRouter = router({
   }),
 
   viagens: router({
+    source: publicProcedure.query(() => ({ source: isXplore360Source() ? "xplore360" : "mysql" })),
     list: publicProcedure.query(async () => {
       return await db.getAllViagens();
     }),
@@ -147,6 +155,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         const { imagem, ...data } = input;
 
         // Create viagem first
@@ -197,6 +206,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         const { id, imagem, ...data } = input;
 
         // Upload new image if provided
@@ -213,6 +223,7 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         await db.deleteViagem(input.id);
         return { success: true };
       }),
@@ -225,11 +236,13 @@ export const appRouter = router({
     create: adminProcedure
       .input(z.object({ nome: z.string() }))
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         return await db.createCategoria(input.nome);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         await db.deleteCategoria(input.id);
         return { success: true };
       }),
@@ -242,11 +255,13 @@ export const appRouter = router({
     create: adminProcedure
       .input(z.object({ nome: z.string() }))
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         return await db.createDestaque(input.nome);
       }),
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         await db.deleteDestaque(input.id);
         return { success: true };
       }),

@@ -31,6 +31,7 @@ export async function getRoomsSummaryAndBeds(propertyId: number) {
     total_beds: totalBeds,
   };
 }
+import { fetchShowcase, fetchTaxonomy, isXplore360Source } from './xplore360Showcase';
 import { eq, and, desc, inArray, or, isNull, gte, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
@@ -435,6 +436,7 @@ function parseViagensRows(rows: any[]) {
 }
 
 export async function getAllViagens() {
+  if (isXplore360Source()) return await fetchShowcase('site');
   try {
     const rows = await executeQuery<any[]>(`
       SELECT v.*,
@@ -599,6 +601,7 @@ export async function deleteViagem(id: number) {
 }
 
 export async function getAllCategorias() {
+  if (isXplore360Source()) return await fetchTaxonomy('categories');
   try {
     return await executeQuery<any[]>(`SELECT * FROM categorias ORDER BY nome`);
   } catch (error) {
@@ -616,6 +619,7 @@ export async function deleteCategoria(id: number) {
 }
 
 export async function getAllDestaques() {
+  if (isXplore360Source()) return await fetchTaxonomy('tags');
   return await executeQuery<any[]>(`SELECT * FROM destaques ORDER BY nome`);
 }
 
@@ -3689,6 +3693,10 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
         break;
       }
       case 'viagens': {
+        if (isXplore360Source()) {
+          itens = await fetchShowcase('tv');
+          break;
+        }
         const rows = await executeQuery<any[]>(`
           SELECT v.id, v.titulo, v.imagemUrl, v.origem, v.valorTotal, v.quantidadeParcelas,
             v.valorParcela, v.temJuros, v.dataIda, v.dataVolta, v.quantidadePessoas,
