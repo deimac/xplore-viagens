@@ -227,13 +227,13 @@ describe("fetch", () => {
 
 describe("properties.getPropertyWithDetails em modo xplore360", () => {
   afterEach(() => {
-    delete process.env.PROPERTIES_SOURCE;
+    delete process.env.SHOWCASE_SOURCE;
     vi.resetModules();
     vi.doUnmock("../db");
   });
 
   it("devolve imagens/comodidades do adaptador e não consulta o MySQL", async () => {
-    process.env.PROPERTIES_SOURCE = "xplore360";
+    process.env.SHOWCASE_SOURCE = "xplore360";
     const adapter = toLegacyPropertyDetail(detail());
     const db = {
       getPropertyBySlug: vi.fn().mockResolvedValue(adapter),

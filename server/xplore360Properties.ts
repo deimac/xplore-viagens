@@ -1,11 +1,10 @@
 // Hospedagens do xplore360: imóveis de parceiros do site/TV lidos do endpoint público.
-// Ativado por PROPERTIES_SOURCE=xplore360 (padrão: mysql). Usa XPLORE360_SHOWCASE_URL/KEY.
+// Ativado pela mesma SHOWCASE_SOURCE=xplore360 das Viagens (uma variável só). Usa XPLORE360_SHOWCASE_URL/KEY.
+import { isXplore360Source } from "./xplore360Showcase";
 
 export type PropertiesChannel = "site" | "tv";
 
-export function isXplore360Properties(): boolean {
-  return (process.env.PROPERTIES_SOURCE || "mysql").trim().toLowerCase() === "xplore360";
-}
+export const isXplore360Properties = isXplore360Source;
 
 export interface PublicPropertyListItem {
   code: number;
