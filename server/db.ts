@@ -38,6 +38,7 @@ import mysql from "mysql2";
 import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos, adminLembretes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { fetchShowcase, fetchTaxonomy, isXplore360Source } from './xplore360Showcase';
+import { fetchSlides } from './xplore360Slides';
 import { isXplore360Properties, fetchPropertiesList, fetchPropertyDetail, fetchPropertiesForTv, pickFeatured, getRoomsSummaryFor, getRoomsWithBedsFor } from './xplore360Properties';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
@@ -901,6 +902,7 @@ export async function getAllHeroSlides() {
 }
 
 export async function getActiveHeroSlides() {
+  if (isXplore360Source()) return await fetchSlides('site');
   const db = await getDb();
   if (!db) return [];
   const result = await db.select().from(heroSlides)
@@ -3690,6 +3692,10 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
 
     switch (secao.codigo) {
       case 'slider': {
+        if (isXplore360Source()) {
+          itens = await fetchSlides('tv');
+          break;
+        }
         const db = await getDb();
         if (db) {
           itens = await db.select().from(heroSlides)

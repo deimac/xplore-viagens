@@ -328,6 +328,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         return await db.createHeroSlide(input);
       }),
     update: publicProcedure
@@ -344,6 +345,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         const { id, ...data } = input;
         await db.updateHeroSlide(id, data);
         return { success: true };
@@ -351,6 +353,7 @@ export const appRouter = router({
     delete: publicProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
         await db.deleteHeroSlide(input.id);
         return { success: true };
       }),
@@ -363,6 +366,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertShowcaseEditable();
 
         const buffer = Buffer.from(input.fileData, "base64");
         const randomSuffix = crypto.randomBytes(8).toString("hex");

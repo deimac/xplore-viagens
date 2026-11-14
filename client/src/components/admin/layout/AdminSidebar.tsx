@@ -128,7 +128,7 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     const { data: propertiesSource } = trpc.properties.source.useQuery();
     const visibleMenuItems = menuItems.filter(
         (item) =>
-            !(viagensSource?.source === "xplore360" && item.label === "Viagens") &&
+            !(viagensSource?.source === "xplore360" && (item.label === "Viagens" || item.label === "Slides Hero")) &&
             !(propertiesSource?.source === "xplore360" && item.label === "Hospedagens"),
     );
     const [expandedItems, setExpandedItems] = useState<string[]>(["Hospedagens", "Viagens"]);
