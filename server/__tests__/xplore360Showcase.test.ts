@@ -3,22 +3,8 @@ import {
   fetchShowcase,
   fetchTaxonomy,
   resetShowcaseCache,
-  showcaseSummary,
   toLegacyViagem,
 } from "../xplore360Showcase";
-
-const flight = (over: any = {}) => ({
-  type: "flight",
-  moments: [],
-  flight: { segments: [{ origin: { iata: "GRU", city: "São Paulo", name: "Guarulhos" } }] },
-  ...over,
-});
-const hotel = (over: any = {}) => ({
-  type: "hotel",
-  moments: [],
-  hotel: { name: "Pousada X", rooms: [{ category: "Suíte" }] },
-  ...over,
-});
 
 const item = (over: any = {}): any => ({
   code: 101,
@@ -44,42 +30,14 @@ const item = (over: any = {}): any => ({
     return_date: "2027-02-08",
     adults: 2,
     children: 0,
-    services: [flight(), hotel()],
+    origin: "São Paulo",
+    lodging: "Pousada X",
+    room_type: "Suíte",
+    board: "Café da manhã",
+    includes: [{ type: "flight", label: "Aéreo", text: null }],
   },
   updated_at: "2026-11-01T00:00:00Z",
   ...over,
-});
-
-describe("showcaseSummary", () => {
-  it("usa cidade do primeiro trecho do voo, hotel e quarto", () => {
-    expect(showcaseSummary([flight(), hotel()])).toEqual({
-      origin: "São Paulo",
-      lodging: "Pousada X",
-      roomType: "Suíte",
-    });
-  });
-  it("cai para IATA quando não há cidade", () => {
-    const f = flight({ flight: { segments: [{ origin: { iata: "GRU", city: "" } }] } });
-    expect(showcaseSummary([f]).origin).toBe("GRU");
-  });
-  it("sem origem do trecho, usa location do primeiro momento do voo", () => {
-    const f = flight({ flight: { segments: [] }, moments: [{ location: " Campinas " }] });
-    expect(showcaseSummary([f]).origin).toBe("Campinas");
-  });
-  it("ignora serviços inativos", () => {
-    const f = flight({ status: "cancelled" });
-    expect(showcaseSummary([f, hotel({ status: "removed" })])).toEqual({
-      origin: null,
-      lodging: null,
-      roomType: null,
-    });
-  });
-  it("sem serviços tudo é null", () => {
-    expect(showcaseSummary([])).toEqual({ origin: null, lodging: null, roomType: null });
-  });
-  it("hotel sem quartos: roomType null", () => {
-    expect(showcaseSummary([hotel({ hotel: { name: "H", rooms: [] } })]).roomType).toBeNull();
-  });
 });
 
 describe("toLegacyViagem", () => {
@@ -118,11 +76,18 @@ describe("toLegacyViagem", () => {
     expect(v.mostrarNaTv).toBe(true);
     expect(v.mostrarNoSite).toBe(false);
   });
-  it("sem serviços: origem e hospedagem null", () => {
-    const v = toLegacyViagem(item({ package: { ...item().package, services: [] } }), "site");
+  it("sem origem, hospedagem e quarto: null", () => {
+    const v = toLegacyViagem(
+      item({ package: { ...item().package, origin: null, lodging: null, room_type: null } }),
+      "site",
+    );
     expect(v.origem).toBeNull();
     expect(v.hospedagem).toBeNull();
     expect(v.tipoQuarto).toBeNull();
+  });
+  it("sem pacote: origem, hospedagem e quarto null", () => {
+    const v = toLegacyViagem(item({ package: null }), "site");
+    expect([v.origem, v.hospedagem, v.tipoQuarto]).toEqual([null, null, null]);
   });
   it("soma adultos e crianças", () => {
     const v = toLegacyViagem(item({ package: { ...item().package, adults: 2, children: 3 } }), "site");

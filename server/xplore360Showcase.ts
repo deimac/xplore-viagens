@@ -35,7 +35,11 @@ export interface PublicShowcaseItem {
     return_date: string | null;
     adults: number;
     children: number;
-    services: any[];
+    origin: string | null;
+    lodging: string | null;
+    room_type: string | null;
+    board: string | null;
+    includes: { type: string; label: string; text: string | null }[];
   } | null;
   updated_at: string;
 }
@@ -66,30 +70,6 @@ export interface LegacyViagemOut {
   mostrarNaTv: boolean;
 }
 
-export interface ShowcaseSummary {
-  origin: string | null;
-  lodging: string | null;
-  roomType: string | null;
-}
-
-const isActive = (s: any) => !s?.status || s.status === "active";
-
-// Cópia mínima de packageSummary do xplore360 (origem, hotel e quarto).
-export function showcaseSummary(allServices: any[]): ShowcaseSummary {
-  const services = (allServices || []).filter(isActive);
-  const flight = services.find((s) => s.type === "flight");
-  const origin0 = flight?.flight?.segments?.[0]?.origin;
-  const origin: string | null = origin0
-    ? origin0.city || origin0.iata || null
-    : flight?.moments?.[0]?.location?.trim() || null;
-  const hotel = services.find((s) => s.type === "hotel")?.hotel;
-  return {
-    origin,
-    lodging: hotel?.name || null,
-    roomType: hotel?.rooms?.[0]?.category || null,
-  };
-}
-
 const ymd = (v: string | null | undefined): string | null => {
   const m = typeof v === "string" ? v.match(/^(\d{4}-\d{2}-\d{2})/) : null;
   return m ? m[1] : null;
@@ -97,16 +77,15 @@ const ymd = (v: string | null | undefined): string | null => {
 
 export function toLegacyViagem(item: PublicShowcaseItem, channel: ShowcaseChannel): LegacyViagemOut {
   const pkg = item.package;
-  const summary = showcaseSummary(pkg?.services ?? []);
   return {
     id: item.code,
     titulo: item.title,
     slug: item.slug,
     descricao: item.description ?? item.summary ?? "",
     tipoViagem: "pacote",
-    origem: summary.origin,
-    hospedagem: summary.lodging,
-    tipoQuarto: summary.roomType,
+    origem: pkg?.origin ?? null,
+    hospedagem: pkg?.lodging ?? null,
+    tipoQuarto: pkg?.room_type ?? null,
     dataIda: ymd(pkg?.departure_date),
     dataVolta: ymd(pkg?.return_date),
     dataExpiracao: ymd(item.valid_until),
