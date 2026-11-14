@@ -5,6 +5,7 @@ export async function getPropertyRoomsSummary(propertyId: number) {
     return await getRoomsSummaryAndBeds(propertyId);
 }
 import * as db from "./db";
+import { isXplore360Properties, groupByCityCountry } from "./xplore360Properties";
 
 interface PropertyData {
     name: string;
@@ -94,6 +95,7 @@ export async function updateProperty(id: number, data: Partial<PropertyData>) {
 
 export async function getActivePropertiesGroupedByCity() {
     const properties = await db.getActiveProperties();
+    if (isXplore360Properties()) return groupByCityCountry(properties as any);
 
     // Agrupar por cidade e país
     const grouped = properties.reduce((acc: any, property: any) => {
@@ -113,6 +115,8 @@ export async function getPropertyWithDetails(slug: string) {
     if (!property) {
         return null;
     }
+    // xplore360: o adaptador já traz imagens e comodidades; não consultar o MySQL
+    if (isXplore360Properties()) return property;
 
     const [images, amenities] = await Promise.all([
         db.getPropertyImages(property.id),

@@ -204,3 +204,32 @@ describe("fetch", () => {
     expect(await getRoomsWithBedsFor(999)).toEqual([]);
   });
 });
+
+describe("properties.getPropertyWithDetails em modo xplore360", () => {
+  afterEach(() => {
+    delete process.env.PROPERTIES_SOURCE;
+    vi.resetModules();
+    vi.doUnmock("../db");
+  });
+
+  it("devolve imagens/comodidades do adaptador e não consulta o MySQL", async () => {
+    process.env.PROPERTIES_SOURCE = "xplore360";
+    const adapter = toLegacyPropertyDetail(detail());
+    const db = {
+      getPropertyBySlug: vi.fn().mockResolvedValue(adapter),
+      getPropertyImages: vi.fn().mockResolvedValue([{ id: 99, image_url: "mysql" }]),
+      getPropertyAmenities: vi.fn().mockResolvedValue([{ id: 99, name: "mysql" }]),
+      getActiveProperties: vi.fn().mockResolvedValue([adapter]),
+    };
+    vi.resetModules();
+    vi.doMock("../db", () => db);
+    const props = await import("../properties");
+    const out: any = await props.getPropertyWithDetails("casa-mar");
+    expect(out.images[0].image_url).toBe("https://x/1.jpg");
+    expect(out.amenities[0].name).toBe("Wi-Fi");
+    expect(db.getPropertyImages).not.toHaveBeenCalled();
+    expect(db.getPropertyAmenities).not.toHaveBeenCalled();
+    const grouped = await props.getActivePropertiesGroupedByCity();
+    expect(Object.keys(grouped)).toEqual(["Balneário Camboriú, Brasil"]);
+  });
+});
