@@ -152,6 +152,8 @@ const TTL_MS = 60_000;
 const ERROR_TTL_MS = 15_000;
 const FETCH_TIMEOUT_MS = 5_000;
 type Entry = { at: number; data: any; failed?: boolean };
+const MAX_CACHE_ENTRIES = 300;
+const SLUG_RE = /^[a-z0-9-]{1,120}$/;
 const cache = new Map<string, Entry>();
 const logged = new Set<string>();
 
@@ -160,12 +162,18 @@ export function resetPropertiesCache() {
   logged.clear();
 }
 
+function remember(key: string, entry: Entry) {
+  cache.delete(key); // reinserir move para o fim: o mais antigo fica na frente
+  cache.set(key, entry);
+  while (cache.size > MAX_CACHE_ENTRIES) cache.delete(cache.keys().next().value as string);
+}
+
 async function cached<T>(key: string, load: () => Promise<T>): Promise<T | null> {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < (hit.failed ? ERROR_TTL_MS : TTL_MS)) return hit.data as T | null;
   try {
     const data = await load();
-    cache.set(key, { at: Date.now(), data });
+    remember(key, { at: Date.now(), data });
     logged.delete(key);
     return data;
   } catch (error) {
@@ -174,7 +182,7 @@ async function cached<T>(key: string, load: () => Promise<T>): Promise<T | null>
       console.error(`[xplore360Properties] ${key}:`, (error as Error).message);
     }
     const stale = hit && hit.data != null ? (hit.data as T) : null;
-    cache.set(key, { at: Date.now(), data: stale, failed: true });
+    remember(key, { at: Date.now(), data: stale, failed: true });
     return stale;
   }
 }
@@ -201,6 +209,7 @@ export async function fetchPropertiesList(channel: PropertiesChannel): Promise<L
 }
 
 export async function fetchPropertyItem(slug: string): Promise<PublicPropertyItem | null> {
+  if (!SLUG_RE.test(slug)) return null; // sem chamada ao xplore360 nem entrada no cache
   return cached(`item:${slug}`, async () => {
     const { status, body } = await request(`/properties/item/${encodeURIComponent(slug)}`);
     return status === 404 ? null : ((body?.item ?? null) as PublicPropertyItem | null);

@@ -189,6 +189,26 @@ describe("fetch", () => {
     expect(await fetchPropertyItem("nao-existe")).toBeNull();
   });
 
+  it("slug inválido devolve null sem chamar o xplore360", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    for (const bad of ["", "../x", "Casa-Mar", "a b", "a/b", "x".repeat(121)]) {
+      expect(await fetchPropertyItem(bad)).toBeNull();
+    }
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it("cache de itens limitado a 300 entradas: o mais antigo sai", async () => {
+    const f = vi.fn().mockResolvedValue(ok({ item: detail() }));
+    vi.stubGlobal("fetch", f);
+    for (let i = 0; i < 301; i++) await fetchPropertyItem(`casa-${i}`);
+    expect(f).toHaveBeenCalledTimes(301);
+    await fetchPropertyItem("casa-300"); // ainda em cache
+    expect(f).toHaveBeenCalledTimes(301);
+    await fetchPropertyItem("casa-0"); // saiu
+    expect(f).toHaveBeenCalledTimes(302);
+  });
+
   it("roomsSummary e quartos por code achando o slug na lista (site, depois tv)", async () => {
     const f = vi.fn(async (url: string) => {
       if (url.includes("/properties/list?channel=site")) return ok({ items: [] });
