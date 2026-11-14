@@ -1,5 +1,6 @@
 // Função para obter resumo dos cômodos e total de camas
 export async function getRoomsSummaryAndBeds(propertyId: number) {
+  if (isXplore360Properties()) return await getRoomsSummaryFor(propertyId);
   // Resumo dos cômodos
   // Resumo dos cômodos com total de camas por tipo
   const roomsSummaryRaw = await executeQuery(
@@ -37,6 +38,7 @@ import mysql from "mysql2";
 import { InsertUser, users, travels, InsertTravel, categories, InsertCategory, travelCategories, quotations, InsertQuotation, companySettings, InsertCompanySettings, heroSlides, InsertHeroSlide, reviewAuthors, reviews, InsertReviewAuthor, InsertReview, ofertasVoo, ofertasDatasFixas, ofertasDatasFlexiveis, clientes, InsertCliente, xpContas, xpMovimentacoes, xpTiposMovimentacao, xpCodigos, xpCodigosUsados, xpConfiguracoes, xploreTvItens, InsertXploreTvItem, xploreTvSecoes, xploreTvVideos, adminLembretes } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { fetchShowcase, fetchTaxonomy, isXplore360Source } from './xplore360Showcase';
+import { isXplore360Properties, fetchPropertiesList, fetchPropertyDetail, fetchPropertiesForTv, pickFeatured, getRoomsSummaryFor, getRoomsWithBedsFor } from './xplore360Properties';
 // import { geocodeAddress, buildAddressString } from './_core/map';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -1224,6 +1226,7 @@ export async function updateProperty(id: number, data: any) {
 }
 
 export async function getPropertyBySlug(slug: string) {
+  if (isXplore360Properties()) return await fetchPropertyDetail(slug);
   const result: any[] = await executeQuery(`
     SELECT 
       id, name, slug, description_short, description_full, property_type_id,
@@ -1256,6 +1259,7 @@ export async function getPropertyById(id: number) {
 }
 
 export async function getActiveProperties() {
+  if (isXplore360Properties()) return await fetchPropertiesList('site');
   const result = await executeQuery<any[]>(`
     SELECT
       p.*,
@@ -1276,6 +1280,7 @@ export async function getActiveProperties() {
 }
 
 export async function getFeaturedProperties() {
+  if (isXplore360Properties()) return pickFeatured(await fetchPropertiesList('site'));
   try {
     // Buscar propriedades em destaque primeiro (se o campo existir)
     const featured = await executeQuery<any[]>(`
@@ -1664,6 +1669,7 @@ export async function getPropertyRooms(propertyId: number) {
 }
 
 export async function getPropertyRoomsWithBeds(propertyId: number) {
+  if (isXplore360Properties()) return await getRoomsWithBedsFor(propertyId);
   // Get rooms
   const rooms = await executeQuery(`
     SELECT 
@@ -3737,6 +3743,10 @@ export async function getHydratedTvPlaylist(orientacao?: string) {
         break;
       }
       case 'hospedagens': {
+        if (isXplore360Properties()) {
+          itens = await fetchPropertiesForTv();
+          break;
+        }
         const rows = await executeQuery<any[]>(`
           SELECT p.id, p.name, p.city, p.country, p.xp, p.max_guests, p.bedrooms,
             (SELECT pi.image_url FROM property_images pi WHERE pi.property_id = p.id ORDER BY pi.sort_order ASC LIMIT 1) as primary_image

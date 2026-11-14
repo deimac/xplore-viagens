@@ -125,10 +125,12 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     const [location] = useLocation();
     // Com a vitrine no xplore360, o cadastro de viagens, categorias e destaques sai do admin.
     const { data: viagensSource } = trpc.viagens.source.useQuery();
-    const visibleMenuItems =
-        viagensSource?.source === "xplore360"
-            ? menuItems.filter((item) => item.label !== "Viagens")
-            : menuItems;
+    const { data: propertiesSource } = trpc.properties.source.useQuery();
+    const visibleMenuItems = menuItems.filter(
+        (item) =>
+            !(viagensSource?.source === "xplore360" && item.label === "Viagens") &&
+            !(propertiesSource?.source === "xplore360" && item.label === "Hospedagens"),
+    );
     const [expandedItems, setExpandedItems] = useState<string[]>(["Hospedagens", "Viagens"]);
 
     const toggleExpanded = (label: string) => {

@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { isXplore360Source, SHOWCASE_MOVED_MESSAGE } from "./xplore360Showcase";
+import { isXplore360Properties } from "./xplore360Properties";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
@@ -51,6 +52,12 @@ function normalizeLocalDateTimeInput(value: string | null | undefined): string |
 
 function assertShowcaseEditable() {
   if (isXplore360Source()) {
+    throw new TRPCError({ code: "FORBIDDEN", message: SHOWCASE_MOVED_MESSAGE });
+  }
+}
+
+function assertPropertiesEditable() {
+  if (isXplore360Properties()) {
     throw new TRPCError({ code: "FORBIDDEN", message: SHOWCASE_MOVED_MESSAGE });
   }
 }
@@ -869,6 +876,7 @@ export const appRouter = router({
   }),
 
   properties: router({
+    source: publicProcedure.query(() => ({ source: isXplore360Properties() ? "xplore360" : "mysql" })),
     roomsSummary: publicProcedure
       .input(z.object({ propertyId: z.number() }))
       .query(async ({ input }) => {
@@ -945,6 +953,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await properties.createProperty(input);
       }),
 
@@ -976,6 +985,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { id, ...data } = input;
         return await properties.updateProperty(id, data);
       }),
@@ -983,12 +993,14 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.deleteProperty(input.id);
       }),
 
     toggleActive: adminProcedure
       .input(z.object({ id: z.number(), active: z.boolean() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await properties.updateProperty(input.id, { active: input.active });
       }),
 
@@ -1008,6 +1020,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const uploadedImages = [];
 
         for (const image of input.images) {
@@ -1052,6 +1065,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { propertyId, toDelete, toAdd, toUpdate } = input;
         const uploadedImages = [];
 
@@ -1099,6 +1113,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await properties.createAmenity(input);
       }),
 
@@ -1110,6 +1125,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await properties.associatePropertyAmenities(input.propertyId, input.amenityIds);
       }),
   }),
@@ -1128,6 +1144,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { geocodeAddress, buildAddressString } = await import('./geocoding');
 
         const addressString = buildAddressString(input);
@@ -1155,6 +1172,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.createRoomType(input);
       }),
 
@@ -1166,6 +1184,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { id, ...data } = input;
         return await db.updateRoomType(id, data);
       }),
@@ -1173,6 +1192,7 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.deleteRoomType(input.id);
       }),
   }),
@@ -1191,6 +1211,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.createBedType(input);
       }),
 
@@ -1203,6 +1224,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { id, ...data } = input;
         return await db.updateBedType(id, data);
       }),
@@ -1210,6 +1232,7 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.deleteBedType(input.id);
       }),
   }),
@@ -1238,6 +1261,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.createPropertyRoom(input);
       }),
 
@@ -1251,6 +1275,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { id, ...data } = input;
         return await db.updatePropertyRoom(id, data);
       }),
@@ -1258,6 +1283,7 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.deletePropertyRoom(input.id);
       }),
 
@@ -1269,6 +1295,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.reorderPropertyRooms(input.propertyId, input.roomIds);
       }),
 
@@ -1281,6 +1308,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const storage = await import('./storage');
 
         // Convert base64 to buffer
@@ -1307,6 +1335,7 @@ export const appRouter = router({
     deletePhoto: adminProcedure
       .input(z.object({ roomId: z.number(), propertyId: z.number() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const storage = await import('./storage');
 
         // Get current room photo
@@ -1339,6 +1368,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.createRoomBed(input);
       }),
 
@@ -1351,6 +1381,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         const { id, ...data } = input;
         return await db.updateRoomBed(id, data);
       }),
@@ -1358,6 +1389,7 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        assertPropertiesEditable();
         return await db.deleteRoomBed(input.id);
       }),
   }),
