@@ -126,10 +126,10 @@ describe("adaptadores", () => {
     expect(r[1].sleepingPhoto).toBeNull();
   });
 
-  it("roomsSummary: mesma regra do xplore360", () => {
+  it("roomsSummary: mesma regra do xplore360, ordenado por nome como o site", () => {
     const s = roomsSummary([
-      { roomTypeName: "Quarto", roomTypeIcon: "bed", beds: [{ quantity: 1 }] },
       { roomTypeName: "Sala", roomTypeIcon: "sofa", beds: [] },
+      { roomTypeName: "Quarto", roomTypeIcon: "bed", beds: [{ quantity: 1 }] },
       { roomTypeName: "Quarto", roomTypeIcon: "bed", beds: [{ quantity: 2 }, { quantity: 1 }] },
     ]);
     expect(s).toEqual({

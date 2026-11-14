@@ -144,7 +144,9 @@ export function roomsSummary(
       groups.set(room.roomTypeName, { name: room.roomTypeName, icon: room.roomTypeIcon, total: 1, beds });
     }
   }
-  return { rooms_summary: Array.from(groups.values()), total_beds: totalBeds };
+  // Mesma ordem do site (MySQL: ORDER BY rt.name).
+  const summary = Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  return { rooms_summary: summary, total_beds: totalBeds };
 }
 
 const TTL_MS = 60_000;
