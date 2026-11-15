@@ -75,6 +75,34 @@ export function buildQuoteBody(input: SiteQuoteInput, formSlug: string, tracking
   return { form_slug: formSlug, answers, tracking: utm, hp: "" };
 }
 
+export class UpstreamError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+/** Mensagem segura para o cliente; o erro real só vai para o log. */
+export function publicErrorMessage(e: unknown): string {
+  return e instanceof UpstreamError && e.status === 429
+    ? "Muitas tentativas. Tente mais tarde."
+    : "Não foi possível enviar. Tente de novo.";
+}
+
+const IPV4 = /^(\d{1,3})(\.\d{1,3}){3}$/;
+const IPV6 = /^[0-9a-fA-F:]+(%[\w.]+)?$/;
+
+/**
+ * IP do cliente atrás do proxy (Traefik/Coolify), que acrescenta o IP real no FIM do
+ * X-Forwarded-For; entradas anteriores são do cliente e podem ser forjadas.
+ */
+export function clientIpFrom(xff: string | string[] | undefined, remote: string | undefined): string | undefined {
+  const header = Array.isArray(xff) ? xff.join(",") : xff || "";
+  const last = header.split(",").map((s) => s.trim()).filter(Boolean).pop();
+  let ip = (last || remote || "").replace(/^::ffff:/i, "");
+  if (IPV4.test(ip) ? ip.split(".").every((n) => Number(n) <= 255) : ip.includes(":") && IPV6.test(ip)) return ip;
+  return undefined;
+}
+
 /** URL das funções: a da vitrine sem o último segmento (…/functions/v1/showcase-public). */
 export function functionsBase(): string {
   return (process.env.XPLORE360_SHOWCASE_URL || "").replace(/\/+$/, "").replace(/\/[^/]+$/, "");
@@ -82,7 +110,7 @@ export function functionsBase(): string {
 
 export async function submitQuote(
   input: SiteQuoteInput,
-  clientIp: string,
+  clientIp: string | undefined,
   tracking: QuoteTracking = {},
 ): Promise<{ locator_code: string | null }> {
   const key = process.env.XPLORE360_SHOWCASE_KEY || "";
@@ -91,11 +119,15 @@ export async function submitQuote(
   if (!base || !key || !form) throw new Error("XPLORE360_SHOWCASE_URL/KEY/QUOTE_FORM não configurados");
   const res = await fetch(`${base}/form-submit`, {
     method: "POST",
-    headers: { "content-type": "application/json", "x-showcase-key": key, "x-client-ip": clientIp },
+    headers: {
+      "content-type": "application/json",
+      "x-showcase-key": key,
+      ...(clientIp ? { "x-client-ip": clientIp } : {}),
+    },
     body: JSON.stringify(buildQuoteBody(input, form, tracking)),
     signal: AbortSignal.timeout(15_000),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok || body?.success === false) throw new Error(body?.error || `HTTP ${res.status}`);
+  if (!res.ok || body?.success === false) throw new UpstreamError(body?.error || `HTTP ${res.status}`, res.status);
   return { locator_code: body?.locator_code ?? null };
 }

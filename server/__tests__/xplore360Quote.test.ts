@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildQuoteBody, functionsBase, submitQuote, type SiteQuoteInput } from "../xplore360Quote";
+import { buildQuoteBody, clientIpFrom, publicErrorMessage, UpstreamError, functionsBase, submitQuote, type SiteQuoteInput } from "../xplore360Quote";
 
 const input = (over: Partial<SiteQuoteInput> = {}): SiteQuoteInput => ({
   campoNome: "Ana  Silva", campoCelular: "+5511999998888", campoEmail: "", campoOrigem: "São Paulo",
@@ -72,5 +72,27 @@ describe("submitQuote", () => {
     expect(await submitQuote(input(), "1.2.3.4")).toEqual({ locator_code: null });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ success: false, error: "Telefone inválido" }) }));
     await expect(submitQuote(input(), "1.2.3.4")).rejects.toThrow("Telefone inválido");
+  });
+});
+
+describe("clientIpFrom", () => {
+  it("usa a última entrada do XFF e ignora a primeira forjada", () => {
+    expect(clientIpFrom("6.6.6.6, 9.9.9.9", "10.0.0.1")).toBe("9.9.9.9");
+    expect(clientIpFrom(["6.6.6.6", "9.9.9.9"], undefined)).toBe("9.9.9.9");
+  });
+  it("sem XFF usa o socket; inválido vira undefined", () => {
+    expect(clientIpFrom(undefined, "::ffff:1.2.3.4")).toBe("1.2.3.4");
+    expect(clientIpFrom(undefined, "2001:db8::1")).toBe("2001:db8::1");
+    expect(clientIpFrom("1.1.1.1, lixo", undefined)).toBeUndefined();
+    expect(clientIpFrom("999.1.1.1", undefined)).toBeUndefined();
+    expect(clientIpFrom(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe("publicErrorMessage", () => {
+  it("genérico, com 429 próprio", () => {
+    expect(publicErrorMessage(new UpstreamError("Telefone inválido em x", 400))).toBe("Não foi possível enviar. Tente de novo.");
+    expect(publicErrorMessage(new UpstreamError("x", 429))).toBe("Muitas tentativas. Tente mais tarde.");
+    expect(publicErrorMessage(new Error("boom"))).toBe("Não foi possível enviar. Tente de novo.");
   });
 });

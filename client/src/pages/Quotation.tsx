@@ -166,7 +166,7 @@ export default function Quotation() {
           <div className="lg:col-span-2">
             <div className="bg-muted/30 border border-muted/40 rounded-xl p-6 md:p-8 shadow-sm">
               <form onSubmit={handleSubmit} className="space-y-6">
-          <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
+                <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
 
                 {/* CATEGORIA 1: Dados Pessoais */}
                 <div className="space-y-3">

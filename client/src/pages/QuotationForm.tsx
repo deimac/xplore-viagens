@@ -179,7 +179,7 @@ export default function QuotationForm() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
               {/* Linha 1: Nome e Telefone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>

@@ -1,6 +1,6 @@
 // Avaliações do site no xplore360: leitura pública (sem e-mail) e envio para moderação.
 // Ativado pela mesma SHOWCASE_SOURCE=xplore360. Usa XPLORE360_SHOWCASE_URL/KEY.
-import { functionsBase } from "./xplore360Quote";
+import { functionsBase, UpstreamError } from "./xplore360Quote";
 
 export interface PublicReview {
   id: string;
@@ -97,5 +97,5 @@ export async function submitReview(r: ReviewSubmission): Promise<void> {
     signal: AbortSignal.timeout(10_000),
   });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok || body?.success === false) throw new Error(body?.error || `HTTP ${res.status}`);
+  if (!res.ok || body?.success === false) throw new UpstreamError(body?.error || `HTTP ${res.status}`, res.status);
 }

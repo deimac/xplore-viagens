@@ -14,7 +14,7 @@ import { verifyGoogleToken } from "./_core/googleAuth";
 import { verifyFacebookToken } from "./_core/facebookAuth";
 import { SignJWT } from "jose";
 import bcrypt from 'bcryptjs';
-import { submitQuote, type SiteQuoteInput } from "./xplore360Quote";
+import { submitQuote, clientIpFrom, publicErrorMessage, type SiteQuoteInput } from "./xplore360Quote";
 import { fetchReviews, submitReview } from "./xplore360Reviews";
 import { readReviewAuthor, signReviewAuthor, REVIEW_AUTHOR_COOKIE, REVIEW_AUTHOR_MAX_AGE_S } from "./reviewAuthor";
 import { parsearOfertaVoo } from "./ofertasVoo";
@@ -551,21 +551,23 @@ export const appRouter = router({
           campoAdicional_1: z.string().max(60).optional(),
           campoAdicional_2: z.string().max(60).optional(),
           campoAdicional_3: z.string().max(60).optional(),
-          tracking: z.record(z.string(), z.string().max(200)).optional(),
-          hp: z.string().optional(),
+          tracking: z
+            .record(z.string().max(40), z.string().max(200))
+            .refine((t) => Object.keys(t).length <= 10, "tracking demais")
+            .optional(),
+          hp: z.string().max(200).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
         const { hp, tracking, ...form } = input;
         if (hp && hp.trim() !== "") return { locator_code: null as string | null };
         if (isXplore360Source()) {
-          const fwd = String(ctx.req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-          const ip = fwd || ctx.req.socket?.remoteAddress || "";
+          const ip = clientIpFrom(ctx.req.headers["x-forwarded-for"], ctx.req.socket?.remoteAddress);
           try {
             return await submitQuote(form as SiteQuoteInput, ip, tracking);
           } catch (e) {
             console.error("[quotations.create]", (e as Error).message);
-            throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+            throw new TRPCError({ code: "BAD_REQUEST", message: publicErrorMessage(e) });
           }
         }
         const adults = form.campoPassageiroAdulto ?? 1;
@@ -732,20 +734,23 @@ export const appRouter = router({
           try {
             await submitReview({ ...author, ...input });
           } catch (e) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+            console.error("[reviews.create]", (e as Error).message);
+            throw new TRPCError({ code: "BAD_REQUEST", message: publicErrorMessage(e) });
           }
+          ctx.res.clearCookie(REVIEW_AUTHOR_COOKIE, getSessionCookieOptions(ctx.req));
           return { success: true };
         }
         if (!author.authorId) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Faça login para avaliar" });
         }
         await db.createReview({ authorId: author.authorId, ...input, status: "pending" });
+        ctx.res.clearCookie(REVIEW_AUTHOR_COOKIE, getSessionCookieOptions(ctx.req));
         return { success: true };
       }),
 
     // List all reviews (admin only)
     list: adminProcedure.query(async ({ ctx }) => {
-      if (isXplore360Source()) return [];
+      assertShowcaseEditable();
       const reviews = await db.getAllReviews();
       try {
         console.log(`[Admin Debug] reviews.list called by user=${ctx.user?.id}-${ctx.user?.email} role=${ctx.user?.role} reviews_count=${Array.isArray(reviews) ? reviews.length : 'unknown'}`);
@@ -778,6 +783,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        assertShowcaseEditable();
         await db.updateReviewStatus(input.id, input.status);
         return { success: true };
       }),
@@ -786,6 +792,7 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
+        assertShowcaseEditable();
         await db.deleteReview(input.id);
         return { success: true };
       }),
