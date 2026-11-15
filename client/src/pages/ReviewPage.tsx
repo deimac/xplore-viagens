@@ -10,7 +10,6 @@ import { APP_LOGO, APP_TITLE } from '@/const';
 
 export default function ReviewPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authorId, setAuthorId] = useState<number | null>(null);
   const [authorInfo, setAuthorInfo] = useState<{ name: string; email: string; avatarUrl: string | null } | null>(null);
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
@@ -22,7 +21,6 @@ export default function ReviewPage() {
 
   const handleLoginSuccess = (id: number, info: { name: string; email: string; avatarUrl: string | null }) => {
     setIsAuthenticated(true);
-    setAuthorId(id);
     setAuthorInfo(info);
     toast.success(`Bem-vindo, ${info.name}!`);
   };
@@ -38,7 +36,7 @@ export default function ReviewPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!authorId) {
+    if (!isAuthenticated) {
       toast.error('Você precisa fazer login primeiro');
       return;
     }
@@ -57,7 +55,6 @@ export default function ReviewPage() {
 
     try {
       await createReview.mutateAsync({
-        authorId,
         rating,
         comment: comment.trim(),
       });

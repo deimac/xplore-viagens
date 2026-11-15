@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { X, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { readUtm } from "@/lib/quoteTracking";
 
 interface FormData {
   campoNome: string;
@@ -25,14 +27,9 @@ interface FormData {
   campoAdicional_3: string;
 }
 
-interface ApiResponse {
-  sucesso: "S" | "N";
-  msg: string;
-  cotacao: string;
-}
-
 export default function QuotationForm() {
   const [, navigate] = useLocation();
+  const createQuote = trpc.quotations.create.useMutation();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -124,38 +121,18 @@ export default function QuotationForm() {
     setIsLoading(true);
 
     try {
-      const payload = new URLSearchParams();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach(v => payload.append(key, v));
-        } else {
-          payload.append(key, String(value));
-        }
+      const hp = ((e.currentTarget as HTMLFormElement).elements.namedItem("website") as HTMLInputElement | null)?.value || "";
+      const data = await createQuote.mutateAsync({ ...formData, tracking: readUtm(), hp });
+
+      setMessage({
+        type: "success",
+        text: data.locator_code ? `Solicitação enviada - Código da cotação: ${data.locator_code}` : "Solicitação enviada",
       });
-
-      const response = await fetch("https://agencia.iddas.com.br/so/mnv0fqto", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: payload.toString(),
-      });
-
-      const data: ApiResponse = await response.json();
-
-      if (data.sucesso === "S") {
-        setMessage({
-          type: "success",
-          text: `${data.msg} - Código: ${data.cotacao}`,
-        });
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      } else {
-        setMessage({ type: "error", text: data.msg || "Erro ao enviar solicitação" });
-      }
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
     } catch (error) {
-      setMessage({ type: "error", text: "Erro ao conectar com o servidor" });
+      setMessage({ type: "error", text: (error as Error).message || "Erro ao enviar solicitação" });
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -202,6 +179,7 @@ export default function QuotationForm() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
               {/* Linha 1: Nome e Telefone */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>

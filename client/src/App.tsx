@@ -16,7 +16,6 @@ import CompanySettings from "./pages/CompanySettings";
 import ReviewPage from "./pages/ReviewPage";
 import PrivacidadePage from "./pages/PrivacidadePage";
 import ExclusaoDadosPage from "./pages/ExclusaoDadosPage";
-import DebugApi from "./pages/DebugApi";
 import RoomTypesManager from "./components/RoomTypesManager";
 import BedTypesManager from "./components/BedTypesManager";
 import Dashboard from "./pages/admin/Dashboard";
@@ -49,7 +48,6 @@ function Router() {
       <Route path={"/hospedagem/:slug"} component={Home} />
       <Route path={"/orcamento"} component={Quotation} />
       <Route path={"/quotation"} component={QuotationForm} />
-      <Route path={"/debug-api"} component={DebugApi} />
       <Route path={"/admin/login"} component={AdminLogin} />
 
       {/* Admin Routes */}

@@ -14,7 +14,9 @@ import { verifyGoogleToken } from "./_core/googleAuth";
 import { verifyFacebookToken } from "./_core/facebookAuth";
 import { SignJWT } from "jose";
 import bcrypt from 'bcryptjs';
-import { authenticateIddas, getAeroportos, getAllAeroportos, getVendas, getPessoas, getOrcamento } from "./_core/iddasApi";
+import { submitQuote, type SiteQuoteInput } from "./xplore360Quote";
+import { fetchReviews, submitReview } from "./xplore360Reviews";
+import { readReviewAuthor, signReviewAuthor, REVIEW_AUTHOR_COOKIE, REVIEW_AUTHOR_MAX_AGE_S } from "./reviewAuthor";
 import { parsearOfertaVoo } from "./ofertasVoo";
 import * as properties from "./properties";
 import * as ofertasVooPremium from "./ofertasVooPremium";
@@ -60,6 +62,29 @@ function assertPropertiesEditable() {
   if (isXplore360Properties()) {
     throw new TRPCError({ code: "FORBIDDEN", message: SHOWCASE_MOVED_MESSAGE });
   }
+}
+
+async function rememberReviewAuthor(
+  ctx: { req: any; res: any },
+  provider: "google" | "facebook",
+  info: { providerId: string; name: string; email: string; picture?: string | null },
+) {
+  const avatarUrl = info.picture ?? null;
+  let authorId: number | undefined;
+  if (!isXplore360Source()) {
+    const author = await db.upsertReviewAuthor({
+      providerId: info.providerId, loginMethod: provider, name: info.name, email: info.email, avatarUrl,
+    });
+    authorId = author.id;
+  }
+  const token = await signReviewAuthor({
+    provider, providerId: info.providerId, name: info.name, email: info.email, avatarUrl, authorId,
+  });
+  ctx.res.cookie(REVIEW_AUTHOR_COOKIE, token, {
+    ...getSessionCookieOptions(ctx.req),
+    maxAge: REVIEW_AUTHOR_MAX_AGE_S * 1000,
+  });
+  return { success: true, author: { id: authorId ?? 0, name: info.name, email: info.email, avatarUrl } };
 }
 
 export const appRouter = router({
@@ -502,25 +527,61 @@ export const appRouter = router({
   }),
 
   quotations: router({
+    // Modo xplore360: repassa ao form-submit (código da cotação volta ao cliente).
+    // Modo mysql (antes da virada): continua gravando na tabela `quotations` legada.
     create: publicProcedure
       .input(
         z.object({
-          name: z.string(),
-          email: z.string().email(),
-          phone: z.string().optional(),
-          destination: z.string(),
-          departureDate: z.string().optional(),
-          returnDate: z.string().optional(),
-          travelers: z.number(),
-          budget: z.string().optional(),
-          message: z.string().optional(),
+          campoNome: z.string().trim().min(2).max(120),
+          campoCelular: z.string().trim().min(8).max(30),
+          campoEmail: z.string().trim().email().max(160).optional().or(z.literal("")),
+          campoOrigem: z.string().trim().min(1).max(120),
+          campoDestino: z.string().trim().min(1).max(120),
+          campoDataInicial: z.string().max(10).optional(),
+          campoDataFinal: z.string().max(10).optional(),
+          campoPassageiroAdulto: z.number().int().min(1).max(50).optional(),
+          campoPassageiroCrianca: z.number().int().min(0).max(50).optional(),
+          campoPassageiroBebe: z.number().int().min(0).max(50).optional(),
+          campoFlexibilidade: z.string().max(1).optional(),
+          campoMalaDespachada: z.number().int().min(0).max(50).optional(),
+          campoServicos: z.array(z.string().max(1)).max(10).optional(),
+          campoCupomDesconto: z.string().max(60).optional(),
+          campoObservacao: z.string().max(2000).optional(),
+          campoAdicional_4: z.string().max(60).optional(),
+          campoAdicional_1: z.string().max(60).optional(),
+          campoAdicional_2: z.string().max(60).optional(),
+          campoAdicional_3: z.string().max(60).optional(),
+          tracking: z.record(z.string(), z.string().max(200)).optional(),
+          hp: z.string().optional(),
         })
       )
-      .mutation(async ({ input }) => {
-        return await db.createQuotation({
-          ...input,
+      .mutation(async ({ ctx, input }) => {
+        const { hp, tracking, ...form } = input;
+        if (hp && hp.trim() !== "") return { locator_code: null as string | null };
+        if (isXplore360Source()) {
+          const fwd = String(ctx.req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+          const ip = fwd || ctx.req.socket?.remoteAddress || "";
+          try {
+            return await submitQuote(form as SiteQuoteInput, ip, tracking);
+          } catch (e) {
+            console.error("[quotations.create]", (e as Error).message);
+            throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+          }
+        }
+        const adults = form.campoPassageiroAdulto ?? 1;
+        await db.createQuotation({
+          name: form.campoNome,
+          email: form.campoEmail || "",
+          phone: form.campoCelular,
+          destination: form.campoDestino,
+          departureDate: form.campoDataInicial || undefined,
+          returnDate: form.campoDataFinal || undefined,
+          travelers: adults + (form.campoPassageiroCrianca ?? 0) + (form.campoPassageiroBebe ?? 0),
+          budget: form.campoAdicional_3 || undefined,
+          message: form.campoObservacao || undefined,
           status: "pending",
-        });
+        } as any);
+        return { locator_code: null as string | null };
       }),
     list: adminProcedure.query(async ({ ctx }) => {
       return await db.getAllQuotations();
@@ -626,91 +687,65 @@ export const appRouter = router({
   }),
 
   reviews: router({
-    // Verify Google token and return user info
+    source: publicProcedure.query(() => ({ source: isXplore360Source() ? "xplore360" : "mysql" })),
+
+    // Verifica o token Google e grava o autor verificado num cookie assinado
     verifyGoogle: publicProcedure
       .input(z.object({ token: z.string() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        let userInfo;
         try {
-          const userInfo = await verifyGoogleToken(input.token);
-
-          // Upsert review author
-          const author = await db.upsertReviewAuthor({
-            providerId: userInfo.providerId,
-            loginMethod: 'google',
-            name: userInfo.name,
-            email: userInfo.email,
-            avatarUrl: userInfo.picture,
-          });
-
-          return {
-            success: true,
-            author: {
-              id: author.id,
-              name: author.name,
-              email: author.email,
-              avatarUrl: author.avatarUrl,
-            },
-          };
-        } catch (error) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Failed to verify Google token",
-          });
+          userInfo = await verifyGoogleToken(input.token);
+        } catch {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Failed to verify Google token" });
         }
+        return await rememberReviewAuthor(ctx, "google", userInfo);
       }),
 
-    // Verify Facebook token and return user info
+    // Verifica o token Facebook e grava o autor verificado num cookie assinado
     verifyFacebook: publicProcedure
       .input(z.object({ accessToken: z.string() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        let userInfo;
         try {
-          const userInfo = await verifyFacebookToken(input.accessToken);
-
-          // Upsert review author
-          const author = await db.upsertReviewAuthor({
-            providerId: userInfo.providerId,
-            loginMethod: 'facebook',
-            name: userInfo.name,
-            email: userInfo.email,
-            avatarUrl: userInfo.picture,
-          });
-
-          return {
-            success: true,
-            author: {
-              id: author.id,
-              name: author.name,
-              email: author.email,
-              avatarUrl: author.avatarUrl,
-            },
-          };
-        } catch (error) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Failed to verify Facebook token",
-          });
+          userInfo = await verifyFacebookToken(input.accessToken);
+        } catch {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Failed to verify Facebook token" });
         }
+        return await rememberReviewAuthor(ctx, "facebook", userInfo);
       }),
 
-    // Create a new review
+    // Cria avaliação: o autor vem só do cookie assinado, nunca do corpo
     create: publicProcedure
       .input(
         z.object({
-          authorId: z.number(),
           rating: z.number().min(1).max(5),
-          comment: z.string().min(10),
+          comment: z.string().min(10).max(2000),
         })
       )
-      .mutation(async ({ input }) => {
-        await db.createReview({
-          ...input,
-          status: "pending", // All reviews start as pending
-        });
+      .mutation(async ({ ctx, input }) => {
+        const author = await readReviewAuthor(ctx.req.headers?.cookie as string | undefined);
+        if (!author) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Faça login para avaliar" });
+        }
+        if (isXplore360Source()) {
+          try {
+            await submitReview({ ...author, ...input });
+          } catch (e) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+          }
+          return { success: true };
+        }
+        if (!author.authorId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Faça login para avaliar" });
+        }
+        await db.createReview({ authorId: author.authorId, ...input, status: "pending" });
         return { success: true };
       }),
 
     // List all reviews (admin only)
     list: adminProcedure.query(async ({ ctx }) => {
+      if (isXplore360Source()) return [];
       const reviews = await db.getAllReviews();
       try {
         console.log(`[Admin Debug] reviews.list called by user=${ctx.user?.id}-${ctx.user?.email} role=${ctx.user?.role} reviews_count=${Array.isArray(reviews) ? reviews.length : 'unknown'}`);
@@ -722,7 +757,16 @@ export const appRouter = router({
 
     // List approved reviews (public)
     listApproved: publicProcedure.query(async () => {
-      return await db.getApprovedReviews();
+      if (isXplore360Source()) return await fetchReviews();
+      // Sem e-mail do autor (antes vazava na resposta pública)
+      const rows = await db.getApprovedReviews();
+      return rows.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        author: r.author ? { name: r.author.name, avatarUrl: r.author.avatarUrl } : null,
+      }));
     }),
 
     // Update review status (admin only)
@@ -744,138 +788,6 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await db.deleteReview(input.id);
         return { success: true };
-      }),
-  }),
-
-  // Iddas CRM API Routes
-  iddas: router({
-    // Test authentication and get token
-    auth: publicProcedure.query(async () => {
-      try {
-        const token = await authenticateIddas();
-        return {
-          success: true,
-          token,
-          message: "Authentication successful",
-        };
-      } catch (error: any) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to authenticate with Iddas API",
-        });
-      }
-    }),
-
-    // Get airports list with pagination
-    aeroportos: publicProcedure
-      .input(
-        z.object({
-          page: z.number().min(1).default(1),
-          perPage: z.number().min(1).max(100).default(10),
-        }).optional()
-      )
-      .query(async ({ input }) => {
-        try {
-          const token = await authenticateIddas();
-          const result = await getAeroportos(
-            token,
-            input?.page || 1,
-            input?.perPage || 10
-          );
-          return result;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "Failed to fetch airports from Iddas API",
-          });
-        }
-      }),
-
-    // Get all airports (no pagination)
-    allAeroportos: publicProcedure.query(async () => {
-      try {
-        const aeroportos = await getAllAeroportos();
-        return {
-          data: aeroportos,
-          total: aeroportos.length,
-        };
-      } catch (error: any) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to fetch all airports from Iddas API",
-        });
-      }
-    }),
-
-    // Get sales (vendas) from Iddas API
-    vendas: publicProcedure
-      .input(
-        z.object({
-          codigo: z.string().optional(),
-          dataInicial: z.string().optional(),
-          dataFinal: z.string().optional(),
-          cliente: z.number().optional(),
-        }).optional()
-      )
-      .query(async ({ input }) => {
-        try {
-          const token = await authenticateIddas();
-          const result = await getVendas(
-            token,
-            input?.codigo,
-            input?.dataInicial,
-            input?.dataFinal,
-            input?.cliente
-          );
-          return result;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "Failed to fetch sales from Iddas API",
-          });
-        }
-      }),
-
-    // Get pessoas from Iddas API
-    pessoas: publicProcedure
-      .input(
-        z.object({
-          cpfCnpj: z.string().optional(),
-          id: z.string().optional(),
-        }).optional()
-      )
-      .query(async ({ input }) => {
-        try {
-          const token = await authenticateIddas();
-          const result = await getPessoas(token, input?.cpfCnpj, input?.id);
-          return result;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "Failed to fetch pessoas from Iddas API",
-          });
-        }
-      }),
-
-    // Get orcamento from Iddas API
-    orcamento: publicProcedure
-      .input(
-        z.object({
-          id: z.string().optional(),
-          pessoaId: z.string().optional(),
-        }).optional()
-      )
-      .query(async ({ input }) => {
-        try {
-          const token = await authenticateIddas();
-          const result = await getOrcamento(token, input?.id, input?.pessoaId);
-          return result;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "Failed to fetch orcamento from Iddas API",
-          });
-        }
       }),
   }),
 

@@ -6,6 +6,8 @@ import { DateRange } from 'react-day-picker';
 import { SectionTitle } from "@/components/SectionTitle";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { BookingDatePicker } from "@/components/BookingDatePicker";
+import { trpc } from "@/lib/trpc";
+import { readUtm } from "@/lib/quoteTracking";
 
 interface FormData {
   campoNome: string;
@@ -29,17 +31,12 @@ interface FormData {
   campoAdicional_3: string;
 }
 
-interface ApiResponse {
-  sucesso: "S" | "N";
-  msg: string;
-  cotacao: string;
-}
-
 interface QuotationFormProps {
   onClose: () => void;
 }
 
 export default function QuotationForm({ onClose }: QuotationFormProps) {
+  const createQuote = trpc.quotations.create.useMutation();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -308,36 +305,14 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
     setIsLoading(true);
 
     try {
-      const payload = new URLSearchParams();
-      Object.entries(actualFormData).forEach(([key, value]) => {
-        if (Array.isArray(value)) {
-          value.forEach(v => payload.append(key, v));
-        } else {
-          payload.append(key, String(value));
-        }
-      });
+      const hp = ((e.currentTarget as HTMLFormElement).elements.namedItem("website") as HTMLInputElement | null)?.value || "";
+      const data = await createQuote.mutateAsync({ ...actualFormData, tracking: readUtm(), hp });
 
-      console.log("DEBUG PAYLOAD:", JSON.stringify(payload, null, 2));
-
-      const response = await fetch("https://agencia.iddas.com.br/so/mnv0fqto", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: payload.toString(),
-      });
-
-      const data: ApiResponse = await response.json();
-
-      if (data.sucesso === "S") {
-        setQuotationCode(data.cotacao);
-        setIsSuccess(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        setMessage({ type: "error", text: data.msg || "Erro ao enviar solicitação" });
-      }
+      setQuotationCode(data.locator_code ?? "");
+      setIsSuccess(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      setMessage({ type: "error", text: "Erro ao conectar com o servidor" });
+      setMessage({ type: "error", text: (error as Error).message || "Erro ao enviar solicitação" });
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -364,9 +339,15 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
             </p>
 
             <div className="bg-white border-2 border-accent/20 rounded-lg p-6 mb-8">
-              <p className="text-sm text-muted-foreground mb-2">Localizador do orçamento:</p>
-              <p className="text-4xl font-bold text-accent">{quotationCode}</p>
-              <p className="text-xs text-muted-foreground mt-2">Guarde este código para acompanhar sua solicitação</p>
+              {quotationCode ? (
+                <>
+                  <p className="text-sm text-muted-foreground mb-2">Código da cotação</p>
+                  <p className="text-4xl font-bold text-accent">{quotationCode}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Guarde este código para acompanhar sua solicitação</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Solicitação registrada. Nossa equipe entrará em contato.</p>
+              )}
             </div>
 
             <div className="bg-accent/5 rounded-lg p-4 mb-8">
@@ -463,6 +444,7 @@ export default function QuotationForm({ onClose }: QuotationFormProps) {
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-6" autoComplete="off" style={{
           WebkitAutofillBackgroundColor: 'transparent',
         } as React.CSSProperties & { WebkitAutofillBackgroundColor: string }}>
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
           <style>{`
             input:-webkit-autofill,
             input:-webkit-autofill:hover,
