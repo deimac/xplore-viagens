@@ -110,3 +110,4 @@ temp/
 # Exportação para o xplore360 (dados reais)
 viagens-export.json
 hospedagens-export.json
+avaliacoes-export.json
