@@ -144,6 +144,7 @@ async function request(path: string): Promise<any> {
     headers: { "x-showcase-key": key },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -154,6 +155,15 @@ export async function fetchShowcase(channel: ShowcaseChannel): Promise<LegacyVia
     return ((body?.items ?? []) as PublicShowcaseItem[]).map((i) => toLegacyViagem(i, channel));
   });
   return out ?? [];
+}
+
+/** Pacote pelo código (link enviado no WhatsApp): abre mesmo fora do site. Indisponível → null. */
+export async function fetchShowcaseItem(code: number): Promise<LegacyViagemOut | null> {
+  if (!Number.isInteger(code) || code <= 0) return null;
+  return cached(`item:${code}`, async () => {
+    const body = await request(`/item/${code}`);
+    return body?.item ? toLegacyViagem(body.item as PublicShowcaseItem, "site") : null;
+  });
 }
 
 export async function fetchTaxonomy(which: "categories" | "tags"): Promise<{ id: string; nome: string }[]> {

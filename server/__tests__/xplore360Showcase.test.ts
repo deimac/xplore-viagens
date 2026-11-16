@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchShowcase,
+  fetchShowcaseItem,
   fetchTaxonomy,
   resetShowcaseCache,
   toLegacyViagem,
@@ -194,5 +195,42 @@ describe("fetchShowcase", () => {
     );
     expect(await fetchTaxonomy("categories")).toEqual([{ id: "c1", nome: "Praia" }]);
     expect(await fetchTaxonomy("tags")).toEqual([{ id: "t1", nome: "Aéreo" }]);
+  });
+});
+
+describe("fetchShowcaseItem", () => {
+  const ok = (body: any) => ({ ok: true, status: 200, json: async () => body });
+  beforeEach(() => {
+    resetShowcaseCache();
+    process.env.XPLORE360_SHOWCASE_URL = "https://sb.example/functions/v1/showcase-public";
+    process.env.XPLORE360_SHOWCASE_KEY = "k";
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("chama /item/:code e converte", async () => {
+    const f = vi.fn().mockResolvedValue(ok({ agency: {}, item: item({ code: 25 }) }));
+    vi.stubGlobal("fetch", f);
+    const out = await fetchShowcaseItem(25);
+    expect(f.mock.calls[0][0]).toBe("https://sb.example/functions/v1/showcase-public/item/25");
+    expect(f.mock.calls[0][1].headers).toEqual({ "x-showcase-key": "k" });
+    expect(out).toMatchObject({ id: 25, titulo: "Praia", origem: "São Paulo" });
+  });
+
+  it("404 (indisponível) devolve null sem logar erro", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({ error: "not_found" }) }));
+    expect(await fetchShowcaseItem(9)).toBeNull();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("código inválido nem chama o endpoint", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    expect(await fetchShowcaseItem(0)).toBeNull();
+    expect(await fetchShowcaseItem(Number.NaN)).toBeNull();
+    expect(f).not.toHaveBeenCalled();
   });
 });

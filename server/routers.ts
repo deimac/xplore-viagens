@@ -1,5 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
-import { isXplore360Source, SHOWCASE_MOVED_MESSAGE } from "./xplore360Showcase";
+import { fetchShowcaseItem, isXplore360Source, SHOWCASE_MOVED_MESSAGE } from "./xplore360Showcase";
 import { isXplore360Properties } from "./xplore360Properties";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -153,6 +153,13 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await db.getViagemById(input.id);
+      }),
+    /** Pacote pelo link /pacote/:code (enviado no WhatsApp). Só no modo xplore360; indisponível → null. */
+    getByCode: publicProcedure
+      .input(z.object({ code: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        if (!isXplore360Source()) return null;
+        return await fetchShowcaseItem(input.code);
       }),
     create: adminProcedure
       .input(

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { MapPin, Users, Building2, Moon, MessageCircle, AlertTriangle, Bed } from "lucide-react";
+import { MessageCircle, AlertTriangle } from "lucide-react";
+import { PackageCard } from "@/components/PackageCard";
+import { buildViagemWhatsAppLink } from "@/lib/packageFormat";
 import { trpc } from "@/lib/trpc";
 import CategoryFilter from "@/components/CategoryFilter";
 import FadeInContainer from "@/components/FadeInContainer";
@@ -8,65 +10,6 @@ import { CarouselNavigation } from "@/components/CarouselNavigation";
 
 interface PackagesCarouselTailProps {
   whatsappNumber?: string | null;
-}
-
-const formatCurrency = (value: number) => {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-};
-
-const formatDate = (dateStr: string | null | undefined): string | null => {
-  if (!dateStr) return null;
-  const monthMap: Record<string, string> = {
-    '01': 'jan', '02': 'fev', '03': 'mar', '04': 'abr', '05': 'mai', '06': 'jun',
-    '07': 'jul', '08': 'ago', '09': 'set', '10': 'out', '11': 'nov', '12': 'dez'
-  };
-  try {
-    // Handle YYYY-MM-DD format (from DB DATE column)
-    const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoMatch) {
-      const day = parseInt(isoMatch[3]).toString().padStart(2, '0');
-      const month = monthMap[isoMatch[2]] || isoMatch[2];
-      const year = isoMatch[1];
-      return `${day} ${month} ${year}`;
-    }
-    // Handle Date object stringified as ISO
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      const day = date.getUTCDate().toString().padStart(2, '0');
-      const monthKey = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-      const month = monthMap[monthKey] || monthKey;
-      const year = date.getUTCFullYear();
-      return `${day} ${month} ${year}`;
-    }
-    return dateStr;
-  } catch {
-    return dateStr;
-  }
-};
-
-const calculateNights = (dataIda: string | null | undefined, dataVolta: string | null | undefined): number | null => {
-  if (!dataIda || !dataVolta) return null;
-
-  const start = new Date(dataIda);
-  const end = new Date(dataVolta);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-
-  const diffMs = end.getTime() - start.getTime();
-  const nights = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  return nights > 0 ? nights : null;
-};
-
-function buildViagemWhatsAppLink(viagem: any, rawNumber: string): string {
-  const number = rawNumber.replace(/\D/g, '');
-  const message = `Olá! Tenho interesse na viagem:\n\n` +
-    `📋 Código: #${viagem.id}\n` +
-    `✈️ ${viagem.titulo}\n` +
-    `👥 ${viagem.quantidadePessoas} ${viagem.quantidadePessoas === 1 ? 'viajante' : 'viajantes'}\n` +
-    `💰 ${formatCurrency(viagem.valorTotal)}\n\n` +
-    `Gostaria de mais informações!`;
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
 export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouselTailProps) {
@@ -261,143 +204,15 @@ export default function PackagesCarouselTail({ whatsappNumber }: PackagesCarouse
                         }
                       }}
                     >
-                      <div
-                        className="rounded-2xl overflow-hidden bg-white h-[400px] md:h-[460px]"
+                      <PackageCard
+                        travel={travel}
+                        whatsappNumber={whatsappNumber}
+                        hideButtonOnMobile
+                        className="h-[400px] md:h-[460px]"
                         style={{
                           boxShadow: '0 20px 50px -10px rgba(0, 0, 0, 0.25), 0 10px 20px -5px rgba(0, 0, 0, 0.12)'
                         }}
-                      >
-                        {/* Image Section - Top */}
-                        <div className="relative h-[54%] md:h-[52%] overflow-hidden">
-                          <img
-                            src={travel.imagemUrl}
-                            alt={travel.titulo}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
-
-                          {/* Destaque badges */}
-                          {travel.destaques?.length > 0 && (
-                            <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-                              {travel.destaques.map((d: any) => (
-                                <span
-                                  key={d.id}
-                                  className="bg-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-md"
-                                >
-                                  {d.nome}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Título e origem sobre a imagem (acima do espaço branco) */}
-                          <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 pt-3 md:px-5 md:pb-3 md:pt-5 text-white">
-                            <h3 className="text-[15px] md:text-lg font-bold leading-tight line-clamp-2">
-                              {travel.titulo}
-                            </h3>
-                            {travel.tipoViagem === "hospedagem" ? (
-                              <div className="flex items-center gap-1.5 text-white/90 text-[11px] md:text-sm mt-0.5 md:mt-1">
-                                <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
-                                <span>{travel.hospedagem && String(travel.hospedagem).trim() ? travel.hospedagem : "Hospedagem não informada"}</span>
-                              </div>
-                            ) : travel.origem && (
-                              <div className="flex items-center gap-1.5 text-white/90 text-[11px] md:text-sm mt-0.5 md:mt-1">
-                                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                                <span>Saindo de {travel.origem}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Info Section - Bottom */}
-                        <div className="pl-4 pr-4 pb-4 pt-3 md:pl-5 md:pr-5 md:pb-5 md:pt-5 h-[46%] md:h-[48%] flex flex-col">
-                          <div className="grid grid-rows-3 gap-1.5 md:gap-2 text-gray-500 text-xs md:text-sm">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <Moon className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">
-                                {travel.dataIda && travel.dataVolta
-                                  ? (() => {
-                                    const nights = calculateNights(travel.dataIda, travel.dataVolta);
-                                    const rangeText = `${formatDate(travel.dataIda)} a ${formatDate(travel.dataVolta)}`;
-                                    return nights != null
-                                      ? `${nights} ${nights === 1 ? 'noite' : 'noites'} · ${rangeText}`
-                                      : rangeText;
-                                  })()
-                                  : formatDate(travel.dataIda) || formatDate(travel.dataVolta) || "Data não informada"}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">
-                                {travel.quantidadePessoas} {travel.tipoViagem === "hospedagem"
-                                  ? (travel.quantidadePessoas === 1 ? "hóspede" : "hóspedes")
-                                  : (travel.quantidadePessoas === 1 ? "viajante" : "viajantes")}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              {travel.tipoViagem === "hospedagem" ? (
-                                <>
-                                  <Bed className="w-3.5 h-3.5 flex-shrink-0" />
-                                  <span className="truncate">
-                                    {travel.tipoQuarto && String(travel.tipoQuarto).trim()
-                                      ? travel.tipoQuarto
-                                      : "Tipo de quarto não informado"}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
-                                  <span className="truncate">
-                                    {travel.hospedagem && String(travel.hospedagem).trim()
-                                      ? travel.hospedagem
-                                      : "Hospedagem não informada"}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="my-3 md:my-2 border-t border-gray-200/80" />
-
-                          <div className="mt-0 md:mt-auto flex flex-col md:grid md:grid-cols-[55%_45%] md:gap-4 md:items-end">
-                            <div>
-                              <p className="text-xs md:text-sm text-gray-500">
-                                Apartir de
-                              </p>
-                              <p className="text-base md:text-xl font-bold text-accent">
-                                {formatCurrency(travel.valorTotal)}
-                              </p>
-                              {travel.quantidadeParcelas && travel.valorParcela ? (
-                                <p className="text-xs md:text-sm text-gray-500">
-                                  ou {travel.quantidadeParcelas}x de {formatCurrency(travel.valorParcela)} {travel.temJuros ? 'com\u00A0juros' : 'sem\u00A0juros'}
-                                </p>
-                              ) : null}
-                              {travel.xp > 0 && (
-                                <p className="mt-1 text-xs md:text-sm font-semibold text-amber-600">
-                                  Acumule +{Number(travel.xp).toLocaleString('pt-BR')} pontos XP
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="hidden md:flex h-full items-end justify-end pr-2">
-                              {whatsappNumber && (
-                                <a
-                                  href={buildViagemWhatsAppLink(travel, whatsappNumber)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="mr-2 inline-flex items-center gap-1.5 bg-accent text-accent-foreground hover:opacity-90 border-2 border-accent rounded-lg font-medium micro-shadow px-3 py-1.5 text-xs md:text-sm"
-                                >
-                                  <span>Tenho interesse</span>
-                                  <MessageCircle className="w-3.5 h-3.5" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      />
                     </div>
                   );
                 })}

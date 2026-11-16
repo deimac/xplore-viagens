@@ -26,6 +26,7 @@ import { HospedagensSection } from "@/components/HospedagensSection";
 import { AllHospedagensView } from "@/components/AllHospedagensView";
 import { PropertyView } from "@/components/PropertyView";
 import { AllPacotesView } from "@/components/AllPacotesView";
+import { PackageView } from "@/components/PackageView";
 import ClienteAuthInline from "@/components/ClienteAuthInline";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -62,6 +63,7 @@ export default function Home() {
   const [showAllPacotes, setShowAllPacotes] = useState(false);
   const [showAllHospedagens, setShowAllHospedagens] = useState(false);
   const [selectedPropertySlug, setSelectedPropertySlug] = useState<string | null>(null);
+  const [selectedPackageCode, setSelectedPackageCode] = useState<number | null>(null);
   const [navigationOrigin, setNavigationOrigin] = useState<'home' | 'list' | null>(null);
   const [isQuotationOpen, setIsQuotationOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -125,6 +127,8 @@ export default function Home() {
       setSelectedPropertySlug(match[1]);
       setNavigationOrigin('home');
     }
+    const pkg = window.location.pathname.match(/^\/pacote\/(\d+)\/?$/);
+    if (pkg) setSelectedPackageCode(Number(pkg[1]));
   }, []);
   const [location, navigate] = useLocation();
 
@@ -535,6 +539,17 @@ export default function Home() {
         ) : isQuotationOpen ? (
           <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4">
             <QuotationForm onClose={() => setIsQuotationOpen(false)} />
+          </div>
+        ) : selectedPackageCode ? (
+          <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4">
+            <PackageView
+              code={selectedPackageCode}
+              whatsappNumber={companySettings?.whatsapp}
+              onClose={() => {
+                setSelectedPackageCode(null);
+                window.history.replaceState(null, '', '/');
+              }}
+            />
           </div>
         ) : selectedPropertySlug ? (
           <div className="w-full min-h-screen bg-background flex items-start justify-center py-24 px-4" id={navigationOrigin === "list" ? "all-hospedagens-section" : "hospedagens-section"}>
